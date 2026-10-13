@@ -17,7 +17,7 @@ This repository contains the client application built with Angular. The server a
 Make sure the following tools are installed:
 
 - [Git](https://git-scm.com/downloads)
-- [Node.js](https://nodejs.org/) **v24.x**
+- [Node.js](https://nodejs.org/) **v26.x**
 
 Verify your installation:
 
@@ -26,7 +26,7 @@ node -v
 git --version
 ```
 
-`node -v` should output a version beginning with `v24`.
+`node -v` should output a version beginning with `v26`.
 
 ### Clone the Repository
 
