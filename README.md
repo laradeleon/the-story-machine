@@ -5,9 +5,11 @@ The Story Machine is a platform where anyone can write, publish, read, and discu
 This repository contains the client application built with Angular. The server application, built with NestJS and MongoDB, lives in a [separate repository](https://github.com/nifemi-cd/the-story-machine).
 
 ## Documentation
+
 - [Vision Statement](./docs/sprint-0/vision.md)
 
 ## Deliverables
+
 - [Sprint 0](./docs/sprint-0/sprint0.md)
 
 ## Running Locally
@@ -38,6 +40,8 @@ npm ci
 
 `npm ci` installs the exact dependency versions defined in `package-lock.json`. This ensures we're all running the same project setup.
 
+You may see warnings starting with `npm warn install-scripts` at the end of the output. These are harmless and everything still installs and runs normally.
+
 ### Start the Development Server
 
 ```bash
@@ -50,7 +54,14 @@ Once the application has finished compiling, open:
 
 To stop the development server, press `Ctrl + C` in the terminal.
 
+### Run the Tests
+
+```bash
+npm run test:ci
+```
+
 ## Group Members
+
 - Lara De Leon
 - Carsten Kolynchuk
 - Colin Leger
