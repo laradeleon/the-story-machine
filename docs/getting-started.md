@@ -103,7 +103,7 @@ See [3. Testing](#3-testing) for which tools we'll use.
 | `npm run format`       | Formats every file to match our rules in `.prettierrc`.                  |
 | `npm run format:check` | Lists files that aren't formatted properly without changing them.        |
 
-These will run automatically, so you will not need to manually call them. See [4. Code quality and CI/CD](#4-code-quality-and-cicd) for _when_ they do run automatically.
+Some of these run automatically, but only partly on your own computer. See [4. Code quality and CI/CD](#4-code-quality-and-cicd) for exactly _when_ they run, and what's worth running yourself before opening a PR.
 
 ---
 
@@ -119,7 +119,7 @@ This is just a breakdown of how the three kinds of tests we need to write fit in
 | **Integration** | Vitest + Angular's `TestBed` |
 | **Acceptance**  | Playwright (not set up yet)  |
 
-- **Vitest** is our test runner. It will find all our test files (anything ending in `.spec.ts`), runs every test in them, and reports which passed and which failed. It's what `npm test` starts.
+- **Vitest** is our test runner. It finds all our test files (anything ending in `.spec.ts`), runs every test in them, and reports which passed and which failed. It's what `npm test` starts.
   - It's also already installed so there's nothing to set up.
 - **`TestBed`** is Angular's own testing helper so it's built into Angular.
 - **Playwright** opens a real browser and clicks through the app like a user would, and checks what's on screen.
@@ -174,13 +174,28 @@ What you'll see:
 3. `npm run format:check`: every file is formatted
 4. `npm run test:ci`: all unit and integration tests pass
 5. `npm run build`: the app builds
-6. `npm audit`: no security problems in the packages that ship to users
+6. `npm audit`: checks the packages that ship to users for known security problems. It only fails on high or critical ones.
 
 What you'll see:
 
 - At the bottom of the PR, a check called **Lint, test and build** with a check or an 'X'.
 - If it fails, click **Details** to see which step failed and the error. Fix it, commit and push, and the checks re-run automatically.
 - **A PR can't be merged until this check passes.**
+
+### Run these before opening a PR
+
+The commit hook only checks **the files you're committing**, and only for lint and formatting. The full lint, format check, tests and build only run on GitHub, after you open the PR. If something fails there, you have to fix it, commit, push and wait for CI again.
+
+If you want, you can catch problems before that and run the same checks yourself first:
+
+```bash
+npm run lint
+npm run format:check
+npm run test:ci
+npm run build
+```
+
+If all four pass on your computer, CI will pass too, because it runs the same commands on the same Node version.
 
 ### Deployment (CD)?
 

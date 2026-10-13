@@ -40,6 +40,8 @@ npm ci
 
 `npm ci` installs the exact dependency versions defined in `package-lock.json`. This ensures we're all running the same project setup.
 
+You may see warnings starting with `npm warn install-scripts` at the end of the output. These are harmless and everything still installs and runs normally.
+
 ### Start the Development Server
 
 ```bash
@@ -51,6 +53,12 @@ Once the application has finished compiling, open:
 <http://localhost:4200>
 
 To stop the development server, press `Ctrl + C` in the terminal.
+
+### Run the Tests
+
+```bash
+npm run test:ci
+```
 
 ## Group Members
 
