@@ -24,7 +24,6 @@ function token(lineNumber: number, value = '', type: TokenType): Token {
 export function tokenize(sourceCode: string): Token[] {
   const tokens = new Array<Token>();
   const src = sourceCode.split('\n'); //split on newline so we get the source code line by line
-  console.log(src);
   let lineNum = 1;
   //loop to tokenize each line
   while (src.length > 0) {
@@ -79,4 +78,46 @@ export function tokenize(sourceCode: string): Token[] {
   return tokens;
 }
 
-tokenize('this is a test line\nmy character might be speaking now');
+const simpleStory = `Team Beluga arrives at the classroom on time for their meeting with Lauren.
+
+Arthur: “Good morning Lauren, welcome to Interactive fiction!”
+Paul: “We worked very hard on this, Adejare and I got zero sleep!”
+Adejare looks at you with sleepless eyes.
+Krupal: “Wake up dude..”
+
+Choice:
+Ignore the group -> end of presentation
+Say goodmorning -> continue presentation
+Immediately give the group an A -> The correct option
+
+# end of presentation
+The group looks worried that you are unresponsive and calls medical.
+END
+
+
+# continue presentation
+Lara: “Thank goodness this isn’t a carpooling app am I right?”
+
+Carsten:”We literally had that same idea Lara… We aren’t any better.”
+
+Choice:
+Give team Beluga an F -> fight lara
+Give team Beluga an A -> the correct option
+
+# fight lara
+Lara: “Hey! You can’t do that! I have to fight you now.”
+You get into a physical altercation with Lara..
+You win without a scratch.
+END
+
+# the correct option 
+Everyone celebrates. 
+
+Colin wakes up. It was all a dream
+END
+`;
+
+//can run the file with "tsx lexer.ts" if you have tsx installed, it will tokenize the whole story we wrote and print it out
+for (const token of tokenize(simpleStory)) {
+  console.log(token);
+}
