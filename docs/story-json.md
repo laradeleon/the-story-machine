@@ -43,7 +43,7 @@ See [section 4](#4-full-example) for a complete story.
     "lines": [
       {
         "line_id": 0,
-        "prose": { "text": "The fire had burned down to embers.", "text_color": null }
+        "prose": { "text": { "words": ["The", "fire", "had", "burned", "down", "to", "embers."] }, "text_color": null }
       }
     ]
   }
@@ -79,7 +79,7 @@ Every entry also has a `line_id`: its position in `lines`, starting from 0. `got
 ### `prose`
 
 ```json
-{ "line_id": 3, "prose": { "text": "He pulled his coat tighter.", "text_color": null } }
+{ "line_id": 3, "prose": { "text": { "words": ["He", "pulled", "his", "coat", "tighter."] }, "text_color": null } }
 ```
 
 ### `choice`
@@ -120,7 +120,7 @@ Start at `lines[0]` with no background, then depending on what the type is:
 
 | Entry        | What the reader does                                                                          |
 | ------------ | --------------------------------------------------------------------------------------------- |
-| `prose`      | Show `text` and wait for the reader to click or press Space/Enter, then go to the next line.  |
+| `prose`      | Show `words` joined with spaces and wait for a click or Space/Enter, then go to the next line. |
 | `dialogue`   | Show `name`, the portrait and `words` joined with spaces, and wait. Then go to the next line. |
 | `choice`     | Show each `option_body` and wait for one to be picked, then go to that option's `goto_line`.  |
 | `background` | Change the background and go straight to the next line without waiting.                       |
@@ -210,7 +210,9 @@ This is a complete story and written out as the JSON the reader would receive.
       {
         "line_id": 1,
         "prose": {
-          "text": "The fire had burned down to embers.",
+          "text": {
+            "words": ["The", "fire", "had", "burned", "down", "to", "embers."]
+          },
           "text_color": null
         }
       },
@@ -228,7 +230,9 @@ This is a complete story and written out as the JSON the reader would receive.
       {
         "line_id": 3,
         "prose": {
-          "text": "He pulled his coat tighter.",
+          "text": {
+            "words": ["He", "pulled", "his", "coat", "tighter."]
+          },
           "text_color": null
         }
       },
@@ -257,7 +261,9 @@ This is a complete story and written out as the JSON the reader would receive.
       {
         "line_id": 6,
         "prose": {
-          "text": "Something heavy scraped against the door.",
+          "text": {
+            "words": ["Something", "heavy", "scraped", "against", "the", "door."]
+          },
           "text_color": null
         }
       },
@@ -294,7 +300,9 @@ This is a complete story and written out as the JSON the reader would receive.
       {
         "line_id": 10,
         "prose": {
-          "text": "The lion blinked, then went back into the trees.",
+          "text": {
+            "words": ["The", "lion", "blinked,", "then", "went", "back", "into", "the", "trees."]
+          },
           "text_color": null
         }
       },
@@ -316,7 +324,9 @@ This is a complete story and written out as the JSON the reader would receive.
       {
         "line_id": 13,
         "prose": {
-          "text": "They waited until the scraping stopped.",
+          "text": {
+            "words": ["They", "waited", "until", "the", "scraping", "stopped."]
+          },
           "text_color": null
         }
       },
