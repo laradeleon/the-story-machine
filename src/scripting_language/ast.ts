@@ -1,6 +1,6 @@
 // Definition of the Node types in the Abstract Syntax tree that we are going to use to pass to the Parser for JSON conversion
 
-export type StatementNode =
+export type NodeType =
   | 'StoryNode'
   | 'DialogueNode'
   | 'ProseNode'
@@ -10,14 +10,14 @@ export type StatementNode =
   | 'EndNode';
 
 export interface BaseNode {
-  kind: StatementNode;
+  kind: NodeType;
   lineNumber: number;
 }
 
 //StoryNode is the top node encapsulating the whole story
 export interface StoryNode extends BaseNode {
   kind: 'StoryNode';
-  body: StatementNode[];
+  body: ASTNode[];
 }
 
 export interface DialogueNode extends BaseNode {
@@ -50,3 +50,6 @@ export interface FlagNode extends BaseNode {
 export interface EndNode extends BaseNode {
   kind: 'EndNode';
 }
+
+// Union of nodes that can appear in the story body
+export type ASTNode = DialogueNode | ProseNode | ChoiceNode | FlagNode | EndNode;
