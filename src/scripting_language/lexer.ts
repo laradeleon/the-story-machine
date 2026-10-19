@@ -9,6 +9,7 @@ export enum TokenType {
   Goto,
   Flag, // denoted by "#"
   End,
+  EOF,
 }
 
 export interface Token {
@@ -74,7 +75,7 @@ export function tokenize(sourceCode: string): Token[] {
 
     lineNum++; //going to next line
   }
-
+  tokens.push(token(lineNum, 'EndOfFile', TokenType.EOF));
   return tokens;
 }
 
