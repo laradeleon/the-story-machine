@@ -28,14 +28,27 @@
 /* contents of card, story title and author name */
 .story-container {
   padding: 24px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .story-title {
   font-size: 1rem;
   overflow-wrap: anywhere;
+
+  /* if a title is too long, its cut off with a ...  on the card*/
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 8; /* 8 lines */
+  line-clamp: 8;
+  overflow: hidden;
 }
 
 .story-author {
   font-size: 0.875rem;
   color: #666;
+
+  margin-top: auto; /* put author name at the bottom of the card */
 }
