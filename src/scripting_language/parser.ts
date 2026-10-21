@@ -7,6 +7,7 @@ import {
   FlagNode,
   EndNode,
   ASTNode,
+  GotoNode,
 } from './ast.ts';
 import { tokenize, Token, TokenType } from './lexer.ts';
 
@@ -65,6 +66,9 @@ export default class Parser {
       case TokenType.End:
         return this.parse_end();
 
+      case TokenType.Goto:
+        return this.parse_goto();
+
       default:
         throw new Error(`Unexpected token '${token.value}' at line ${token.lineNumber}`);
     }
@@ -73,6 +77,11 @@ export default class Parser {
   private parse_prose(): ProseNode {
     const token = this.pop();
     return { lineNumber: token.lineNumber, kind: 'ProseNode', text: token.value };
+  }
+
+  private parse_goto(): GotoNode {
+    const token = this.pop();
+    return { lineNumber: token.lineNumber, kind: 'GotoNode', destination: token.value };
   }
 
   //construct a dialogue node by popping off the speaker token and dialogue text token

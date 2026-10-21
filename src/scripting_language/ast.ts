@@ -7,7 +7,8 @@ export type NodeType =
   | 'ChoiceNode'
   | 'ChoiceOptionNode'
   | 'FlagNode'
-  | 'EndNode';
+  | 'EndNode'
+  | 'GotoNode';
 
 export interface BaseNode {
   kind: NodeType;
@@ -51,5 +52,10 @@ export interface EndNode extends BaseNode {
   kind: 'EndNode';
 }
 
+export interface GotoNode extends BaseNode {
+  kind: 'GotoNode';
+  destination: string; //name of our destination flag
+}
+
 // Union of nodes that can appear in the story body
-export type ASTNode = DialogueNode | ProseNode | ChoiceNode | FlagNode | EndNode;
+export type ASTNode = DialogueNode | ProseNode | ChoiceNode | FlagNode | EndNode | GotoNode;

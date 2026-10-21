@@ -1,5 +1,35 @@
 import Parser from './parser';
 
+const tresspassing = `Grandpa: “You got written permission to fish here?”
+Fisherman: “Huh?”
+Grandpa: “Written permission from Trey Taylor.”
+Fisherman: “Trey Taylor?”
+Grandpa: “Crew Tractor.”
+Fisherman: “Oh, Crew Tractor.”
+Grandpa: “He, who, uh, who told you you could fish here?”
+Fisherman: “Man, I thought it was state property.”
+Grandpa: “State?”
+Fisherman: “Yeah.”
+Grandpa: “This?”
+Fisherman: “Yeah.”
+Grandpa: “State? Hit the road, dude. This ain't no state property. This is priiiivvaate prooopeeerrtyyy.”
+
+Choice:
+Accept it -> accept_it
+Ask to finish your last cast -> one_more_cast
+
+# accept_it
+Fisherman: “Oh, okay.”
+END
+
+# one_more_cast
+Fisherman: “Can I at least finish this last cast?”
+Grandpa: “One cast.”
+You cast and haul a giant catfish onto the grass.
+Grandpa: “Well I'll be. Come back Saturday, and bring two rods.”
+END
+`;
+
 const simpleStory = `Team Beluga arrives at the classroom on time for their meeting with Lauren.
 
 Arthur: “Good morning Lauren, welcome to Interactive fiction!”
@@ -42,8 +72,13 @@ END
 function main() {
   const parser = new Parser();
 
-  const story = parser.produceAST(simpleStory);
-  console.dir(story, { depth: null });
+  const story1 = parser.produceAST(simpleStory);
+  const story2 = parser.produceAST(tresspassing);
+  console.dir(story1, { depth: null });
+
+  console.log('\nPRINTING THE SECOND STORY NOW:\n\n');
+
+  console.dir(story2, { depth: null });
 }
 
 main();

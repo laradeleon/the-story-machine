@@ -60,6 +60,11 @@ export function tokenize(sourceCode: string): Token[] {
     } else if (lowercaseLine == 'end') {
       //this line is an END token if the whole line is "END/end"
       tokens.push(token(lineNum, src.shift(), TokenType.End));
+    } else if (lowercaseLine.startsWith('->')) {
+      //this line is a standalone goto token if the line starts with '->'
+      const cleaned_token = src[0].slice(2).trim();
+      tokens.push(token(lineNum, cleaned_token, TokenType.Goto));
+      src.shift();
     } else {
       //we want to check now that its dialogue by ensuring it follows dialogue format of: Colin: "heyo guys"
       const dialogueMatch = src[0].match(/^([A-Za-z][A-Za-z0-9 ]*):\s*(.*)$/);
