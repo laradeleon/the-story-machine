@@ -1,5 +1,5 @@
-import Parser from './parser';
-import { toJSON } from './to_json.ts';
+import Parser from '../parser';
+import { toJSON } from '../to_json.ts';
 
 const tresspassing = `Grandpa: "You got written permission to fish here?"
 Fisherman: "Huh?"

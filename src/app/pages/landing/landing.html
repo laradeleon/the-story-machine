@@ -4,13 +4,12 @@
 <!-- shows loading message if stories are still being retrieved -->
 @if (stories.isLoading()) {
   <p>loading...</p>
-
 } @else {
   <!-- each story is displayed as a card on the home page, functionally a link that takes them to the reader -->
   <div class="story-grid">
     <!-- display every story that was retrieved -->
-    @for (story of stories.value(); track story.storyId) {
-      <a class="story-card" [routerLink]="['read', story.storyId]">
+    @for (story of stories.value(); track story.story_id) {
+      <a class="story-card" [routerLink]="['read', story.story_id]">
         <div class="story-container">
           <h2 class="story-title">{{ story.title }}</h2>
           <p class="story-author">{{ story.author }}</p>

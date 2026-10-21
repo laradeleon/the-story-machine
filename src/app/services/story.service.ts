@@ -1,4 +1,4 @@
-import { StorySummary } from '../models/story-summary';
+import { StoryInfo } from '../../models/story';
 import { httpResource } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 
@@ -9,6 +9,6 @@ export class StoryService {
 
   getStories() {
     // get summary data from ALL stories to display on landing page
-    return httpResource<StorySummary[]>(() => this.storiesURL, { defaultValue: [] });
+    return httpResource<StoryInfo[]>(() => this.storiesURL, { defaultValue: [] });
   }
 }
