@@ -9,12 +9,12 @@
   <div class="story-grid">
     <!-- display every story that was retrieved -->
     @for (story of stories.value(); track story.story_id) {
-      <a class="story-card" [routerLink]="['read', story.story_id]">
+      <button type="button" class="story-card" (click)="selectedStory.set(story)">
         <div class="story-container">
           <h2 class="story-title">{{ story.title }}</h2>
           <p class="story-author">{{ story.author }}</p>
         </div>
-      </a>
+      </button>
     } @empty {
       <!-- if there's no stories to display -->
       <p>No stories yet so stay tuned!</p>
@@ -22,4 +22,7 @@
   </div>
 }
 
-<a routerLink="/read">Read</a>
+<!-- preview popup for the story that got clocked -->
+@if (selectedStory(); as story) {
+  <app-story-preview [story]="story" (closed)="selectedStory.set(null)" />
+}

@@ -10,6 +10,8 @@ export interface StoryResponse {
   _id: string;
   authorId: string;
   title: string;
+  description: string;
+  updatedAt: string;
 }
 
 export interface UserResponse {

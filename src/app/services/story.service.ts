@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, resource } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { APIResponse, StoryResponse, UserResponse } from '../../models/api';
-import { StoryInfo } from '../../models/story';
+import { StoryDetails } from '../../models/story-details';
 
 @Injectable({ providedIn: 'root' }) // global singleton
 export class StoryService {
@@ -15,7 +15,7 @@ export class StoryService {
   // gets every published story to show as a card on the landing page
   getStories() {
     return resource({
-      defaultValue: [] as StoryInfo[],
+      defaultValue: [] as StoryDetails[],
 
       loader: async () => {
         //get all the stories that have been published already
@@ -43,6 +43,8 @@ export class StoryService {
           story_id: story._id,
           title: story.title,
           author: authorNames.get(story.authorId) ?? 'Unknown author',
+          description: story.description,
+          updatedAt: story.updatedAt,
         }));
       },
     });

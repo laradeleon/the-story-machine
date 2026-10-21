@@ -1,0 +1,20 @@
+<!-- the linter requires every click to have a keyboard equivalent, but keyboard users can already do that with esc so the check is skipped for that line -->
+<!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+<dialog
+  #dialog
+  class="story-preview"
+  (close)="closed.emit()"
+  (click)="closeOnBackdropClick($event)"
+>
+  <div class="preview-content">
+    <!-- close fires whenever esc is pressed, x is clicked or if clicking outside the popup -->
+    <button type="button" class="close-button" (click)="dialog.close()">x</button>
+
+    <h2 id="preview-title">{{ story().title }}</h2>
+    <p class="preview-author">by {{ story().author }}</p>
+    <p class="preview-description">{{ story().description }}</p>
+
+    <!-- mm/dd/yyyy-->
+    <p class="preview-updated">Last updated {{ story().updatedAt | date: 'mediumDate' }}</p>
+  </div>
+</dialog>
