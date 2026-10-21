@@ -7,6 +7,7 @@ import {
   FlagNode,
   EndNode,
   ASTNode,
+  GotoNode,
 } from './ast.ts';
 import { tokenize, Token, TokenType } from './lexer.ts';
 
@@ -14,6 +15,7 @@ export const MAX_OPTIONS = 4;
 
 export default class Parser {
   private tokens: Token[] = [];
+  private current_speaker: Token | null = null;
 
   //checks to see if we got to end of file
   private not_eof(): boolean {
@@ -54,7 +56,10 @@ export default class Parser {
         return this.parse_prose();
 
       case TokenType.DialogueSpeaker:
-        return this.parse_Dialogue();
+        return this.parse_Dialogue(0);
+
+      case TokenType.DialogueText:
+        return this.parse_Dialogue(1);
 
       case TokenType.ChoiceStart:
         return this.parse_choice();
@@ -64,6 +69,9 @@ export default class Parser {
 
       case TokenType.End:
         return this.parse_end();
+
+      case TokenType.Goto:
+        return this.parse_goto();
 
       default:
         throw new Error(`Unexpected token '${token.value}' at line ${token.lineNumber}`);
@@ -75,9 +83,27 @@ export default class Parser {
     return { lineNumber: token.lineNumber, kind: 'ProseNode', text: token.value };
   }
 
+  private parse_goto(): GotoNode {
+    const token = this.pop();
+    return { lineNumber: token.lineNumber, kind: 'GotoNode', destination: token.value };
+  }
+
   //construct a dialogue node by popping off the speaker token and dialogue text token
-  private parse_Dialogue(): DialogueNode {
-    const speaker_token = this.pop(); //popped the speaker off of the array
+  private parse_Dialogue(type: number): DialogueNode {
+    let speaker_token: Token;
+
+    if (type == 0) {
+      speaker_token = this.pop();
+      this.current_speaker = speaker_token;
+    } else {
+      if (this.current_speaker == null) {
+        throw new Error(
+          `Dialogue text has no speaker at line ${this.at().lineNumber}, please add a speaker.`,
+        );
+      }
+      speaker_token = this.current_speaker;
+    }
+
     const dialogue_token = this.pop(); //now the actual dialogue
     return {
       lineNumber: speaker_token.lineNumber,
@@ -106,7 +132,9 @@ export default class Parser {
           `Unexpected token '${this.at().value}' at line ${this.at().lineNumber}\nToo many options, maximum of '${MAX_OPTIONS}' options per choice: '${option_token.value}'`,
         );
       }
+
       const option_destination = this.pop(); //get the choice destination
+
       chioce_options.push({
         lineNumber: option_token.lineNumber,
         kind: 'ChoiceOptionNode',
