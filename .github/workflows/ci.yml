@@ -31,3 +31,10 @@ jobs:
       - run: npm run test:ci
       - run: npm run build
       - run: npm audit --omit=dev --audit-level=high
+  docker:
+    name: Build Docker image
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build -t story-machine-frontend:ci .
