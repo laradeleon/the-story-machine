@@ -14,14 +14,32 @@ export class StoryPreview {
   closed = output<void>(); // tells landing page it was closed
 
   private dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog'); // popup
+  private pressStartedOutside = false; // whether the mouse was pressed down outside the popup
 
   constructor() {
     afterNextRender(() => this.dialog().nativeElement.showModal()); // show popup only if dialog element exists
   }
 
+  // returns true if the mouse is outside the popup (its rounded corners count as inside)
+  private isOutsidePopup(event: MouseEvent) {
+    const popup = this.dialog().nativeElement.getBoundingClientRect();
+    return (
+      event.clientX < popup.left ||
+      event.clientX > popup.right ||
+      event.clientY < popup.top ||
+      event.clientY > popup.bottom
+    );
+  }
+
+  // remember where the click started so dragging out of the popup doesnt close it
+  protected rememberPressStarted(event: MouseEvent) {
+    this.pressStartedOutside = this.isOutsidePopup(event);
+  }
+
+  // closes the popup only when the click both started and ended on the background
   protected closeOnBackdropClick(event: MouseEvent) {
-    // only closes if the click was on the background and not the content of the popup
-    if (event.target === this.dialog().nativeElement) {
+    const clickedBackdrop = event.target === this.dialog().nativeElement; // not a button or text inside the popup
+    if (clickedBackdrop && this.pressStartedOutside && this.isOutsidePopup(event)) {
       this.dialog().nativeElement.close();
     }
   }
