@@ -1,33 +1,33 @@
 import Parser from './parser';
 import { toJSON } from './to_json.ts';
 
-const tresspassing = `Grandpa: “You got written permission to fish here?”
-Fisherman: “Huh?”
-Grandpa: “Written permission from Trey Taylor.”
-Fisherman: “Trey Taylor?”
-Grandpa: “Crew Tractor.”
-Fisherman: “Oh, Crew Tractor.”
-Grandpa: “He, who, uh, who told you you could fish here?”
-Fisherman: “Man, I thought it was state property.”
-Grandpa: “State?”
-Fisherman: “Yeah.”
-Grandpa: “This?”
-Fisherman: “Yeah.”
-Grandpa: “State? Hit the road, dude. This ain't no state property. This is priiiivvaate prooopeeerrtyyy.”
+const tresspassing = `Grandpa: "You got written permission to fish here?"
+Fisherman: "Huh?"
+Grandpa: "Written permission from Trey Taylor."
+Fisherman: "Trey Taylor?"
+Grandpa: "Crew Tractor."
+Fisherman: "Oh, Crew Tractor."
+Grandpa: "He, who, uh, who told you you could fish here?"
+Fisherman: "Man, I thought it was state property."
+Grandpa: "State?"
+Fisherman: "Yeah."
+Grandpa: "This?"
+Fisherman: "Yeah."
+Grandpa: "State? Hit the road, dude. This ain't no state property. This is priiiivvaate prooopeeerrtyyy."
 
 Choice:
 Accept it -> accept_it
 Ask to finish your last cast -> one_more_cast
 
 # accept_it
-Fisherman: “Oh, okay.”
+Fisherman: "Oh, okay."
 END
 
 # one_more_cast
-Fisherman: “Can I at least finish this last cast?”
-Grandpa: “One cast.”
+Fisherman: "Can I at least finish this last cast?"
+Grandpa: "One cast."
 You cast and haul a giant catfish onto the grass.
-Grandpa: “Well I'll be. Come back Saturday, and bring two rods.”
+Grandpa: "Well I'll be. Come back Saturday, and bring two rods."
 END
 `;
 
@@ -51,7 +51,7 @@ END
 # continue presentation
 Lara: “Thank goodness this isn’t a carpooling app am I right?”
 
-Carsten:”We literally had that same idea Lara… We aren’t any better.”
+Carsten:“We literally had that same idea Lara… We aren’t any better.”
 
 Choice:
 Give team Beluga an F -> fight lara
