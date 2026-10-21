@@ -1,32 +1,32 @@
 import Parser from './parser';
 
-const tresspassing = `Grandpa: “You got written permission to fish here?”
-Fisherman: “Huh?”
-Grandpa: “Written permission from Trey Taylor.”
-Fisherman: “Trey Taylor?”
-Grandpa: “Crew Tractor.”
-Fisherman: “Oh, Crew Tractor.”
-Grandpa: “He, who, uh, who told you you could fish here?”
-Fisherman: “Man, I thought it was state property.”
-Grandpa: “State?”
-Fisherman: “Yeah.”
-Grandpa: “This?”
-Fisherman: “Yeah.”
-Grandpa: “State? Hit the road, dude. This ain't no state property. This is priiiivvaate prooopeeerrtyyy.”
+const tresspassing = `Grandpa: "You got written permission to fish here?"
+Fisherman: "Huh?"
+Grandpa: "Written permission from Trey Taylor."
+Fisherman: "Trey Taylor?"
+Grandpa: "Crew Tractor."
+Fisherman: "Oh, Crew Tractor."
+Grandpa: "He, who, uh, who told you you could fish here?"
+Fisherman: "Man, I thought it was state property."
+Grandpa: "State?"
+Fisherman: "Yeah."
+Grandpa: "This?"
+Fisherman: "Yeah."
+Grandpa: "State? Hit the road, dude. This ain't no state property. This is priiiivvaate prooopeeerrtyyy."
 
 Choice:
 Accept it -> accept_it
 Ask to finish your last cast -> one_more_cast
 
 # accept_it
-Fisherman: “Oh, okay.”
+Fisherman: "Oh, okay."
 END
 
 # one_more_cast
-Fisherman: “Can I at least finish this last cast?”
-Grandpa: “One cast.”
+Fisherman: "Can I at least finish this last cast?"
+Grandpa: "One cast."
 You cast and haul a giant catfish onto the grass.
-Grandpa: “Well I'll be. Come back Saturday, and bring two rods.”
+Grandpa: "Well I'll be. Come back Saturday, and bring two rods."
 END
 `;
 

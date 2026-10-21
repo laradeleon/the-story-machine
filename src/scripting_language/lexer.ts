@@ -1,5 +1,5 @@
-//TokenType: All of the types of data that we watn present in our scripting language,
-//in this case we want things like characters, dialogue, prose, backgorunds, bgm, etc...
+//TokenType: All of the types of data that we want present in our scripting language,
+//in this case we want things like characters, dialogue, prose, backgrounds, bgm, etc...
 export enum TokenType {
   ChoiceStart, //denoted by "Choice:" ignore case, up to 4 choices
   ChoiceOption,
@@ -49,6 +49,15 @@ export function tokenize(sourceCode: string): Token[] {
       while (src.length > 0 && src[0].includes('->')) {
         //if the line has a goto, we know it's a choice option, we add the option and the Goto token right after
         const choiceSplit = src[0].split('->').map((str) => str.trim()); //split the choice text and goto token
+        if (choiceSplit[0].length <= 0) {
+          throw new Error(
+            `Missing choice text choice at line ${lineNum}. Choice syntax: choice text -> destination flag`,
+          );
+        } else if (choiceSplit[1].length <= 0) {
+          throw new Error(
+            `Missing destination for choice at line ${lineNum}. Choice syntax: choice text -> destination flag`,
+          );
+        }
         tokens.push(token(lineNum, choiceSplit[0], TokenType.ChoiceOption));
         tokens.push(token(lineNum++, choiceSplit[1], TokenType.Goto)); //lineNum++ again
         src.shift(); //keep movin since not done in push() this time
@@ -56,14 +65,42 @@ export function tokenize(sourceCode: string): Token[] {
       continue;
     } else if (lowercaseLine.startsWith('#')) {
       //this line is a flag that we can jump to
-      tokens.push(token(lineNum, src.shift()?.slice(1).trim(), TokenType.Flag)); //remove the # and trim to be cleaner
+      const flag_name = src.shift()?.slice(1).trim(); //remove the # and trim to be cleaner
+      if (flag_name == undefined || flag_name?.length <= 0) {
+        //check if we have a name
+        throw new Error(`Missing name for flag at line ${lineNum}. flag syntax: # flag name`);
+      }
+      tokens.push(token(lineNum, flag_name, TokenType.Flag));
     } else if (lowercaseLine == 'end') {
       //this line is an END token if the whole line is "END/end"
       tokens.push(token(lineNum, src.shift(), TokenType.End));
     } else if (lowercaseLine.startsWith('->')) {
       //this line is a standalone goto token if the line starts with '->'
       const cleaned_token = src[0].slice(2).trim();
+      if (cleaned_token?.length <= 0) {
+        //check if we have a destination
+        throw new Error(
+          `Missing destination for goto at line ${lineNum}. Goto syntax: -> destination name`,
+        );
+      }
       tokens.push(token(lineNum, cleaned_token, TokenType.Goto));
+      src.shift();
+    } else if (lowercaseLine.startsWith('"') || lowercaseLine.startsWith('“')) {
+      //this line is dialogue but now we need to look for the ending line.
+      let dialogue: string = src[0];
+      const original_line_num = lineNum;
+      while (!(src[0].endsWith('"') || src[0].endsWith('”'))) {
+        lineNum++;
+        src.shift();
+        dialogue += ' ' + src[0];
+      }
+      if (src[0].length > 1) {
+        //minor formatting fix for unwanted spaces
+        dialogue += ' ' + src[0];
+      } else {
+        dialogue += src[0];
+      }
+      tokens.push(token(original_line_num, dialogue, TokenType.DialogueText));
       src.shift();
     } else {
       //we want to check now that its dialogue by ensuring it follows dialogue format of: Colin: "heyo guys"
