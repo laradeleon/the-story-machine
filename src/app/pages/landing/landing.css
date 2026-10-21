@@ -1,0 +1,41 @@
+.story-grid {
+  display: grid;
+  gap: 24px; /*space between each story*/
+  padding: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.story-card {
+  display: flex;
+  flex-direction: column;
+  max-width: 180px;
+  height: 270px;
+
+  box-sizing: border-box;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+  border: 1px solid;
+  border-radius: 1rem;
+
+  /* get rid of blue link styling w/ underline */
+  color: inherit;
+  text-decoration: none;
+}
+
+.story-card:hover {
+  box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* contents of card, story title and author name */
+.story-container {
+  padding: 24px;
+}
+
+.story-title {
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.story-author {
+  font-size: 0.875rem;
+  color: #666;
+}

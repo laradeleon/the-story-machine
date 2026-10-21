@@ -4,5 +4,5 @@ import { Read } from './pages/read/read';
 
 export const routes: Routes = [
   { path: '', component: Landing }, //home page
-  { path: 'read', component: Read },
+  { path: 'read/:storyId', component: Read },
 ];

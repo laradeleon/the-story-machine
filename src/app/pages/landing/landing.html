@@ -1,2 +1,26 @@
-<h1>The Story Machine</h1>
+<h1 class="website-name">The Story Machine</h1>
+<h2 class="subtitle">Where stories come to life!</h2>
+
+<!-- shows loading message if stories are still being retrieved -->
+@if (stories.isLoading()) {
+  <p>loading...</p>
+
+} @else {
+  <!-- each story is displayed as a card on the home page, functionally a link that takes them to the reader -->
+  <div class="story-grid">
+    <!-- display every story that was retrieved -->
+    @for (story of stories.value(); track story.storyId) {
+      <a class="story-card" [routerLink]="['read', story.storyId]">
+        <div class="story-container">
+          <h2 class="story-title">{{ story.title }}</h2>
+          <p class="story-author">{{ story.author }}</p>
+        </div>
+      </a>
+    } @empty {
+      <!-- if there's no stories to display -->
+      <p>No stories yet so stay tuned!</p>
+    }
+  </div>
+}
+
 <a routerLink="/read">Read</a>
