@@ -50,7 +50,7 @@ END
 # continue presentation
 Lara: “Thank goodness this isn’t a carpooling app am I right?”
 
-Carsten:”We literally had that same idea Lara… We aren’t any better.”
+Carsten:“We literally had that same idea Lara… We aren’t any better.”
 
 Choice:
 Give team Beluga an F -> fight lara

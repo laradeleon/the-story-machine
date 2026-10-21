@@ -91,8 +91,8 @@ export function tokenize(sourceCode: string): Token[] {
       const original_line_num = lineNum;
       while (!(src[0].endsWith('"') || src[0].endsWith('”'))) {
         lineNum++;
-        src.shift();
         dialogue += ' ' + src[0];
+        src.shift();
       }
       if (src[0].length > 1) {
         //minor formatting fix for unwanted spaces
@@ -107,8 +107,31 @@ export function tokenize(sourceCode: string): Token[] {
       const dialogueMatch = src[0].match(/^([A-Za-z][A-Za-z0-9 ]*):\s*(.*)$/);
       if (dialogueMatch) {
         tokens.push(token(lineNum, dialogueMatch[1], TokenType.DialogueSpeaker));
-        tokens.push(token(lineNum, dialogueMatch[2], TokenType.DialogueText));
-        src.shift();
+        if (!(dialogueMatch[2].startsWith('"') || dialogueMatch[2].startsWith('“'))) {
+          throw new Error(
+            `Missing open quotations at line ${lineNum}. Dialogue syntax: Character name: "dialogue"`,
+          );
+        }
+        if (!(dialogueMatch[2].endsWith('"') || dialogueMatch[2].endsWith('”'))) {
+          //if the dialogue is on more than one line, Not very clean
+          const original_line_num = lineNum;
+          while (!(src[0].endsWith('"') || src[0].endsWith('”'))) {
+            lineNum++;
+            dialogueMatch[2] += ' ' + src[0];
+            src.shift();
+          }
+          if (src[0].length > 1) {
+            //minor formatting fix for unwanted spaces
+            dialogueMatch[2] += ' ' + src[0];
+          } else {
+            dialogueMatch[2] += src[0];
+          }
+          tokens.push(token(original_line_num, dialogueMatch[2], TokenType.DialogueText));
+          src.shift();
+        } else {
+          tokens.push(token(lineNum, dialogueMatch[2], TokenType.DialogueText));
+          src.shift();
+        }
       } else {
         //if all checks fail, then the line MUST be prose
         tokens.push(token(lineNum, src.shift(), TokenType.Prose));
