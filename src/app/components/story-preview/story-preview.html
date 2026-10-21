@@ -4,6 +4,7 @@
   #dialog
   class="story-preview"
   (close)="closed.emit()"
+  (mousedown)="rememberPressStarted($event)"
   (click)="closeOnBackdropClick($event)"
 >
   <div class="preview-content">
