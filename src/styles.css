@@ -1,1 +1,18 @@
-/* Can add global styles to this file and also import other style files */
+/* colours for whole app*/
+:root {
+  color-scheme: dark;
+  --color-background: #0d0c17; /* dark purple main theme */
+  --color-surface: #16152a; /* where the stories are on the landing page */
+  --color-surface-raised: #1f1d38; /*  for stories and popup */
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-text: #ecebf5;
+  --color-text-muted: #9c9ab5;
+  --color-accent: #f2b35b; /* outline on story */
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--color-background);
+  color: var(--color-text);
+}
