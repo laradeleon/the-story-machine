@@ -1,3 +1,5 @@
+import { StoryJSON } from './story';
+
 // structure of responses from backend
 
 export interface APIResponse<T> {
@@ -18,4 +20,11 @@ export interface UserResponse {
   _id: string;
   username: string;
   displayName: string;
+}
+
+export interface ChapterResponse {
+  _id: string;
+  title: string;
+  order: number;
+  contents: StoryJSON | null;
 }

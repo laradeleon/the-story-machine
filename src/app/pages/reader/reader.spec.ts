@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Read } from './read';
+import { Reader } from './reader';
 import { provideRouter } from '@angular/router';
 
-describe('Read', () => {
-  let component: Read;
-  let fixture: ComponentFixture<Read>;
+describe('Reader', () => {
+  let component: Reader;
+  let fixture: ComponentFixture<Reader>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Read],
+      imports: [Reader],
       providers: [provideRouter([])],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(Read);
+    fixture = TestBed.createComponent(Reader);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

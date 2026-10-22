@@ -1,8 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, resource } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { APIResponse, StoryResponse, UserResponse } from '../../models/api';
+import { APIResponse, StoryResponse, UserResponse, ChapterResponse } from '../../models/api';
 import { StoryDetails } from '../../models/story-details';
+import { Chapter } from '../../models/chapter';
 
 @Injectable({ providedIn: 'root' }) // global singleton
 export class StoryService {
@@ -11,6 +12,7 @@ export class StoryService {
   // api endpoint urls
   private storiesURL = '/api/v1/story?status=published';
   private usersURL = '/api/v1/user';
+  private mockChapterURL = 'mock/chapter.json'; //todo: update with api url once backend can store chapter contents
 
   // gets every published story to show as a card on the landing page
   getStories() {
@@ -46,6 +48,19 @@ export class StoryService {
           description: story.description,
           updatedAt: story.updatedAt,
         }));
+      },
+    });
+  }
+
+  getFirstChapter() {
+    // gets the chapter title and the list of lines in that chapter (all the text content)
+    return resource({
+      loader: async (): Promise<Chapter> => {
+        const response = await firstValueFrom(
+          this.http.get<APIResponse<ChapterResponse>>(this.mockChapterURL),
+        );
+        const chapter = response.data;
+        return { title: chapter.title, lines: chapter.contents?.story.lines ?? [] }; // a valid chapter with no contents will display nothing
       },
     });
   }

@@ -1,0 +1,48 @@
+<!-- if chapter is still loading in, show message -->
+@if (chapter.isLoading()) {
+  <p>Loading in chapter.....</p>
+} @else if (chapter.error()) {
+  <p>Sorry, this chapter could not be retrieved.</p>
+} @else {
+  @let currentChapter = page();
+  <!-- types are title, text, choice and end, check for each one -->
+  <!-- chapter title -->
+  @if (currentChapter.kind === 'title') {
+    <button type="button" class="reader-page" (click)="nextLine()">
+      <h1 class="chapter-title">{{ currentChapter.title }}</h1>
+      <p class="click-hint">Click to go to the next page.</p>
+    </button>
+  }
+
+  <!-- if prose or dialogue-->
+  @if (currentChapter.kind === 'text') {
+    <button type="button" class="reader-page" (click)="nextLine()">
+      <!-- if its dialogue-->
+      @if (currentChapter.speaker) {
+        <h1 class="current-speaker">{{ currentChapter.speaker }}:</h1>
+      }
+      <h1 class="line-text">{{ currentChapter.text }}</h1>
+    </button>
+  }
+
+  <!-- choices -->
+  @if (currentChapter.kind === 'choice') {
+    <!--not a button unlike the types above as buttons cant be inside buttons-->
+    <div class="reader-page">
+      @for (option of currentChapter.options; track option.goto_line) {
+        <!-- each option jumps to the the line specified-->
+        <button type="button" class="choice-option" (click)="goTo(option.goto_line)">
+          {{ option.option_body }}
+        </button>
+      }
+    </div>
+  }
+
+  <!-- end of the chapter -->
+  @if (currentChapter.kind === 'end') {
+    <div class="reader-page">
+      <p class="line-text">The End.</p>
+      <a routerLink="/">Back to stories.</a>
+    </div>
+  }
+}
