@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { StoryPreview } from './story-preview';
+import { provideRouter } from '@angular/router';
 
 describe('StoryPreview', () => {
   let component: StoryPreview;
@@ -8,6 +9,7 @@ describe('StoryPreview', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [StoryPreview],
+      providers: [provideRouter([])], // the read story link needs a router to exist
     }).compileComponents();
 
     fixture = TestBed.createComponent(StoryPreview);
