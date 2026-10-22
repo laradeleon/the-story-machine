@@ -8,6 +8,7 @@
   --color-text: #ecebf5;
   --color-text-muted: #9c9ab5;
   --color-accent: #f2b35b; /* outline on story */
+  --color-accent-hover: #f6c47a; /* lighter than one boave*/
 }
 
 body {
@@ -15,4 +16,23 @@ body {
   font-family: 'Inter', system-ui, sans-serif;
   background: var(--color-background);
   color: var(--color-text);
+}
+
+/* yellow button (read story, write story, back to stories)*/
+.primary-button {
+  display: inline-block;
+  padding: 10px 18px;
+  border: 1px solid var(--color-accent);
+  border-radius: 0.5rem;
+  background: var(--color-accent);
+  color: #1a1206;
+  font: inherit;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primary-button:hover {
+  border-color: var(--color-accent-hover);
+  background: var(--color-accent-hover);
 }
