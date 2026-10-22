@@ -72,4 +72,45 @@ describe('Landing', () => {
     const readLink = links.find((link) => link.textContent?.includes('Read Story'));
     expect(readLink?.getAttribute('href')).toBe('/read/2');
   });
+
+  it('should remove the preview when it is closed', async () => {
+    (compiled.querySelector('.story-card') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(compiled.querySelector('app-story-preview')).not.toBeNull();
+
+    // the popup fires "close" when esc, the x button or the background is used
+    compiled.querySelector('dialog')!.dispatchEvent(new Event('close'));
+    await fixture.whenStable();
+
+    expect(compiled.querySelector('app-story-preview')).toBeNull();
+  });
+});
+
+describe('Landing with no stories', () => {
+  let compiled: HTMLElement;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [Landing],
+      providers: [
+        provideRouter([]),
+        // same fake service as above, but this time it gives back no stories
+        {
+          provide: StoryService,
+          useValue: {
+            getStories: () => resource({ defaultValue: [], loader: async () => [] }),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(Landing);
+    compiled = fixture.nativeElement as HTMLElement;
+    await fixture.whenStable();
+  });
+
+  it('should show a message if there are no stories', () => {
+    expect(compiled.querySelectorAll('.story-card').length).toBe(0);
+    expect(compiled.textContent).toContain('No stories yet so stay tuned!');
+  });
 });
