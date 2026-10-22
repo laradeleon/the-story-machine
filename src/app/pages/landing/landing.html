@@ -11,6 +11,9 @@
   <!-- shows loading message if stories are still being retrieved -->
   @if (stories.isLoading()) {
     <p class="section-message">Loading stories...</p>
+  } @else if (stories.error()) {
+    <!-- if the stories couldn't be retrieved -->
+    <p class="section-message">Sorry, stories couldn't be loaded right now.</p>
   } @else {
     <!-- each story is displayed as a card, clicking one opens its preview popup -->
     <div class="story-grid">
