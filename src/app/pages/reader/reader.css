@@ -1,3 +1,9 @@
+/* the whole reader page uses the reading font and everything else inside will inherit*/
+:host {
+  display: block;
+  font-family: var(--font-reading);
+}
+
 /* every screen fills the window with its content in the middle */
 .reader-page {
   display: flex;
@@ -18,7 +24,7 @@
 }
 
 .chapter-title {
-  font-size: 2rem;
+  font-size: 4rem;
 }
 
 /* both chapter title and end screen have everything in the middle */
@@ -40,7 +46,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 1000px;
+  max-width: 1200px;
 }
 
 .choice-page {
@@ -57,7 +63,7 @@
 /* small grey hint so readers know clicking moves the story on */
 .click-hint {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 1.5rem;
 }
 
 /* name of whos talking above their dialogue */
@@ -65,7 +71,7 @@
   margin: 0 0 12px 16px;
   text-align: left; /*put on left edge of dialogue box*/
   font-weight: bold;
-  font-size: 2rem;
+  font-size: 2.5rem;
   color: var(--color-accent);
 }
 
@@ -80,7 +86,7 @@
   border-radius: 1.5rem;
   background: var(--color-surface-raised);
   text-align: left;
-  font-size: 1.25rem;
+  font-size: 1.75rem;
   line-height: 1.6;
 }
 
@@ -104,7 +110,7 @@
   border-radius: 0.75rem;
   background: var(--color-surface);
   font: inherit;
-  font-size: 1.125rem;
+  font-size: 1.3rem;
   color: inherit;
   text-align: left;
   cursor: pointer;

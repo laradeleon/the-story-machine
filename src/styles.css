@@ -8,7 +8,8 @@
   --color-text: #ecebf5;
   --color-text-muted: #9c9ab5;
   --color-accent: #f2b35b; /* outline on story */
-  --color-accent-hover: #f6c47a; /* lighter than one boave*/
+  --color-accent-hover: #f6c47a; /* lighter than one above*/
+  --font-reading: 'Literata', Georgia, serif;
 }
 
 body {
