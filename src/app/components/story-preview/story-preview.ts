@@ -3,8 +3,9 @@ import { StoryDetails } from '../../../models/story-details';
 import { DatePipe } from '@angular/common';
 import { afterNextRender } from '@angular/core';
 
+import { RouterLink } from '@angular/router';
 @Component({
-  imports: [DatePipe],
+  imports: [DatePipe, RouterLink],
   selector: 'app-story-preview',
   styleUrl: './story-preview.css',
   templateUrl: './story-preview.html',

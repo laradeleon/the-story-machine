@@ -32,3 +32,20 @@
   color: #666;
   font-size: 0.875rem;
 }
+
+.preview-actions {
+  gap: 12px;
+  display: flex;
+  margin-top: 24px;
+}
+
+.preview-button {
+  padding: 8px 16px;
+  border: 1px solid;
+  border-radius: 0.5rem;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
