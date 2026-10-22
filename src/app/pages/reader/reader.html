@@ -8,7 +8,7 @@
   <!-- types are title, text, choice and end, check for each one -->
   <!-- chapter title -->
   @if (currentChapter.kind === 'title') {
-    <button type="button" class="reader-page" (click)="nextLine()">
+    <button type="button" class="reader-page centered-page" (click)="nextLine()">
       <h1 class="chapter-title">{{ currentChapter.title }}</h1>
       <p class="click-hint">Click to go to the next page.</p>
     </button>
@@ -16,32 +16,43 @@
 
   <!-- if prose or dialogue-->
   @if (currentChapter.kind === 'text') {
-    <button type="button" class="reader-page" (click)="nextLine()">
+    <button type="button" class="reader-page text-page" (click)="nextLine()">
       <!-- if its dialogue-->
       @if (currentChapter.speaker) {
-        <h1 class="current-speaker">{{ currentChapter.speaker }}:</h1>
+        <h1 class="current-speaker">{{ currentChapter.speaker }}</h1>
       }
-      <h1 class="line-text">{{ currentChapter.text }}</h1>
+      <h1 class="dialogue-box">{{ currentChapter.text }}</h1>
     </button>
   }
 
   <!-- choices -->
   @if (currentChapter.kind === 'choice') {
     <!--not a button unlike the types above as buttons cant be inside buttons-->
-    <div class="reader-page">
-      @for (option of currentChapter.options; track option.goto_line) {
-        <!-- each option jumps to the the line specified-->
-        <button type="button" class="choice-option" (click)="goTo(option.goto_line)">
-          {{ option.option_body }}
-        </button>
-      }
+    <div class="reader-page choice-page">
+      <div class="reader-content">
+        <!-- the line before the choice so the reader remembers what theyre choosing about -->
+        @if (currentChapter.prompt; as prompt) {
+          @if (prompt.speaker) {
+            <p class="speaker-name">{{ prompt.speaker }}</p>
+          }
+          <p class="dialogue-box">{{ prompt.text }}</p>
+        }
+
+        <!-- display all the options on screen-->
+        @for (option of currentChapter.options; track option.goto_line) {
+          <button type="button" class="choice-option" (click)="goTo(option.goto_line)">
+            <span class="choice-number">{{ $index + 1 }}.</span>
+            {{ option.option_body }}
+          </button>
+        }
+      </div>
     </div>
   }
 
   <!-- end of the chapter -->
   @if (currentChapter.kind === 'end') {
-    <div class="reader-page">
-      <p class="line-text">The End.</p>
+    <div class="reader-page centered-page">
+      <p class="chapter-title">The End.</p>
       <a routerLink="/">Back to stories.</a>
     </div>
   }

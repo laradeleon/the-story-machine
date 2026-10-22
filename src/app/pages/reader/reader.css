@@ -1,0 +1,105 @@
+/* every screen fills the window with its content in the middle */
+.reader-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 100vh;
+  padding: 32px;
+  box-sizing: border-box;
+
+  /* get rid of default button styling */
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.chapter-title {
+  font-size: 2rem;
+}
+
+/* both chapter title and end screen have everything in the middle */
+.centered-page {
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.text-page {
+  justify-content: flex-end;
+  padding-bottom: 22vh;
+}
+
+/* dialogue box and choices*/
+.reader-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1000px;
+}
+
+.choice-page {
+  justify-content: flex-start;
+  cursor: default; /* only the options are clickable (not entire screen) */
+}
+
+/* small grey hint so readers know clicking moves the story on */
+.click-hint {
+  color: #888;
+  font-size: 0.875rem;
+}
+
+/* name of whos talking above their dialogue */
+.speaker-name {
+  margin: 0 0 12px 16px; /*put on left edge of dialogue box*/
+  font-weight: bold;
+  font-size: 2rem;
+}
+
+/* rounded box that the prose or dialogue goes in */
+.dialogue-box {
+  margin: 0 0 20px 0;
+  padding: 24px 40px;
+  border: 1px solid;
+  border-radius: 1.5rem;
+  font-size: 1.25rem;
+  line-height: 1.6;
+}
+
+.choice-heading {
+  margin: 48px 0 32px;
+  font-size: 1.75rem;
+}
+
+/*each option is a long bar with the text in the middle*/
+.choice-option {
+  position: relative; /* so the number can be placed on its left end */
+  margin-bottom: 16px;
+  padding: 16px 80px; /* leaves room on the left for the option number */
+  border: 1px solid;
+  border-radius: 1rem;
+  font: inherit;
+  font-size: 1.25rem;
+  color: inherit;
+  cursor: pointer;
+}
+
+.choice-option:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* the circle with the option's number on the left end of the bar */
+.choice-number {
+  position: absolute;
+  top: -1px; /* vertically align number inside bar */
+  bottom: -1px;
+  left: -1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  border-radius: 999px;
+}

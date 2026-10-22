@@ -1,16 +1,33 @@
 import { Component, computed, signal, inject } from '@angular/core';
 
-import { ChoiceOption } from '../../../models/story';
+import { ChoiceOption, Line } from '../../../models/story';
 import { StoryService } from '../../services/story.service';
 
 import { RouterLink } from '@angular/router';
 
+// the words to display for prose or a dialogue line for dialogue box
+interface LineText {
+  speaker: string | null; // null if prose
+  text: string;
+}
+
 // what the reader can be showing at any moment
 type ReaderPage =
   | { kind: 'title'; title: string } // chapter title
-  | { kind: 'text'; speaker: string | null; text: string } // speaker is null for prose
-  | { kind: 'choice'; options: ChoiceOption[] }
+  | ({ kind: 'text' } & LineText) // prose or dialogue
+  | { kind: 'choice'; prompt: LineText | null; options: ChoiceOption[] } // prompt is the line just before the choice
   | { kind: 'end' };
+
+// turns a prose or dialogue line into the words to show any other kind of line (or no line) gives null
+function toLineText(line: Line | undefined): LineText | null {
+  if (line && 'prose' in line) {
+    return { speaker: null, text: line.prose.text.words.join(' ') };
+  }
+  if (line && 'dialogue' in line) {
+    return { speaker: line.dialogue.name, text: line.dialogue.text.words.join(' ') };
+  }
+  return null;
+}
 
 @Component({
   imports: [RouterLink],
@@ -59,28 +76,22 @@ export class Reader {
       return { kind: 'end' };
     }
 
-    // prose
-    if ('prose' in line) {
-      return {
-        kind: 'text',
-        speaker: null,
-        text: line.prose.text.words.join(' '),
-      };
+    // prose or dialogue
+    const lineText = toLineText(line);
+    if (lineText) {
+      return { kind: 'text', ...lineText };
     }
 
-    // dialogue has to contain speaker name
-    if ('dialogue' in line) {
-      return {
-        kind: 'text',
-        speaker: line.dialogue.name,
-        text: line.dialogue.text.words.join(' '),
-      };
-    }
-
-    // if choices, show them all
+    // choice
+    // the line written before it is shown above the list of options
     if ('choice' in line) {
-      return { kind: 'choice', options: line.choice };
+      return {
+        kind: 'choice',
+        prompt: toLineText(chapter.lines[lineId - 1]),
+        options: line.choice,
+      };
     }
+
     return { kind: 'end' };
   });
 
