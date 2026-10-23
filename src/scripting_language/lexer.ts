@@ -87,7 +87,7 @@ export function tokenize(sourceCode: string): Token[] {
       src.shift();
     } else if (lowercaseLine.startsWith('"') || lowercaseLine.startsWith('“')) {
       //this line is dialogue but now we need to look for the ending line.
-      let dialogue: string = src[0];
+      let dialogue = ''; //starts empty so the loop below doesn't add the first line twice
       const original_line_num = lineNum;
       while (!(src[0].endsWith('"') || src[0].endsWith('”'))) {
         lineNum++;
@@ -100,7 +100,7 @@ export function tokenize(sourceCode: string): Token[] {
       } else {
         dialogue += src[0];
       }
-      tokens.push(token(original_line_num, dialogue, TokenType.DialogueText));
+      tokens.push(token(original_line_num, dialogue.trim(), TokenType.DialogueText)); //trim the leading space from the first ' ' + line
       src.shift();
     } else {
       //we want to check now that its dialogue by ensuring it follows dialogue format of: Colin: "heyo guys"
@@ -115,6 +115,8 @@ export function tokenize(sourceCode: string): Token[] {
         if (!(dialogueMatch[2].endsWith('"') || dialogueMatch[2].endsWith('”'))) {
           //if the dialogue is on more than one line, Not very clean
           const original_line_num = lineNum;
+          src.shift(); //done with the speaker line, its text is already in dialogueMatch[2]
+          lineNum++;
           while (!(src[0].endsWith('"') || src[0].endsWith('”'))) {
             lineNum++;
             dialogueMatch[2] += ' ' + src[0];
