@@ -1,1 +1,39 @@
-/* Can add global styles to this file and also import other style files */
+/* colours for whole app*/
+:root {
+  color-scheme: dark;
+  --color-background: #0d0c17; /* dark purple main theme */
+  --color-surface: #16152a; /* where the stories are on the landing page */
+  --color-surface-raised: #1f1d38; /*  for stories and popup */
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-text: #ecebf5;
+  --color-text-muted: #9c9ab5;
+  --color-accent: #f2b35b; /* outline on story */
+  --color-accent-hover: #f6c47a; /* lighter than one above*/
+  --font-reading: 'Literata', Georgia, serif;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+/* yellow button (read story, write story, back to stories)*/
+.primary-button {
+  display: inline-block;
+  padding: 10px 18px;
+  border: 1px solid var(--color-accent);
+  border-radius: 0.5rem;
+  background: var(--color-accent);
+  color: #1a1206;
+  font: inherit;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primary-button:hover {
+  border-color: var(--color-accent-hover);
+  background: var(--color-accent-hover);
+}
