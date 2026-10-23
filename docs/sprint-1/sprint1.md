@@ -16,6 +16,14 @@ The story reader is in a totally usable state, able to read any properly formatt
 
 We tested the Angular client with **Vitest** and Angular's **TestBed**, running in **jsdom** which is essentially a browser that is a simulation that runs in Node. The backend(HTTP calls) has been mocked using `provideHttpClientTesting()` and `HttpTestingController`. This lets us test and check every request that the webapp sends and controls the response including errors.
 
+| Command                  | What it runs                                          |
+| ------------------------ | ----------------------------------------------------- |
+| `npm test`               | All tests in watch mode (re-runs when a file changes) |
+| `npm run test:ci`        | All tests once (this is what CI runs)                 |
+| `npm test -- --coverage` | The tests with a coverage report                      |
+
+At the end of Sprint 1 we have **107 tests in 12 files**, and all of them pass.
+
 #### Unit Tests
 
 These unit tests checks every part of a function on its own, it uses a mocked backend. This helps us know exactly which part is broken in the code.
@@ -27,6 +35,13 @@ We tested 3 kinds of units: a service, the pages and a component
 - **`landing.spec.ts`**: This tests the homepage of the website, it tests to see if the cards show for each story.
 - **`reader.spec.ts`**: This test checks the reader page where you read the story. It makes sure the lines pop up 1 by 1 with the speaker's name for dialogue.
 - **`app.spec.ts`**: This checks if the webapp starts properly.
+- **`writer.spec.ts`**: This checks if the writer page starts properly.
+
+We also tested the script parser, which turns a writer's `.txt` script into story JSON in three stages:
+
+- **`lexer.spec.ts`**: The lexer turns each line into a token (prose, dialogue, flag, goto, choice, end), joins dialogue that carries onto the next line, keeps line numbers correct after blank lines and choice blocks, and throws a clear error for things like a flag with no name, a goto with no destination or dialogue missing its opening quote.
+- **`parser.spec.ts`**: The parser builds the story tree from the tokens, gives speakerless dialogue to whoever spoke last, and rejects dialogue with no speaker and choices with too many options.
+- **`to_json.spec.ts`**: `toJSON` turns the tree into the agreed story JSON: `line_id`s go up in order, flags and goto/choice destinations become line ids (ignoring case), extra whitespace and curly quotes are cleaned up, and duplicate or missing flags throw an error.
 
 #### Integration Tests
 
@@ -37,6 +52,8 @@ These tests check that the different parts of the webapp works together, the bac
 - **Client and API**: The 'StoryServices' sends requests to the backend,`HttpTestingController` answers them just like the API would. This way we check that the app is sending the right request and it handles the responses along with any error encountered.
 - **Router and pages**: This tests the routes that checks that the links are going to the correct places.
 - **Component and component**: This tests that the story popup works like the real homepage, it checks the opening and closing of it.
+- **Script and JSON**: a whole script goes through every parser stage (lexer → parser → `toJSON`) together, instead of one stage at a time.
+- **JSON and reader**: the JSON the parser makes is played by the real reader page, so we know the two agree on the story format.
 
 **What we test** (`app.integration.spec.ts`):
 
@@ -44,17 +61,29 @@ These tests check that the different parts of the webapp works together, the bac
 - **Opening a story link directly**: We tested by directly opening the story link, so we woudn't have to go through the homepage. This way a user could jump straight into reading.
 - **Backend errors**: These tests send the backend an error, this way we test that the homepage and reader show the correct error response to it.
 
-### Backend testing
+**What we test** (parser):
 
-We tested the NestJS API with **Vitest** and Nest's testing module (`@nestjs/testing`), which builds just the parts of the app a test needs. In unit tests the MongoDB models are replaced with mocks, so the tests run without a database and we control exactly what each query returns, including "not found" results and database errors. The end-to-end test uses **supertest** to send real HTTP requests to the whole app.
+- **Parsing whole stories** (`script_to_json.integration.spec.ts`): two example stories, "simple_story" and "tresspassing", are parsed and must match their expected JSON exactly.
+- **Playing a parsed story** (`script_to_reader.integration.spec.ts`): the same two stories are parsed and then read in the reader through every choice to an ending.
 
-| Command            | What it runs                                   |
-| ------------------ | ---------------------------------------------- |
-| `npm test`         | All unit tests once (this is what CI runs)     |
-| `npm run test:cov` | The unit tests with a coverage report          |
-| `npm run test:e2e` | The end-to-end tests (needs a running MongoDB) |
+#### Gaps
 
-At the end of Sprint 1 we have **149 unit tests in 17 files**, and all of them pass.
+- There are no end-to-end tests that run the frontend in a real browser against the real backend; the backend is always mocked.
+- The writer page only has a test that it starts, since the writing feature wasn't finished this sprint (see [Known Issues](#8-known-issues)).
+- There is no minimum coverage that CI enforces.
+
+### Back end testing
+
+We tested the NestJS API with **Vitest** and Nest's testing module (`@nestjs/testing`), which builds just the parts of the app a test needs. In unit tests the MongoDB models are replaced with mocks, so the tests run without a database and we control exactly what each query returns, including "not found" results and database errors. The end-to-end tests use **supertest** to send real HTTP requests to the whole app.
+
+| Command              | What it runs                                                            |
+| -------------------- | ----------------------------------------------------------------------- |
+| `npm test`           | All unit tests once                                                     |
+| `npm run test:watch` | The unit tests in watch mode (re-runs when a file changes)              |
+| `npm run test:cov`   | The unit tests with a coverage report                                   |
+| `npm run test:e2e`   | The end-to-end tests (uses an in-memory MongoDB, so no setup is needed) |
+
+CI runs both the unit tests (with a coverage report) and the end-to-end tests. At the end of Sprint 1 we have **149 unit tests in 17 files** and **63 end-to-end tests in 4 files**, and all of them pass.
 
 #### Unit Tests
 
@@ -64,20 +93,26 @@ These check each part of the backend on its own, mostly the services (the busine
 - **Chapters** (`chapter.service.spec.ts`, `create-chapter.dto.spec.ts`): adding a chapter to the end of its story (and taking it back out if saving fails), returning chapters in the agreed story JSON shape, renaming, and deleting a chapter, which moves the later chapters up one place so the reading order has no gaps.
 - **Chapter scripts** (`check-script.spec.ts`): the checks a script must pass before it is saved. Each line has exactly one kind (dialogue, prose, choice, background, goto_line or end), `line_id` matches the line's position, every jump and flag points to a real line, and dialogue only uses the story's characters and their emotions.
 - **Users** (`user.service.spec.ts`, `create-user.dto.spec.ts`, `user.entity.spec.ts`): registering with a hashed password, rejecting taken emails and usernames with a 409 (case-insensitively, and also when two sign-ups race each other), paging through users and updating profiles. The DTO tests cover the email, username and strong-password rules.
+- **Controllers** (`story.controller.spec.ts`, `chapter.controller.spec.ts`, `user.controller.spec.ts`, `app.controller.spec.ts`): check that each controller is created, and that the root route returns its greeting. The controllers' actual routes are tested in the end-to-end tests below.
 - **Shared pieces** (`src/common`): the response wrapper that puts every reply in `{ success, message, data }`, the error filter that turns every error into the same shape (and hides the details of unexpected errors), the pipe that rejects invalid ids, and the pagination defaults and limits.
 
 #### Contract Tests
 
-The frontend's reader and the backend have to agree on the story JSON format, so we used the two examples from our story JSON documents ("The Lion at the Door" and the sprint 1 Team Beluga example) as test data (`test/fixtures/story-json.ts`). The tests check that both examples pass validation and that a saved chapter comes back **exactly** as the agreed JSON, with no extra or missing fields. If either side's format changes, these tests fail.
+The frontend's reader and the backend have to agree on the story JSON format, so we used the two examples from our story JSON documents ("The Lion at the Door" and the sprint 1 Team Beluga example) as test data (`test/fixtures/story-json.ts`). They are used in `check-script.spec.ts`, `create-chapter.dto.spec.ts`, `chapter.service.spec.ts` and `chapter.e2e-spec.ts`. The tests check that both examples pass validation and that a saved chapter comes back **exactly** as the agreed JSON, with no extra or missing fields. If either side's format changes, these tests fail.
 
 #### End-to-End Tests
 
-`test/app.e2e-spec.ts` starts the whole app and sends a real request to the root route (`GET /`), checking the response comes back in the `{ success, message, data }` wrapper. It connects to a real MongoDB, so it isn't part of CI yet (see section 3).
+These start the whole app, with the same validation, response wrapper and error handling as production, and send real HTTP requests to every route (`/api/v1/...`). Each test starts with an empty database. The database is a throwaway in-memory MongoDB (`mongodb-memory-server`) and Azure Blob Storage is replaced with a fake that keeps files in memory, so the tests need no secrets or network access and run in CI.
+
+- **Users** (`user.e2e-spec.ts`): signing up, never returning the password, rejecting weak passwords, unknown fields, and taken emails and usernames, paging, and profile updates (email and password can't be changed there).
+- **Stories** (`story.e2e-spec.ts`): creating, listing and filtering, publishing and unpublishing, deleting a story together with its file, and uploading and downloading the `.txt` draft, including the 10 MB limit and files that aren't plain text.
+- **Chapters** (`chapter.e2e-spec.ts`): adding chapters with and without a script, invalid scripts being rejected, not being able to load a chapter through another story's URL, renaming (which also updates the story's `chapterOrder`), deleting (later chapters move up), and saving the "Lion at the Door" script.
+- **App** (`app.e2e-spec.ts`): the root route (`GET /api/v1`) answers in the `{ success, message, data }` wrapper.
 
 #### Gaps
 
-- The end-to-end tests don't cover the story and chapter routes yet, only the root route.
-- The storage service, which saves draft files to Azure Blob Storage, is mocked in the story tests but has no tests of its own.
+- The controllers' unit tests only check that each controller is created; their routes are only covered by the end-to-end tests.
+- The storage service, which saves draft files to Azure Blob Storage, is replaced with a fake in the unit and end-to-end tests, so it has no tests of its own against real Azure.
 - There is no minimum coverage that CI enforces.
 
 ## 3 CI Status
@@ -102,9 +137,13 @@ On GitHub Actions, each repository has a workflow called **CI**. It runs wheneve
 1. **Install** (`npm ci`): installs the package versions in `package-lock.json`.
 2. **Lint** (`npm run lint` / `npm run lint:ci`)
 3. **Format check** (`npm run format:check`): makes sure the code follows our Prettier style.
+   - **Type check** (`npm run typecheck`, backend only): runs the TypeScript compiler over the whole project without building it.
 4. **Unit tests**: runs all our Vitest tests once.
-5. **Build** (`npm run build`): makes sure the project actually compiles.
-6. **Security audit** (`npm audit --omit=dev --audit-level=high`): fails if a package that ships to users has a vulnerability.
+5. **End-to-end tests** (`npm run test:e2e`, backend only): runs the whole API against an in-memory database.
+6. **Build** (`npm run build`): makes sure the project actually compiles.
+7. **Security audit** (`npm audit --omit=dev --audit-level=high`): fails if a package that ships to users has a vulnerability.
+
+The frontend runs its tests with `npm run test:ci`, and the backend runs them with `npm test -- --coverage`, which also prints a coverage report. On the frontend, once all of these pass, a second job (**Build Docker image**) builds the production Docker image, so we know the image we deploy still builds.
 
 **Why this trigger:** we picked **pull requests** because that's where we review each other's work, so every change gets checked before it's merged into a shared branch. It also runs on **pushes to the shared branches**, so we know `develop`, `staging` and `main` stay working after a merge. We chose not to run it on every push to our personal branches since the pre-commit hook already covers that work.
 
@@ -113,7 +152,7 @@ On GitHub Actions, each repository has a workflow called **CI**. It runs wheneve
 **As the pipeline matures:** we plan to add some more checks:
 
 - **Coverage threshold:** make CI fail if test coverage drops below a set percentage
-- **End-to-end tests in CI:** add a step that runs the backend's end-to-end tests (`npm run test:e2e`), which aren't part of CI yet, and a frontend job that runs browser tests (through Playwright for example)
+- **Frontend end-to-end tests in CI:** the backend's end-to-end tests already run in CI, so the next step is a frontend job that runs browser tests (through Playwright for example)
 
 ## 4 API Documentation
 
@@ -155,6 +194,10 @@ The backend API is documented with **Swagger**. Every route, request body, field
 
 **Creating a readable chapter** takes three requests, in order: create the story with its characters (`POST /api/v1/story`), add a chapter with its parsed script (`POST /api/v1/story/{storyId}/chapter`), then fetch the chapter (`GET /api/v1/story/{storyId}/chapter/{id}`), which returns it in the story JSON format the reader plays.
 
+### Running the frontend against it
+
+With the backend running on port `4563`, start the frontend from its repository with `npm ci` and then `npm start`, and open `http://localhost:4200`. The dev server forwards every `/api` request to `http://localhost:4563` (set in `proxy.conf.json`), so the frontend talks to the local backend with no extra setup.
+
 ## 5 Architecture
 
 ![Sprint 1 Architecture Diagram](./Sprint1.drawio.png)
@@ -164,6 +207,19 @@ The backend API is documented with **Swagger**. Every route, request body, field
 Deployment is partially complete. The backend is live on Azure Container Apps at a public HTTPS URL, but deployment is still manual and the CD pipeline is not finished. We provisioned the resource group, container registry, and Container Apps environment, created the container app with ingress, and confirmed the URL serves over a managed certificate. Three environment-specific obstacles worth recording: Azure’s region policy on student subscriptions rejected both canadacentral and eastus, so we settled on westus; the CLI provisioned an “express” environment by default, which does not support managed-identity authentication to the registry, and resolving it required installing the preview containerapp extension and recreating the environment with --environment-mode WorkloadProfiles; and a startup-probe failure traced to a mismatch between the configured target port and the port the container actually listened on.
 
 What is outstanding is continuous deployment. Connecting GitHub Actions to Azure via OIDC federated credentials requires registering an application in Entra ID, which the University of Manitoba tenant does not permit for student accounts. We have moved the deployment into a teammate’s Azure for Students subscription, where Paul holds Owner access, and the frontend’s deployment and CD setup is in progress. Until that lands, deploying means running az acr build and az containerapp update by hand, so a working URL exists but no push-to-deploy pipeline does. Secrets are configured through Container Apps secrets rather than baked into the image, and MongoDB Atlas remains the database, reachable from the container app over the public endpoint.
+
+### Frontend
+
+The frontend is packaged the same way as the backend, as a Docker image for Azure Container Apps, but it is not live yet.
+
+- **Image** (`Dockerfile`): built in two stages. The first stage uses Node 26 to run `npm ci` and `npm run build`. The second stage copies only the built files into a small **nginx** image, so the image that ships has no Node or source code in it.
+- **Web server** (`nginx.conf`): nginx serves the built files on port 80 and sends any unknown path back to `index.html`, so links like `/read/<storyId>` still work when opened directly or after a page refresh.
+- **CD workflow** (`.github/workflows/cd.yml`): runs on every push to `main`, or by hand from the Actions tab. It logs in to Azure with OIDC, builds the image, pushes it to our container registry tagged with the commit, and updates the `comp4350-frontend` container app to that image. Only one deploy runs at a time, and a deploy is never cancelled halfway through.
+
+What is outstanding for the frontend:
+
+- The workflow needs the `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID` secrets from the app registration in Paul's subscription, which isn't set up yet, so it hasn't deployed yet.
+- In production the frontend still has to reach the backend. Locally the dev server forwards `/api` to the backend, but nginx doesn't do this yet, so we need to add an `/api` proxy to `nginx.conf` (or point the frontend at the backend's URL) before the deployed site can load stories.
 
 ## 7 Reflection
 
@@ -175,7 +231,7 @@ Our testing was done primarily after implementation. Our initial focus was on en
 
 Our team working agreement is still valid. While our Git branching strategy was followed somewhat more loosely than we originally planned, we were careful when we were integrating changes and communicated regularly to avoid conflicts. We were responsible when it came to always pulling in the latest changes. Additionally, the repository management and pull request tools we used also provided us with some safeguards to reduce the risk of any major integration problems.
 
-## 8 Known Issues *
+## 8 Known Issues
 
 | Issue                           | Description                                                                                                                         |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
