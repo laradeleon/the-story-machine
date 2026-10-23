@@ -8,7 +8,7 @@
 
 We tested the Angular client with **Vitest** and Angular's **TestBed**, running in **jsdom** which is essentially a browser that is a simulation that runs in Node. The backend(HTTP calls) has been mocked using `provideHttpClientTesting()` and `HttpTestingController`. This lets us test and check every request that the webapp sends and controls the response including errors.
 
-### Unit Tests
+#### Unit Tests
 
 These unit tests checks every part of a function on its own, it uses a mocked backend. This helps us know exactly which part is broken in the code.
 
@@ -20,7 +20,7 @@ We tested 3 kinds of units: a service, the pages and a component
 - **`reader.spec.ts`**: THis test checks the reader page where you read the story. It makes sure the lines pop up 1 by 1 with the speaker's name for dialogue.
 - **`app.spec.ts`**: This checks if the webapp starts properly.
 
-### Integration Tests
+#### Integration Tests
 
 These tests check the the different parts of the webapp works together, the backend is mocked.
 
