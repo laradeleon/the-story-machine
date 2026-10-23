@@ -47,6 +47,14 @@ On GitHub Actions, each repository has a workflow called **CI**. It runs wheneve
 
 ## 7 Reflection
 
+As a group, we are proud of the progress that we made for Sprint 1, and the feature that we are particularly proud of is the story reading feature. It’s one of our primary user facing features and its development also heavily depended on the parser, which we identified as a major bottleneck early on since a lot of our project’s functionality relied on it being completed first. Being able to complete the reader and the parser represents significant progress for our Sprint 1 and gives us a strong foundation to work on for Sprint 2.
+
+One area that could have been improved was the writing feature. We underestimated the amount of effort that it would require to learn, integrate and build around CodeMirror, which introduced additional complexity that affected our development time. As a result, we weren’t able to implement the writing functionality to the extent that we had originally envisioned for this sprint. However, despite this challenge, we now have a much better understanding of this process and the remaining work we need to complete and we plan to continue refining and expanding the writing feature for Sprint 2.
+
+Our testing was done primarily after implementation. Our initial focus was on ensuring that our core functionality was working before dedicating time to write tests and fix issues that were discovered during development. Having a more test driven approach may have helped us catch some problems earlier, however our main priority was establishing a functional foundation given the scope of our project and any time constraints. As our project matures, we do expect testing to become a more integrated part of our development process.
+
+Our team working agreement is still valid. While our Git branching strategy was followed somewhat more loosely than we originally planned, we were careful when we were integrating changes and communicated regularly to avoid conflicts. We were responsible when it came to always pulling in the latest changes. Additionally, the repository management and pull request tools we used also provided us with some safeguards to reduce the risk of any major integration problems.
+
 ## 8 Known Issues
 
 | Issue                           | Description                                                                                                         |
