@@ -36,6 +36,42 @@ These tests check the the different parts of the webapp works together, the back
 - **Opening a story link directly**: We tested by directly opening the story link, so we woudn't have to go through the homepage. THis way a user could jump straight into reading.
 - **Backend errors**: These tests send teh backend an error, this way we test that the homepage and reader show the correct error response to it.
 
+### Back end testing
+
+We tested the NestJS API with **Vitest** and Nest's testing module (`@nestjs/testing`), which builds just the parts of the app a test needs. In unit tests the MongoDB models are replaced with mocks, so the tests run without a database and we control exactly what each query returns, including "not found" results and database errors. The end-to-end test uses **supertest** to send real HTTP requests to the whole app.
+
+| Command            | What it runs                                   |
+| ------------------ | ---------------------------------------------- |
+| `npm test`         | All unit tests once (this is what CI runs)     |
+| `npm run test:cov` | The unit tests with a coverage report          |
+| `npm run test:e2e` | The end-to-end tests (needs a running MongoDB) |
+
+At the end of Sprint 1 we have **149 unit tests in 17 files**, and all of them pass.
+
+#### Unit Tests
+
+These check each part of the backend on its own, mostly the services (the business logic) and the DTOs (the rules for what a request body may contain).
+
+- **Stories** (`story.service.spec.ts`, `create-story.dto.spec.ts`, `story.entity.spec.ts`): creating a story only when its author exists, listing stories a page at a time with author and status filters, publishing and unpublishing (which sets or clears `publishedAt`), every character getting a `default` emotion, uploading and downloading the story's `.txt` draft, and deleting a story together with its chapters and draft file. The DTO tests check which fields a client may send, for example that `status` and `likeCount` can't be set when creating a story and that two characters can't share a name.
+- **Chapters** (`chapter.service.spec.ts`, `create-chapter.dto.spec.ts`): adding a chapter to the end of its story (and taking it back out if saving fails), returning chapters in the agreed story JSON shape, renaming, and deleting a chapter, which moves the later chapters up one place so the reading order has no gaps.
+- **Chapter scripts** (`check-script.spec.ts`): the checks a script must pass before it is saved. Each line has exactly one kind (dialogue, prose, choice, background, goto_line or end), `line_id` matches the line's position, every jump and flag points to a real line, and dialogue only uses the story's characters and their emotions.
+- **Users** (`user.service.spec.ts`, `create-user.dto.spec.ts`, `user.entity.spec.ts`): registering with a hashed password, rejecting taken emails and usernames with a 409 (case-insensitively, and also when two sign-ups race each other), paging through users and updating profiles. The DTO tests cover the email, username and strong-password rules.
+- **Shared pieces** (`src/common`): the response wrapper that puts every reply in `{ success, message, data }`, the error filter that turns every error into the same shape (and hides the details of unexpected errors), the pipe that rejects invalid ids, and the pagination defaults and limits.
+
+#### Contract Tests
+
+The frontend's reader and the backend have to agree on the story JSON format, so we used the two examples from our story JSON documents ("The Lion at the Door" and the sprint 1 Team Beluga example) as test data (`test/fixtures/story-json.ts`). The tests check that both examples pass validation and that a saved chapter comes back **exactly** as the agreed JSON, with no extra or missing fields. If either side's format changes, these tests fail.
+
+#### End-to-End Tests
+
+`test/app.e2e-spec.ts` starts the whole app and sends a real request to the root route (`GET /`), checking the response comes back in the `{ success, message, data }` wrapper. It connects to a real MongoDB, so it isn't part of CI yet (see section 3).
+
+#### Gaps
+
+- The end-to-end tests don't cover the story and chapter routes yet, only the root route.
+- The storage service, which saves draft files to Azure Blob Storage, is mocked in the story tests but has no tests of its own.
+- There is no minimum coverage that CI enforces.
+
 ## 3 CI Status
 
 While we've split up our project across two repositories, both of them have CI set up the same way:
@@ -73,9 +109,51 @@ On GitHub Actions, each repository has a workflow called **CI**. It runs wheneve
 
 ## 4 API Documentation
 
+The backend API is documented with **Swagger**. Every route, request body, field rule and possible response is described there, with examples, and requests can be sent straight from the page. So this means the backend would need to be built to access the swagger documentation through a url. Steps listed below are the same steps to build and run the backend project
+
+### Running it locally
+
+1. Install **Node.js 26** (the version is in `.nvmrc`; with nvm, run `nvm use`).
+2. In the backend repository, install the dependencies:
+
+   ```bash
+   npm ci
+   ```
+
+3. Copy `.env.example` to `.env` and fill in the values. Ask a teammate for them; they aren't committed to the repository.
+
+   | Variable                          | What it is                                                                                                           |
+   | --------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+   | `PORT`                            | Port the server listens on, e.g. `4563`                                                                              |
+   | `MONGO_URI`                       | MongoDB connection string                                                                                            |
+   | `LOG_LEVEL`                       | How much to log, e.g. `info`                                                                                         |
+   | `AZURE_STORAGE_CONNECTION_STRING` | Azure Blob Storage connection string, where story draft files are saved. Required: the server won't start without it |
+   | `AZURE_STORAGE_CONTAINER`         | Blob container for the files (`stories` if left out)                                                                 |
+
+4. Start the server:
+
+   ```bash
+   npm run start:dev
+   ```
+
+5. Open **`http://localhost:<PORT>/api/docs`** in a browser, e.g. `http://localhost:4563/api/docs`.
+
+### Using the Swagger page
+
+- Routes are grouped into **Users**, **Stories** and **Chapters**. Click a route, then **Try it out**, fill in the parameters or body, and **Execute**.
+- **Server response** shows what actually came back from the request you just sent. **Responses** below it lists every response the route _can_ return, whatever happened in your request.
+- Every response is wrapped the same way. A success looks like `{ "success": true, "message": "Story created", "data": { ... } }`, and an error looks like `{ "success": false, "message": "Validation failed", "errors": [{ "field": "title", "message": "...", "success": false }] }`.
+- There's no login yet, so creating a story takes the author's user id (`authorId`) in the request body.
+
+**Creating a readable chapter** takes three requests, in order: create the story with its characters (`POST /api/v1/story`), add a chapter with its parsed script (`POST /api/v1/story/{storyId}/chapter`), then fetch the chapter (`GET /api/v1/story/{storyId}/chapter/{id}`), which returns it in the story JSON format the reader plays.
+
 ## 5 Architecture
 
-## 6 Deployment *
+## 6 Deployment
+
+Deployment is partially complete. The backend is live on Azure Container Apps at a public HTTPS URL, but deployment is still manual and the CD pipeline is not finished. We provisioned the resource group, container registry, and Container Apps environment, created the container app with ingress, and confirmed the URL serves over a managed certificate. Three environment-specific obstacles worth recording: Azure’s region policy on student subscriptions rejected both canadacentral and eastus, so we settled on westus; the CLI provisioned an “express” environment by default, which does not support managed-identity authentication to the registry, and resolving it required installing the preview containerapp extension and recreating the environment with --environment-mode WorkloadProfiles; and a startup-probe failure traced to a mismatch between the configured target port and the port the container actually listened on.
+
+What is outstanding is continuous deployment. Connecting GitHub Actions to Azure via OIDC federated credentials requires registering an application in Entra ID, which the University of Manitoba tenant does not permit for student accounts. We have moved the deployment into a teammate’s Azure for Students subscription, where Paul holds Owner access, and the frontend’s deployment and CD setup is in progress. Until that lands, deploying means running az acr build and az containerapp update by hand, so a working URL exists but no push-to-deploy pipeline does. Secrets are configured through Container Apps secrets rather than baked into the image, and MongoDB Atlas remains the database, reachable from the container app over the public endpoint.
 
 ## 7 Reflection
 
