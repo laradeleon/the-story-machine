@@ -5,9 +5,8 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { routes } from './app.routes';
+import { MOCK_CHAPTER_URL } from './services/story.service';
 
-// integration tests: the real router, real pages and real StoryService all work together.
-// the only fake part is the backend, we answer its requests ourselves with HttpTestingController
 describe('Integration: finding and reading a story', () => {
   let harness: RouterTestingHarness;
   let httpTesting: HttpTestingController;
@@ -79,7 +78,7 @@ describe('Integration: finding and reading a story', () => {
 
   // pretends to be the backend answering the reader's chapter request
   async function answerChapter() {
-    httpTesting.expectOne('mock/chapter.json').flush({
+    httpTesting.expectOne(MOCK_CHAPTER_URL).flush({
       success: true,
       message: 'ok',
       data: {
@@ -162,7 +161,7 @@ describe('Integration: finding and reading a story', () => {
     await waitForPage();
 
     // the backend says the chapter doesn't exist
-    httpTesting.expectOne('mock/chapter.json').flush('Not found', {
+    httpTesting.expectOne(MOCK_CHAPTER_URL).flush('Not found', {
       status: 404,
       statusText: 'Not Found',
     });
