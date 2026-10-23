@@ -1,4 +1,4 @@
-# Testing 
+# Testing
 
 ## Testing Strategy
 
@@ -14,9 +14,8 @@ Our frontend tests use **Vitest**, run through Angular's test runner (`ng test`)
 - `npm run test:ci`: runs every test once and stops. This is what our CI uses.
 
 Generate a coverage report with:
+
 - `npx ng test --coverage --watch=false`
-
-
 
 # Sprint 1 Progress
 
