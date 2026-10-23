@@ -33,7 +33,7 @@ We tested 3 kinds of units: a service, the pages and a component
 - **`story.service.spec.ts`**: We tested on getting data from the backend, made sure that the stories show their correct author, chapters and title and lines.
 - **`story-preview.spec.ts`**: This tests the popup that shows a story's detail that is shown in the card. it makes sure the popup opens when a story is clicked and closes when we click outside of it.
 - **`landing.spec.ts`**: This tests the homepage of the website, it test to see if the cards show for each story.
-- **`reader.spec.ts`**: THis test checks the reader page where you read the story. It makes sure the lines pop up 1 by 1 with the speaker's name for dialogue.
+- **`reader.spec.ts`**: This test checks the reader page where you read the story. It makes sure the lines pop up 1 by 1 with the speaker's name for dialogue.
 - **`app.spec.ts`**: This checks if the webapp starts properly.
 - **`writer.spec.ts`**: This checks if the writer page starts properly.
 
@@ -45,12 +45,12 @@ We also tested the script parser, which turns a writer's `.txt` script into stor
 
 #### Integration Tests
 
-These tests check the the different parts of the webapp works together, the backend is mocked.
+These tests check the the different parts of the webapp works together, the backend is mocked. [Here is a link to the est Coverage report for sprint 1](https://github.com/laradeleon/the-story-machine/blob/documentation-testing/docs/sprint-1/test-coverage-report)
 
 **Boundaries we test:**
 
-- **Client and API**: The 'StoryServices' sends requests to the backend,`HttpTestingController` answers them just like the API would. This way we check that the app is sending the right rewuest and it handles the responses along with any error encountered.
-- **Router and pages**: THis tests the routes that checks that the links are going to the correct places.
+- **Client and API**: The 'StoryServices' sends requests to the backend,`HttpTestingController` answers them just like the API would. This way we check that the app is sending the right request and it handles the responses along with any error encountered.
+- **Router and pages**: This tests the routes that checks that the links are going to the correct places.
 - **Component and component**: This tests the story popup works like the real homepage, it checks the opening and closing of it.
 - **Script and JSON**: a whole script goes through every parser stage (lexer → parser → `toJSON`) together, instead of one stage at a time.
 - **JSON and reader**: the JSON the parser makes is played by the real reader page, so we know the two agree on the story format.
@@ -58,7 +58,7 @@ These tests check the the different parts of the webapp works together, the back
 **What we test** (`app.integration.spec.ts`):
 
 - **Reading a story from start to end**: We tested this like a user would, go through the entire app. Going to the homepage, clicking a story's link, and clicking till it ends.
-- **Opening a story link directly**: We tested by directly opening the story link, so we woudn't have to go through the homepage. THis way a user could jump straight into reading.
+- **Opening a story link directly**: We tested by directly opening the story link, so we wouldn't have to go through the homepage. This way a user could jump straight into reading.
 - **Backend errors**: These tests send teh backend an error, this way we test that the homepage and reader show the correct error response to it.
 
 **What we test** (parser):
@@ -204,7 +204,7 @@ With the backend running on port `4563`, start the frontend from its repository 
 
 ## 6 Deployment
 
-Deployment is partially complete. The backend is live on Azure Container Apps at a public HTTPS URL, but deployment is still manual and the CD pipeline is not finished. We provisioned the resource group, container registry, and Container Apps environment, created the container app with ingress, and confirmed the URL serves over a managed certificate. Three environment-specific obstacles worth recording: Azure’s region policy on student subscriptions rejected both canadacentral and eastus, so we settled on westus; the CLI provisioned an “express” environment by default, which does not support managed-identity authentication to the registry, and resolving it required installing the preview containerapp extension and recreating the environment with --environment-mode WorkloadProfiles; and a startup-probe failure traced to a mismatch between the configured target port and the port the container actually listened on.
+Deployment is partially complete. The backend is live on Azure Container Apps at a public HTTPS URL, but deployment is still manual and the CD pipeline is not finished. We provisioned the resource group, container registry, and Container Apps environment, created the container app with ingress, and confirmed the URL serves over a managed certificate. Three environment-specific obstacles worth recording: Azure’s region policy on student subscriptions rejected both canada-central and east-us, so we settled on west-us; the CLI provisioned an “express” environment by default, which does not support managed-identity authentication to the registry, and resolving it required installing the preview containerapp extension and recreating the environment with --environment-mode WorkloadProfiles; and a startup-probe failure traced to a mismatch between the configured target port and the port the container actually listened on.
 
 What is outstanding is continuous deployment. Connecting GitHub Actions to Azure via OIDC federated credentials requires registering an application in Entra ID, which the University of Manitoba tenant does not permit for student accounts. We have moved the deployment into a teammate’s Azure for Students subscription, where Paul holds Owner access, and the frontend’s deployment and CD setup is in progress. Until that lands, deploying means running az acr build and az containerapp update by hand, so a working URL exists but no push-to-deploy pipeline does. Secrets are configured through Container Apps secrets rather than baked into the image, and MongoDB Atlas remains the database, reachable from the container app over the public endpoint.
 
@@ -238,3 +238,5 @@ Our team working agreement is still valid. While our Git branching strategy was 
 | Writing functionality not added | The writer page required much more overhead than expected to be able to start, thus was not included in this sprint                 |
 | Application not deployed        | Much more of the time was dedicated to development of the api/backend. However the deployment process was started but not completed |
 | Users and comments not started  | Those functions were not started as they were out of scope this sprint.                                                             |
+| Parser new line dialogue        | Parser has an issue where [Name]:\n"dialogue" returns an error when instead of attributing the dialogue to name.                    |
+| Edit button is non-functional   | No writing page to send the contents to edit to at the moment                                                                       |
