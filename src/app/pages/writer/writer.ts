@@ -14,8 +14,6 @@ import {
 import { basicSetup } from 'codemirror';
 import { EditorView } from '@codemirror/view';
 
-//the example story shown in the editor by default, the same one the parser is tested with
-//(src/scripting_language/examples/test_parser.ts)
 const exampleStory = `Welcome to The Story Machine.
 
 This is a platform for writing, reading and sharing interactive fiction. 
@@ -59,6 +57,10 @@ Sprint 1 was about getting the foundation planted.
   selector: 'app-writer',
   styleUrl: './writer.css',
   templateUrl: './writer.html',
+  host: {
+    //the browser is refreshing or closing the page, which skips onDestroy, so save here too
+    '(window:pagehide)': 'save_script()',
+  },
 })
 export class Writer {
   //init an editorview
@@ -100,8 +102,6 @@ export class Writer {
             error_line_highlight,
             EditorView.updateListener.of((update) => {
               if (update.docChanged) {
-                //save the script after every edit, so it survives leaving the page or reloading it
-                this.previewService.script.set(update.state.doc.toString());
                 //hide the error message once its line has been edited, since it's out of date.
                 //(edits to other lines keep it, unless the error didn't say which line it was on)
                 if (!has_error_line(update.state)) {
@@ -116,11 +116,23 @@ export class Writer {
       }
     });
 
-    //runs when the writer page closes, however the writer leaves (Back, Preview, browser back...).
-    //removes CodeMirror's listeners and frees its copy of the document,
-    //otherwise every visit to the writer leaves an old editor behind
-    //(the script is already saved by the updateListener above)
-    this.destroyRef.onDestroy(() => this.editorView?.destroy());
+    //runs when the writer page closes, however the writer leaves (Back, Preview, browser back...)
+    this.destroyRef.onDestroy(() => {
+      //keep the latest script (has to happen before destroy, the text can't be read after that)
+      this.save_script();
+      //remove CodeMirror's listeners and free its copy of the document,
+      //otherwise every visit to the writer leaves an old editor behind
+      this.editorView?.destroy();
+    });
+  }
+
+  //saves the editor's text to the preview service and localStorage.
+  //only done when leaving the page, refreshing/closing it or pressing Preview, not on every
+  //keystroke, so typing doesn't slow down as the story gets longer
+  protected save_script() {
+    if (this.editorView) {
+      this.previewService.save_script_now(this.editorView.state.doc.toString());
+    }
   }
 
   //adds a flag where the cursor is in the editor, with a placeholder for the writer to replace
@@ -198,6 +210,7 @@ export class Writer {
 
     this.previewError.set(null);
     this.editorView?.dispatch({ effects: set_error_line.of(null) });
-    this.router.navigate(['/preview']); //the script is already saved, see the updateListener in the constructor
+    this.save_script();
+    this.router.navigate(['/preview']);
   }
 }

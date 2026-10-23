@@ -24,6 +24,14 @@ export class PreviewService {
     effect(() => save(SCRIPT_KEY, this.script()));
     effect(() => save(METADATA_KEY, this.metadata()));
   }
+
+  // sets the script and writes it to localStorage straight away.
+  // the effects above save a moment after a change, which is too late when the page is being
+  // refreshed or closed, so the writer uses this to make sure the script is stored before it's gone
+  save_script_now(script: string) {
+    this.script.set(script);
+    save(SCRIPT_KEY, script);
+  }
 }
 
 // reads a saved value, or gives back the fallback if nothing was saved.

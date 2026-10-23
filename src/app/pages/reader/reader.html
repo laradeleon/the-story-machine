@@ -2,7 +2,12 @@
 @if (isLoading()) {
   <p>Loading in chapter.....</p>
 } @else if (hasError()) {
-  <p>Sorry, this chapter could not be retrieved.</p>
+  <!-- the chapter couldn't be loaded (or there was nothing to preview),
+       laid out like the end page with a way back to the story list -->
+  <div class="reader-page centered-page">
+    <p>Sorry, this chapter could not be retrieved.</p>
+    <a class="primary-button" routerLink="/">Back to stories</a>
+  </div>
 } @else {
   @let currentChapter = page();
   <!-- types are title, text, choice and end, check for each one -->

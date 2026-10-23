@@ -7,6 +7,9 @@ describe('Writer', () => {
   let fixture: ComponentFixture<Writer>;
 
   beforeEach(async () => {
+    // clear local storage so every test starts the same
+    localStorage.clear();
+
     await TestBed.configureTestingModule({
       imports: [Writer],
       providers: [provideRouter([])], // the back button and preview() both need a router

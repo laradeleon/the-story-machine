@@ -1,5 +1,5 @@
-<!-- close fires on esc, Cancel or after Save, so the writer can remove the popup -->
-<dialog #dialog class="metadata-dialog" (close)="closed.emit()">
+<!-- appModal opens this as a popup, closed fires on esc, Cancel or after Save so the writer can remove it -->
+<dialog appModal #modal="appModal" class="metadata-dialog" (closed)="closed.emit()">
   <!-- submitting the form (Save button or enter in a box) saves what was typed -->
   <form
     class="metadata-content"
@@ -36,7 +36,7 @@
     </label>
 
     <div class="metadata-actions">
-      <button type="button" class="cancel-button" (click)="dialog.close()">Cancel</button>
+      <button type="button" class="cancel-button" (click)="modal.close()">Cancel</button>
       <button type="submit" class="primary-button">Save</button>
     </div>
   </form>
