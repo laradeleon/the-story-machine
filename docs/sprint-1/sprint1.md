@@ -15,8 +15,9 @@
 ## 7 Reflection
 
 ## 8 Known Issues
-|Issue|Description|
-|-----|---|
-|Writing functionality not added| The writer page required much more overhead than expected to be able to start, thus was not included in this sprint   |
-|     |   |
-|     |   |
+
+| Issue                           | Description                                                                                                         |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Writing functionality not added | The writer page required much more overhead than expected to be able to start, thus was not included in this sprint |
+|                                 |                                                                                                                     |
+|                                 |                                                                                                                     |
