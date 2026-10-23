@@ -5,6 +5,10 @@ import { APIResponse, StoryResponse, UserResponse, ChapterResponse } from '../..
 import { StoryDetails } from '../../models/story-details';
 import { Chapter } from '../../models/chapter';
 
+// the mock chapter file the reader loads until getFirstChapter uses the real api
+// exported so the tests answer the same url. delete it when switching, then any test still using it won't compile
+export const MOCK_CHAPTER_URL = 'mock/chapter.json'; //todo: replace with the real chapter endpoints
+
 @Injectable({ providedIn: 'root' }) // global singleton
 export class StoryService {
   private http = inject(HttpClient);
@@ -12,7 +16,6 @@ export class StoryService {
   // api endpoint urls
   private storiesURL = '/api/v1/story';
   private usersURL = '/api/v1/user';
-  private mockChapterURL = 'mock/chapter.json'; //todo: update with api url once backend can store chapter contents
 
   // gets every published story to show as a card on the landing page
   getStories() {
@@ -57,7 +60,7 @@ export class StoryService {
     return resource({
       loader: async (): Promise<Chapter> => {
         const response = await firstValueFrom(
-          this.http.get<APIResponse<ChapterResponse>>(this.mockChapterURL),
+          this.http.get<APIResponse<ChapterResponse>>(MOCK_CHAPTER_URL),
         );
         const chapter = response.data;
         return { title: chapter.title, lines: chapter.contents?.story.lines ?? [] }; // a valid chapter with no contents will display nothing
