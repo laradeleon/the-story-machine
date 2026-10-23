@@ -10,7 +10,7 @@ export class StoryService {
   private http = inject(HttpClient);
 
   // api endpoint urls
-  private storiesURL = '/api/v1/story?status=published';
+  private storiesURL = '/api/v1/story';
   private usersURL = '/api/v1/user';
   private mockChapterURL = 'mock/chapter.json'; //todo: update with api url once backend can store chapter contents
 

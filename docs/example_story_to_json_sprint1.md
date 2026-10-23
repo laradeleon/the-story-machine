@@ -1,13 +1,16 @@
 # Sample Story
+
 This is a sample story for sprint 1 for testing purposes to include and demonstrate the following utilities:
+
 - prose (descriptions and text, any text that a character might say)
 - dialogue (with temporary character names)
-- choices 
-- flags 
-- chapters 
+- choices
+- flags
+- chapters
 - ending a story
 
 #### Example Input
+
 ```
 Team Beluga arrives at the classroom on time for their meeting with Lauren.
 
@@ -42,14 +45,15 @@ You get into a physical altercation with Lara..
 You win without a scratch.
 END
 
-# the correct option 
-Everyone celebrates. 
+# the correct option
+Everyone celebrates.
 
 Colin wakes up. It was all a dream
 END
 ```
 
 #### Example Output
+
 ```JSON
 {
   "title": "Team Beluga's Presentation",
