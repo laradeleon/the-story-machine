@@ -78,13 +78,3 @@
 .preview-button:hover {
   background: rgba(255, 255, 255, 0.06);
 }
-
-.preview-button:first-child {
-  border-color: var(--color-accent);
-  background: var(--color-accent);
-  color: #1a1206;
-}
-
-.preview-button:first-child:hover {
-  background: #f6c47a;
-}
