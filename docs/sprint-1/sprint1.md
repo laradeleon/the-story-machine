@@ -75,7 +75,7 @@ On GitHub Actions, each repository has a workflow called **CI**. It runs wheneve
 
 ## 5 Architecture
 
-## 6 Deployment
+## 6 Deployment *
 
 ## 7 Reflection
 
@@ -87,10 +87,10 @@ Our testing was done primarily after implementation. Our initial focus was on en
 
 Our team working agreement is still valid. While our Git branching strategy was followed somewhat more loosely than we originally planned, we were careful when we were integrating changes and communicated regularly to avoid conflicts. We were responsible when it came to always pulling in the latest changes. Additionally, the repository management and pull request tools we used also provided us with some safeguards to reduce the risk of any major integration problems.
 
-## 8 Known Issues
+## 8 Known Issues *
 
-| Issue                           | Description                                                                                                         |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Writing functionality not added | The writer page required much more overhead than expected to be able to start, thus was not included in this sprint |
-|                                 |                                                                                                                     |
-|                                 |                                                                                                                     |
+| Issue                           | Description                                                                                                                         |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Writing functionality not added | The writer page required much more overhead than expected to be able to start, thus was not included in this sprint                 |
+| Application not deployed        | Much more of the time was dedicated to development of the api/backend. However the deployment process was started but not completed |
+|                                 |                                                                                                                                     |
