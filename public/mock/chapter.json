@@ -1,0 +1,284 @@
+{
+  "success": true,
+  "message": "Chapter fetched",
+  "data": {
+    "_id": "mock-chapter-1",
+    "title": "Chapter 1: The Presentation",
+    "order": 0,
+    "contents": {
+      "title": "Team Beluga",
+      "author": "mock-author",
+      "story_id": "mock-id-1",
+      "characters": {},
+      "story": {
+        "flags": {
+          "end of presentation": {
+            "line_id": 6
+          },
+          "continue presentation": {
+            "line_id": 8
+          },
+          "fight lara": {
+            "line_id": 11
+          },
+          "the correct option": {
+            "line_id": 15
+          }
+        },
+        "variables": [],
+        "lines": [
+          {
+            "line_id": 0,
+            "prose": {
+              "text": {
+                "words": [
+                  "Team",
+                  "Beluga",
+                  "arrives",
+                  "at",
+                  "the",
+                  "classroom",
+                  "on",
+                  "time",
+                  "for",
+                  "their",
+                  "meeting",
+                  "with",
+                  "Lauren."
+                ]
+              },
+              "text_color": null
+            }
+          },
+          {
+            "line_id": 1,
+            "dialogue": {
+              "name": "Arthur",
+              "portrait": "default",
+              "text": {
+                "words": ["Good", "morning", "Lauren,", "welcome", "to", "Interactive", "fiction!"]
+              },
+              "text_color": null
+            }
+          },
+          {
+            "line_id": 2,
+            "dialogue": {
+              "name": "Paul",
+              "portrait": "default",
+              "text": {
+                "words": [
+                  "We",
+                  "worked",
+                  "very",
+                  "hard",
+                  "on",
+                  "this,",
+                  "Adejare",
+                  "and",
+                  "I",
+                  "got",
+                  "zero",
+                  "sleep!"
+                ]
+              },
+              "text_color": null
+            }
+          },
+          {
+            "line_id": 3,
+            "prose": {
+              "text": {
+                "words": ["Adejare", "looks", "at", "you", "with", "sleepless", "eyes."]
+              },
+              "text_color": null
+            }
+          },
+          {
+            "line_id": 4,
+            "dialogue": {
+              "name": "Krupal",
+              "portrait": "default",
+              "text": {
+                "words": ["Wake", "up", "dude.."]
+              },
+              "text_color": null
+            }
+          },
+          {
+            "line_id": 5,
+            "choice": [
+              {
+                "goto_line": 6,
+                "option_body": "Ignore the group",
+                "condition": null
+              },
+              {
+                "goto_line": 8,
+                "option_body": "Say goodmorning",
+                "condition": null
+              },
+              {
+                "goto_line": 15,
+                "option_body": "Immediately give the group an A",
+                "condition": null
+              }
+            ]
+          },
+          {
+            "line_id": 6,
+            "prose": {
+              "text": {
+                "words": [
+                  "The",
+                  "group",
+                  "looks",
+                  "worried",
+                  "that",
+                  "you",
+                  "are",
+                  "unresponsive",
+                  "and",
+                  "calls",
+                  "medical."
+                ]
+              },
+              "text_color": null
+            }
+          },
+          {
+            "line_id": 7,
+            "end": true
+          },
+          {
+            "line_id": 8,
+            "dialogue": {
+              "name": "Lara",
+              "portrait": "default",
+              "text": {
+                "words": [
+                  "Thank",
+                  "goodness",
+                  "this",
+                  "isn’t",
+                  "a",
+                  "carpooling",
+                  "app",
+                  "am",
+                  "I",
+                  "right?"
+                ]
+              },
+              "text_color": null
+            }
+          },
+          {
+            "line_id": 9,
+            "dialogue": {
+              "name": "Carsten",
+              "portrait": "default",
+              "text": {
+                "words": [
+                  "We",
+                  "literally",
+                  "had",
+                  "that",
+                  "same",
+                  "idea",
+                  "Lara…",
+                  "We",
+                  "aren’t",
+                  "any",
+                  "better."
+                ]
+              },
+              "text_color": null
+            }
+          },
+          {
+            "line_id": 10,
+            "choice": [
+              {
+                "goto_line": 11,
+                "option_body": "Give team Beluga an F",
+                "condition": null
+              },
+              {
+                "goto_line": 15,
+                "option_body": "Give team Beluga an A",
+                "condition": null
+              }
+            ]
+          },
+          {
+            "line_id": 11,
+            "dialogue": {
+              "name": "Lara",
+              "portrait": "default",
+              "text": {
+                "words": [
+                  "Hey!",
+                  "You",
+                  "can’t",
+                  "do",
+                  "that!",
+                  "I",
+                  "have",
+                  "to",
+                  "fight",
+                  "you",
+                  "now."
+                ]
+              },
+              "text_color": null
+            }
+          },
+          {
+            "line_id": 12,
+            "prose": {
+              "text": {
+                "words": ["You", "get", "into", "a", "physical", "altercation", "with", "Lara.."]
+              },
+              "text_color": null
+            }
+          },
+          {
+            "line_id": 13,
+            "prose": {
+              "text": {
+                "words": ["You", "win", "without", "a", "scratch."]
+              },
+              "text_color": null
+            }
+          },
+          {
+            "line_id": 14,
+            "end": true
+          },
+          {
+            "line_id": 15,
+            "prose": {
+              "text": {
+                "words": ["Everyone", "celebrates."]
+              },
+              "text_color": null
+            }
+          },
+          {
+            "line_id": 16,
+            "prose": {
+              "text": {
+                "words": ["Colin", "wakes", "up.", "It", "was", "all", "a", "dream"]
+              },
+              "text_color": null
+            }
+          },
+          {
+            "line_id": 17,
+            "end": true
+          }
+        ]
+      }
+    }
+  }
+}
