@@ -2,6 +2,14 @@
 
 ## 1 Sprint Summary
 
+We made massive progress in almost all of our goals. The backend, parser logic, and the book reader are all in a functional state.
+
+The backend database is functional and the API is usable to the level we needed for the rest of the project. The MongoDB is hosted externally on Microsoft Azure.
+
+The parser logic for our homebrew markdown language central to our project is functional, and able to take the raw text of our story format and turn it into a formatted JSON that the rest of the project is able to use.
+
+The story reader is in a totally usable state, able to read any properly formatted story passed to it. The main direction of improvements in the future is mainly towards the user experience rather than the underlying logic.
+
 ## 2 Testing Status
 
 ### Front end testing
@@ -149,6 +157,8 @@ The backend API is documented with **Swagger**. Every route, request body, field
 
 ## 5 Architecture
 
+![Sprint 1 Architecture Diagram](./Sprint1.drawio.png)
+
 ## 6 Deployment
 
 Deployment is partially complete. The backend is live on Azure Container Apps at a public HTTPS URL, but deployment is still manual and the CD pipeline is not finished. We provisioned the resource group, container registry, and Container Apps environment, created the container app with ingress, and confirmed the URL serves over a managed certificate. Three environment-specific obstacles worth recording: Azure’s region policy on student subscriptions rejected both canadacentral and eastus, so we settled on westus; the CLI provisioned an “express” environment by default, which does not support managed-identity authentication to the registry, and resolving it required installing the preview containerapp extension and recreating the environment with --environment-mode WorkloadProfiles; and a startup-probe failure traced to a mismatch between the configured target port and the port the container actually listened on.
@@ -171,4 +181,4 @@ Our team working agreement is still valid. While our Git branching strategy was 
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | Writing functionality not added | The writer page required much more overhead than expected to be able to start, thus was not included in this sprint                 |
 | Application not deployed        | Much more of the time was dedicated to development of the api/backend. However the deployment process was started but not completed |
-|                                 |                                                                                                                                     |
+| Users and comments not started  | Those functions were not started as they were out of scope this sprint.                                                             |
