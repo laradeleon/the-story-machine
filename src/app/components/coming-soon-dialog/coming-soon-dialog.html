@@ -1,0 +1,11 @@
+<!-- close fires on esc or OK, so the writer can remove the popup -->
+<dialog #dialog class="coming-soon-dialog" (close)="closed.emit()">
+  <div class="coming-soon-content">
+    <h2>{{ feature() }} is coming soon</h2>
+    <p>This button doesn't do anything yet, it's still being worked on.</p>
+
+    <div class="coming-soon-actions">
+      <button type="button" class="primary-button" (click)="dialog.close()">OK</button>
+    </div>
+  </div>
+</dialog>

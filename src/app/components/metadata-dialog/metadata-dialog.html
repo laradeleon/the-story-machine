@@ -1,0 +1,43 @@
+<!-- close fires on esc, Cancel or after Save, so the writer can remove the popup -->
+<dialog #dialog class="metadata-dialog" (close)="closed.emit()">
+  <!-- submitting the form (Save button or enter in a box) saves what was typed -->
+  <form
+    class="metadata-content"
+    (submit)="
+      $event.preventDefault(); save(titleInput.value, genresInput.value, descriptionInput.value)
+    "
+  >
+    <h2>Story details</h2>
+
+    <label class="metadata-field">
+      Title
+      <input #titleInput type="text" [value]="metadata().title" placeholder="Untitled Story" />
+    </label>
+
+    <label class="metadata-field">
+      Genres
+      <input
+        #genresInput
+        type="text"
+        [value]="metadata().genres.join(', ')"
+        placeholder="fantasy, mystery"
+      />
+      <span class="metadata-hint">Separate genres with commas</span>
+    </label>
+
+    <label class="metadata-field">
+      Description
+      <textarea
+        #descriptionInput
+        rows="5"
+        [value]="metadata().description"
+        placeholder="What is your story about?"
+      ></textarea>
+    </label>
+
+    <div class="metadata-actions">
+      <button type="button" class="cancel-button" (click)="dialog.close()">Cancel</button>
+      <button type="submit" class="primary-button">Save</button>
+    </div>
+  </form>
+</dialog>

@@ -1,7 +1,7 @@
 <!-- if chapter is still loading in, show message -->
-@if (chapter.isLoading()) {
+@if (isLoading()) {
   <p>Loading in chapter.....</p>
-} @else if (chapter.error()) {
+} @else if (hasError()) {
   <p>Sorry, this chapter could not be retrieved.</p>
 } @else {
   @let currentChapter = page();
@@ -62,7 +62,12 @@
   @if (currentChapter.kind === 'end') {
     <div class="reader-page centered-page">
       <p class="chapter-title">The End.</p>
-      <a class="primary-button" routerLink="/">Back to stories</a>
+      <!-- a preview goes back to the writer, a normal story goes back to the story list -->
+      @if (isPreview) {
+        <a class="primary-button" routerLink="/write">Back to writing</a>
+      } @else {
+        <a class="primary-button" routerLink="/">Back to stories</a>
+      }
     </div>
   }
 }

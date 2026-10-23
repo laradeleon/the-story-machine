@@ -4,17 +4,137 @@
     <style></style>
   </head>
   <body>
-    <!-- Replace with a proper tutorial, maybe a slide-deck or a dedicated page? -->
-    <a
-      href="https://github.com/laradeleon/the-story-machine/blob/feature/story-reading/docs/example_story_to_json_sprint1.md"
-      target="_blank"
-      rel="noopener noreferrer"
-      >Example Story</a
-    >
-    <!-- The div that the codemirror is placed into -->
-    <div id="mainwriting"></div>
-    <button>getText</button>
-    <!-- A button that interacts with the editor, the goal is to print what is in the editor -->
-    <div id="textPrint"></div>
+    <!-- holds the whole writer page, leaving space on the left and right -->
+    <div class="writer-page">
+      <!-- banner at the top of the writer, same rounded card shape as the landing page wallpaper -->
+      <header class="writer-banner">
+        <h1 class="writer-banner-title">The Story Machine</h1>
+      </header>
+
+      <!-- Syntax toolbar: each button adds a piece of script syntax where the cursor is in the editor -->
+      <div class="writer-toolbar">
+        <!-- opens the popup for the story's title, genres and description -->
+        <button type="button" class="primary-button" (click)="metadataOpen.set(true)">
+          Metadata
+        </button>
+
+        <!-- TODO: open a popup for the story's characters (shows the coming soon popup for now) -->
+        <button type="button" class="primary-button" (click)="comingSoon.set('Characters')">
+          Characters
+        </button>
+
+        <!-- Replace with a proper tutorial, maybe a slide-deck or a dedicated page? -->
+        <a
+          class="primary-button"
+          href="https://github.com/laradeleon/the-story-machine/blob/feature/story-reading/docs/example_story_to_json_sprint1.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Example</a
+        >
+
+        <!-- one joined button: [ Choice | 1 | 2 | 3 | 4 ]
+             "Choice" is just a label, clicking a number adds a choice with that many options
+             where the cursor is, see insert_choice() in writer.ts -->
+        <!-- title shows as a tooltip when hovering -->
+        <div
+          class="choice-tool"
+          role="group"
+          aria-label="Add a choice with this many options"
+          title="Show each option_body and wait for one to be picked, then go to that option's flag"
+        >
+          <span class="choice-label">Choice</span>
+          @for (count of choiceCounts; track count) {
+            <button type="button" class="choice-count-button" (click)="insert_choice(count)">
+              {{ count }}
+            </button>
+          }
+        </div>
+
+        <!-- adds "# [put your flag name here]" where the cursor is, see insert_flag() in writer.ts -->
+        <!-- title shows as a tooltip when hovering the button -->
+        <button
+          type="button"
+          class="primary-button"
+          (click)="insert_flag()"
+          title='Bookmarks a name for a place in lines, like "Morning starts at line_id 15".'
+        >
+          Flag
+        </button>
+
+        <!-- adds "-> [flag name]" where the cursor is, see insert_goto() in writer.ts -->
+        <button
+          type="button"
+          class="primary-button"
+          (click)="insert_goto()"
+          title="Jumps straight to a flag, without asking the reader to pick"
+        >
+          Goto
+        </button>
+
+        <!-- adds "END" where the cursor is, see insert_end() in writer.ts -->
+        <button
+          type="button"
+          class="primary-button"
+          (click)="insert_end()"
+          title="Ends the story here"
+        >
+          End
+        </button>
+      </div>
+
+      <!-- The div that the codemirror is placed into -->
+      <div id="mainwriting"></div>
+
+      <!-- shows what's wrong with the script when Preview can't parse it -->
+      @if (previewError(); as error) {
+        <p class="preview-error">{{ error }}</p>
+      }
+
+      <!-- Page toolbar: leaving, previewing, publishing and saving the story -->
+      <div class="writer-toolbar">
+        <!-- Leaves the editor and goes back to the story browser (the landing page) -->
+        <!-- TODO: swap routerLink for (click)="go_back()" and write go_back() in writer.ts:
+             1. keep track of whether the editor has unsaved edits
+                (e.g. an updateListener on the EditorView that sets a has_unsaved_edits flag,
+                and save() clears it)
+             2. if there are no unsaved edits, go straight to "/" (inject Router, router.navigate)
+             3. if there are, ask the user if they want to save first
+                (window.confirm for now, a <dialog> later)
+             4. if they say yes, call save() and then go back; if no, just go back -->
+        <a class="primary-button back-button" routerLink="/">Back</a>
+
+        <!-- these buttons are grouped so they can sit together on the right -->
+        <div class="toolbar-right">
+          <!-- parses the script and plays it in the reader, see preview() in writer.ts -->
+          <button type="button" class="primary-button" (click)="preview()">Preview</button>
+
+          <!-- TODO: swap the coming soon popup for (click)="open_publish()" and write open_publish()
+               in writer.ts to open a <dialog> modal (see components/metadata-dialog for an example) -->
+          <button type="button" class="primary-button" (click)="comingSoon.set('Publish')">
+            Publish
+          </button>
+
+          <!-- TODO: swap the coming soon popup for (click)="save()" and write save() in writer.ts
+               to store the unfinished script as a draft (not published) -->
+          <button type="button" class="primary-button" (click)="comingSoon.set('Save')">
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- the metadata popup, opened by the Metadata button -->
+    @if (metadataOpen()) {
+      <app-metadata-dialog
+        [metadata]="previewService.metadata()"
+        (saved)="previewService.metadata.set($event)"
+        (closed)="metadataOpen.set(false)"
+      />
+    }
+
+    <!-- TEMPORARY: popup for buttons that don't do anything yet -->
+    @if (comingSoon(); as feature) {
+      <app-coming-soon-dialog [feature]="feature" (closed)="comingSoon.set(null)" />
+    }
   </body>
 </html>
