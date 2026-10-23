@@ -4,6 +4,38 @@
 
 ## 2 Testing Status
 
+### Front end testing
+
+We tested the Angular client with **Vitest** and Angular's **TestBed**, running in **jsdom** which is essentially a browser that is a simulation that runs in Node. The backend(HTTP calls) has been mocked using `provideHttpClientTesting()` and `HttpTestingController`. This lets us test and check every request that the webapp sends and controls the response including errors.
+
+#### Unit Tests
+
+These unit tests checks every part of a function on its own, it uses a mocked backend. This helps us know exactly which part is broken in the code.
+
+We tested 3 kinds of units: a service, the pages and a component
+
+- **`story.service.spec.ts`**: We tested on getting data from the backend, made sure that the stories show their correct author, chapters and title and lines.
+- **`story-preview.spec.ts`**: This tests the popup that shows a story's detail that is shown in the card. it makes sure the popup opens when a story is clicked and closes when we click outside of it.
+- **`landing.spec.ts`**: This tests the homepage of the website, it test to see if the cards show for each story.
+- **`reader.spec.ts`**: THis test checks the reader page where you read the story. It makes sure the lines pop up 1 by 1 with the speaker's name for dialogue.
+- **`app.spec.ts`**: This checks if the webapp starts properly.
+
+#### Integration Tests
+
+These tests check the the different parts of the webapp works together, the backend is mocked.
+
+**Boundaries we test:**
+
+- **Client and API**: The 'StoryServices' sends requests to the backend,`HttpTestingController` answers them just like the API would. This way we check that the app is sending the right rewuest and it handles the responses along with any error encountered.
+- **Router and pages**: THis tests the routes that checks that the links are going to the correct places.
+- **Component and component**: This tests the story popup works like the real homepage, it checks the opening and closing of it.
+
+**What we test** (`app.integration.spec.ts`):
+
+- **Reading a story from start to end**: We tested this like a user would, go through the entire app. Going to the homepage, clicking a story's link, and clicking till it ends.
+- **Opening a story link directly**: We tested by directly opening the story link, so we woudn't have to go through the homepage. THis way a user could jump straight into reading.
+- **Backend errors**: These tests send teh backend an error, this way we test that the homepage and reader show the correct error response to it.
+
 ## 3 CI Status
 
 While we've split up our project across two repositories, both of them have CI set up the same way:
