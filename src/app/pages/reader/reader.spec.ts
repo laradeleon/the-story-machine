@@ -125,13 +125,13 @@ describe('Reader', () => {
 
     it('should not show a speaker name for prose', async () => {
       await clickPage();
-      expect(compiled.querySelector('.current-speaker')).toBeNull();
+      expect(compiled.querySelector('.speaker-name')).toBeNull();
     });
 
     it('should show the speaker name for dialogue', async () => {
       await clickPage(); // line 0
       await clickPage(); // line 1
-      expect(compiled.querySelector('.current-speaker')?.textContent).toContain('Dave');
+      expect(compiled.querySelector('.speaker-name')?.textContent).toContain('Dave');
       expect(compiled.querySelector('.dialogue-box')?.textContent).toContain('Who is there?');
     });
   });
@@ -184,7 +184,7 @@ describe('Reader', () => {
       await pickChoice('Open the door'); // line 3
       await clickPage(); // line 4 is a goto to line 8
 
-      expect(compiled.querySelector('.current-speaker')?.textContent).toContain('Lion');
+      expect(compiled.querySelector('.speaker-name')?.textContent).toContain('Lion');
       expect(compiled.textContent).not.toContain('Skipped line.');
     });
 
@@ -228,7 +228,7 @@ describe('Reader', () => {
 
       expect(compiled.textContent).toContain('The End.');
       const backLink = compiled.querySelector('a');
-      expect(backLink?.textContent).toContain('Back to stories.');
+      expect(backLink?.textContent).toContain('Back to stories');
       expect(backLink?.getAttribute('href')).toBe('/');
     });
 

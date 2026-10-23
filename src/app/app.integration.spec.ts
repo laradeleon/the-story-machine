@@ -54,7 +54,7 @@ describe('Integration: finding and reading a story', () => {
 
   // pretends to be the backend answering the landing page's requests
   async function answerStoryList() {
-    httpTesting.expectOne('/api/v1/story?status=published').flush({
+    httpTesting.expectOne('/api/v1/story').flush({
       success: true,
       message: 'ok',
       data: [
@@ -171,18 +171,18 @@ describe('Integration: finding and reading a story', () => {
     expect(page().textContent).toContain('Sorry, this chapter could not be retrieved.');
   });
 
-  //   it('should show a sorry message if the stories could not be loaded', async () => {
-  //     await harness.navigateByUrl('/');
-  //     await waitForPage();
+  it('should show a sorry message if the stories could not be loaded', async () => {
+    await harness.navigateByUrl('/');
+    await waitForPage();
 
-  //     // the backend is broken and sends back an error
-  //     httpTesting.expectOne('/api/v1/story?status=published').flush('Server error', {
-  //       status: 500,
-  //       statusText: 'Internal Server Error',
-  //     });
-  //     await waitForPage();
+    // the backend is broken and sends back an error
+    httpTesting.expectOne('/api/v1/story').flush('Server error', {
+      status: 500,
+      statusText: 'Internal Server Error',
+    });
+    await waitForPage();
 
-  //     expect(page().textContent).toContain('Stories could not be loaded.');
-  //     expect(page().querySelectorAll('.story-card').length).toBe(0);
-  //   });
+    expect(page().textContent).toContain("Sorry, stories couldn't be loaded right now.");
+    expect(page().querySelectorAll('.story-card').length).toBe(0);
+  });
 });

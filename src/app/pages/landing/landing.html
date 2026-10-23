@@ -1,28 +1,43 @@
-<h1 class="website-name">The Story Machine</h1>
-<h2 class="subtitle">Where stories come to life!</h2>
+<!-- banner at the top of the page with the wallpaper behind the site name -->
+<header class="hero">
+  <h1 class="website-name">The Story Machine</h1>
+  <p class="subtitle">Where stories come to life!</p>
+</header>
 
-<!-- shows loading message if stories are still being retrieved -->
-@if (stories.isLoading()) {
-  <p>loading...</p>
-} @else {
-  <!-- each story is displayed as a card on the home page, functionally a link that takes them to the reader -->
-  <div class="story-grid">
-    <!-- display every story that was retrieved -->
-    @for (story of stories.value(); track story.story_id) {
-      <button type="button" class="story-card" (click)="selectedStory.set(story)">
-        <div class="story-container">
-          <h2 class="story-title">{{ story.title }}</h2>
-          <p class="story-author">{{ story.author }}</p>
-        </div>
-      </button>
-    } @empty {
-      <!-- if there's no stories to display -->
-      <p>No stories yet so stay tuned!</p>
-    }
+<!-- the stories get their own panel over top the wallpaper -->
+<main class="stories-section">
+  <div class="section-header">
+    <h2 class="section-heading">Stories</h2>
+    <!-- takes the author to the writing page -->
+    <a class="primary-button" routerLink="/write">Write Story</a>
   </div>
-}
 
-<!-- preview popup for the story that got clocked -->
+  <!-- shows loading message if stories are still being retrieved -->
+  @if (stories.isLoading()) {
+    <p class="section-message">Loading stories...</p>
+  } @else if (stories.error()) {
+    <!-- if the stories couldn't be retrieved -->
+    <p class="section-message">Sorry, stories couldn't be loaded right now.</p>
+  } @else {
+    <!-- each story is displayed as a card, clicking one opens its preview popup -->
+    <div class="story-grid">
+      <!-- display every story that was retrieved -->
+      @for (story of stories.value(); track story.story_id) {
+        <button type="button" class="story-card" (click)="selectedStory.set(story)">
+          <div class="story-container">
+            <h3 class="story-title">{{ story.title }}</h3>
+            <p class="story-author">{{ story.author }}</p>
+          </div>
+        </button>
+      } @empty {
+        <!-- if there's no stories to display -->
+        <p class="section-message">No stories yet so stay tuned!</p>
+      }
+    </div>
+  }
+</main>
+
+<!-- preview popup for the story that got clicked -->
 @if (selectedStory(); as story) {
   <app-story-preview [story]="story" (closed)="selectedStory.set(null)" />
 }

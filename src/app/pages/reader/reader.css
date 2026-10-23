@@ -1,3 +1,9 @@
+/* the whole reader page uses the reading font and everything else inside will inherit*/
+:host {
+  display: block;
+  font-family: var(--font-reading);
+}
+
 /* every screen fills the window with its content in the middle */
 .reader-page {
   display: flex;
@@ -18,7 +24,7 @@
 }
 
 .chapter-title {
-  font-size: 2rem;
+  font-size: 4rem;
 }
 
 /* both chapter title and end screen have everything in the middle */
@@ -28,9 +34,11 @@
   text-align: center;
 }
 
-.text-page {
+/* for dialogue, prose and choice screens */
+.text-page,
+.choice-page {
   justify-content: flex-end;
-  padding-bottom: 22vh;
+  padding-bottom: 48px;
 }
 
 /* dialogue box and choices*/
@@ -38,35 +46,55 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 1000px;
+  max-width: 1200px;
 }
 
 .choice-page {
-  justify-content: flex-start;
   cursor: default; /* only the options are clickable (not entire screen) */
+}
+
+.choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px; /* space between the box and the first option */
 }
 
 /* small grey hint so readers know clicking moves the story on */
 .click-hint {
-  color: #888;
-  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  font-size: 1.5rem;
 }
 
 /* name of whos talking above their dialogue */
 .speaker-name {
-  margin: 0 0 12px 16px; /*put on left edge of dialogue box*/
+  margin: 0 0 12px 16px;
+  text-align: left; /*put on left edge of dialogue box*/
   font-weight: bold;
-  font-size: 2rem;
+  font-size: 2.5rem;
+  color: var(--color-accent);
 }
 
-/* rounded box that the prose or dialogue goes in */
+/* dialogue gets rounded corner */
 .dialogue-box {
-  margin: 0 0 20px 0;
+  margin: 0;
+  height: 11rem;
+  overflow-y: auto; /* if dialogue is long, let user scroll */
   padding: 24px 40px;
-  border: 1px solid;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
   border-radius: 1.5rem;
-  font-size: 1.25rem;
+  background: var(--color-surface-raised);
+  text-align: left;
+  font-size: 1.75rem;
   line-height: 1.6;
+}
+
+/* prose has square corners */
+.prose-box {
+  border-radius: 0;
+  background: var(--color-surface);
+  text-align: center; /* prose is the only box with centred text */
 }
 
 .choice-heading {
@@ -74,21 +102,24 @@
   font-size: 1.75rem;
 }
 
-/*each option is a long bar with the text in the middle*/
+/* each option shows as row under box, number on the left */
 .choice-option {
-  position: relative; /* so the number can be placed on its left end */
-  margin-bottom: 16px;
-  padding: 16px 80px; /* leaves room on the left for the option number */
-  border: 1px solid;
-  border-radius: 1rem;
+  position: relative;
+  padding: 10px 16px 10px 56px; /* room on left for option number */
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
   font: inherit;
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   color: inherit;
+  text-align: left;
   cursor: pointer;
 }
 
+/* highlight the option when hovered */
 .choice-option:hover {
-  background: rgba(0, 0, 0, 0.05);
+  border-color: var(--color-accent);
+  background: var(--color-surface-raised);
 }
 
 /* the circle with the option's number on the left end of the bar */
@@ -100,6 +131,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  border-radius: 999px;
+  width: 48px;
+  color: var(--color-accent);
 }

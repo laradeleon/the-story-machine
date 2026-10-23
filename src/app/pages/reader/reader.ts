@@ -34,6 +34,9 @@ function toLineText(line: Line | undefined): LineText | null {
   selector: 'app-read',
   styleUrl: './reader.css',
   templateUrl: './reader.html',
+  host: {
+    '(document:keydown)': 'onKeydown($event)', // checks for keypresses
+  },
 })
 
 /**
@@ -125,5 +128,34 @@ export class Reader {
       lineId = line.goto_line; // otherwise, go to this line then check what that line is the next time round the loop
     }
     this.lineId.set(lineId);
+  }
+
+  // space or enter goes to the next line
+  // 1 2 3 4 on keyboard selects that option
+  protected onKeydown(event: KeyboardEvent) {
+    // only count first press and not if the user holds the key down as it skips through everything otherwise
+    if (event.repeat || this.chapter.error()) {
+      return;
+    }
+    const page = this.page();
+
+    // should not skip through choice page
+    if (
+      (event.key === ' ' || event.key === 'Enter') &&
+      (page.kind === 'title' || page.kind === 'text')
+    ) {
+      // stops space from scrolling the page
+      event.preventDefault();
+      this.nextLine();
+      return;
+    }
+
+    // number keys pick that option on a choice screen
+    if (page.kind === 'choice') {
+      const option = page.options[Number(event.key) - 1];
+      if (option) {
+        this.goTo(option.goto_line);
+      }
+    }
   }
 }

@@ -19,7 +19,7 @@ describe('StoryPreview closing', () => {
 
     await TestBed.configureTestingModule({
       imports: [StoryPreview],
-      providers: [provideRouter([])],
+      providers: [provideRouter([])], // the read story link needs a router to exist
     }).compileComponents();
 
     fixture = TestBed.createComponent(StoryPreview);

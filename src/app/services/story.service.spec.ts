@@ -100,7 +100,7 @@ describe('StoryService', () => {
     const stories = getStories();
     await waitForResource();
 
-    httpTesting.expectOne('/api/v1/story?status=published').flush({
+    httpTesting.expectOne('/api/v1/story').flush({
       success: true,
       message: 'ok',
       data: [
@@ -140,7 +140,7 @@ describe('StoryService', () => {
     const stories = getStories();
     await waitForResource();
 
-    httpTesting.expectOne('/api/v1/story?status=published').flush({
+    httpTesting.expectOne('/api/v1/story').flush({
       success: true,
       message: 'ok',
       data: [
@@ -164,7 +164,7 @@ describe('StoryService', () => {
     const stories = getStories();
     await waitForResource();
 
-    httpTesting.expectOne('/api/v1/story?status=published').flush({
+    httpTesting.expectOne('/api/v1/story').flush({
       success: true,
       message: 'ok',
       data: [],
@@ -179,7 +179,7 @@ describe('StoryService', () => {
     const stories = getStories();
     await waitForResource();
 
-    httpTesting.expectOne('/api/v1/story?status=published').flush({
+    httpTesting.expectOne('/api/v1/story').flush({
       success: true,
       message: 'ok',
       data: [],
