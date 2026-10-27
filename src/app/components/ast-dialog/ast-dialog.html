@@ -1,0 +1,14 @@
+<!-- appModal opens this as a popup, closed fires on esc or Close so the writer can remove it -->
+<dialog appModal #modal="appModal" class="ast-dialog" (closed)="closed.emit()">
+  <div class="ast-content">
+    <h2>Parser output (AST)</h2>
+    <p class="ast-hint">How the parser read the script, before it's turned into JSON.</p>
+
+    <!-- pre keeps the indentation of the formatted AST -->
+    <pre class="ast-output">{{ ast() }}</pre>
+
+    <div class="ast-actions">
+      <button type="button" class="primary-button" (click)="modal.close()">Close</button>
+    </div>
+  </div>
+</dialog>

@@ -105,6 +105,16 @@
 
         <!-- these buttons are grouped so they can sit together on the right -->
         <div class="toolbar-right">
+          <!-- parses the script and shows the parser's AST in a popup, see show_ast() in writer.ts -->
+          <button
+            type="button"
+            class="primary-button"
+            (click)="show_ast()"
+            title="Show how the parser read the script, before it's turned into JSON"
+          >
+            AST
+          </button>
+
           <!-- parses the script and plays it in the reader, see preview() in writer.ts -->
           <button type="button" class="primary-button" (click)="preview()">Preview</button>
 
@@ -130,6 +140,11 @@
         (saved)="previewService.metadata.set($event)"
         (closed)="metadataOpen.set(false)"
       />
+    }
+
+    <!-- the parser's AST, opened by the AST button -->
+    @if (astOutput(); as ast) {
+      <app-ast-dialog [ast]="ast" (closed)="astOutput.set(null)" />
     }
 
     <!-- TEMPORARY: popup for buttons that don't do anything yet -->

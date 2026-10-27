@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { PreviewService } from '../../services/preview.service';
 import { MetadataDialog } from '../../components/metadata-dialog/metadata-dialog';
 import { ComingSoonDialog } from '../../components/coming-soon-dialog/coming-soon-dialog';
+import { AstDialog } from '../../components/ast-dialog/ast-dialog';
 import Parser, { MAX_OPTIONS } from '../../../scripting_language/parser';
 import { toJSON } from '../../../scripting_language/to_json';
 import {
@@ -53,7 +54,7 @@ Sprint 1 was about getting the foundation planted.
 
 //setup for writer component
 @Component({
-  imports: [RouterLink, MetadataDialog, ComingSoonDialog],
+  imports: [RouterLink, MetadataDialog, ComingSoonDialog, AstDialog],
   selector: 'app-writer',
   styleUrl: './writer.css',
   templateUrl: './writer.html',
@@ -82,6 +83,9 @@ export class Writer {
 
   //the parser's error message when the script has a mistake in it, null when there isn't one
   protected previewError = signal<string | null>(null);
+
+  //the parser's AST as formatted text, shown in the AST popup. null when the popup is closed
+  protected astOutput = signal<string | null>(null);
 
   constructor() {
     //start render prep for the codemirror
@@ -185,6 +189,21 @@ export class Writer {
     view.focus(); //clicking the button took focus away from the editor, give it back
   }
 
+  //parse the script in the editor and show the AST the parser made, before it's turned into JSON
+  protected show_ast() {
+    const script = this.editorView?.state.doc.toString() ?? '';
+
+    //the parser throws an Error when the script has a mistake in it,
+    //so show that message to the writer instead of opening the popup
+    try {
+      const ast = new Parser().produceAST(script);
+      this.clear_parse_error();
+      this.astOutput.set(JSON.stringify(ast, null, 2)); //indented 2 spaces so it's readable
+    } catch (error) {
+      this.show_parse_error(error);
+    }
+  }
+
   //parse the script in the editor and open it in the reader to play through it
   protected preview() {
     const script = this.editorView?.state.doc.toString() ?? '';
@@ -201,16 +220,26 @@ export class Writer {
       });
       this.previewService.chapter.set({ title: json.title, lines: json.story.lines });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.previewError.set(message);
-      //colour the line the error is on, if the message says which line
-      this.editorView?.dispatch({ effects: set_error_line.of(line_from_error(message)) });
+      this.show_parse_error(error);
       return;
     }
 
-    this.previewError.set(null);
-    this.editorView?.dispatch({ effects: set_error_line.of(null) });
+    this.clear_parse_error();
     this.save_script();
     this.router.navigate(['/preview']);
+  }
+
+  //shows the parser's error message under the editor and colours the line it's on,
+  //if the message says which line
+  private show_parse_error(error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    this.previewError.set(message);
+    this.editorView?.dispatch({ effects: set_error_line.of(line_from_error(message)) });
+  }
+
+  //hides the error message and the line colouring once the script parses again
+  private clear_parse_error() {
+    this.previewError.set(null);
+    this.editorView?.dispatch({ effects: set_error_line.of(null) });
   }
 }
