@@ -3,6 +3,7 @@ import { ApplicationRef, Injector, runInInjectionContext } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { StoryService } from './story.service';
+import { ChapterNotFoundError } from '../../models/errors';
 
 describe('StoryService', () => {
   let service: StoryService;
@@ -133,7 +134,7 @@ describe('StoryService', () => {
     await waitForResource();
     await answerChapterList(); // only two chapters, so there is no chapter 6 to request
 
-    expect(chapter.error()).toBeTruthy();
+    expect(chapter.error()).toBeInstanceOf(ChapterNotFoundError);
   });
 
   it('should have an error if the request fails', async () => {
@@ -146,6 +147,7 @@ describe('StoryService', () => {
     await waitForResource();
 
     expect(chapter.error()).toBeTruthy();
+    expect(chapter.error()).not.toBeInstanceOf(ChapterNotFoundError);
   });
 
   function getStories() {

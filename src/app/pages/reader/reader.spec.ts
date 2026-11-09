@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { Reader } from './reader';
 import { StoryService } from '../../services/story.service';
 import { Chapter } from '../../../models/chapter';
+import { ChapterNotFoundError } from '../../../models/errors';
 
 // fake chapter used by most of the tests
 // line 2 is a choice: "Open the door" goes to line 3, "Hide under the table" goes to line 6
@@ -97,6 +98,14 @@ describe('Reader', () => {
       await createReader(() => Promise.reject(new Error('could not load')));
       await fixture.whenStable();
       expect(compiled.textContent).toContain('Sorry, this chapter could not be retrieved.');
+    });
+
+    // testing Chapter error
+    it('should say the story has no chapters if the chapter is missing', async () => {
+      await createReader(() => Promise.reject(new ChapterNotFoundError('s1', 0)));
+      await fixture.whenStable();
+      expect(compiled.textContent).toContain("This story doesn't have any chapters yet.");
+      expect(compiled.textContent).not.toContain('Sorry, this chapter could not be retrieved.');
     });
   });
 

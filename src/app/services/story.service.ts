@@ -10,6 +10,7 @@ import {
 } from '../../models/api';
 import { StoryDetails } from '../../models/story-details';
 import { Chapter } from '../../models/chapter';
+import { ChapterNotFoundError } from '../../models/errors';
 
 @Injectable({ providedIn: 'root' }) // global singleton
 export class StoryService {
@@ -75,7 +76,7 @@ export class StoryService {
         const chapters = listResponse.data;
         const summary = chapters[params.chapterIndex];
         if (!summary) {
-          throw new Error('This story has no chapter at that position'); // reader shows its sorry message
+          throw new ChapterNotFoundError(params.storyId, params.chapterIndex); // reader shows its no chapters message
         }
 
         // then get that one chapter by its id, which contains that chapter's content

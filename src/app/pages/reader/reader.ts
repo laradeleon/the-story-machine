@@ -2,6 +2,7 @@ import { Component, computed, signal, inject } from '@angular/core';
 
 import { ChoiceOption, Line } from '../../../models/story';
 import { StoryService } from '../../services/story.service';
+import { ChapterNotFoundError } from '../../../models/errors';
 
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
@@ -62,6 +63,9 @@ export class Reader {
     () => this.storyId,
     () => this.chapterIndex(),
   );
+
+  // true when the story exists but has no chapter at a given index
+  protected chapterMissing = computed(() => this.chapter.error() instanceof ChapterNotFoundError);
 
   // the line being shown, if null then user is on title page of chapter (before line 0)
   private lineId = signal<number | null>(null); // a signal

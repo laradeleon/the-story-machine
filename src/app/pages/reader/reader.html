@@ -1,6 +1,9 @@
 <!-- if chapter is still loading in, show message -->
 @if (chapter.isLoading()) {
   <p>Loading in chapter.....</p>
+} @else if (chapterMissing()) {
+  <!-- the story exists but doesnt have any chapters-->
+  <p>This story doesn't have any chapters yet.</p>
 } @else if (chapter.error()) {
   <p>Sorry, this chapter could not be retrieved.</p>
 } @else {
