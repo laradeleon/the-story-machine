@@ -60,7 +60,7 @@ describe('Reader', () => {
         provideRouter([]), // needed for the back to stories link on the end page
         {
           provide: StoryService,
-          useValue: { getFirstChapter: () => resource({ loader: loadChapter }) },
+          useValue: { getChapter: () => resource({ loader: loadChapter }) },
         },
       ],
     }).compileComponents();
@@ -241,6 +241,23 @@ describe('Reader', () => {
       await clickPage(); // line 0
       await clickPage(); // past the last line
       expect(compiled.textContent).toContain('The End.');
+    });
+
+    it('should show a next chapter button instead of the end if there is another chapter', async () => {
+      await createReader(async () => ({
+        title: 'Chapter 1',
+        lines: [{ line_id: 0, end: true }],
+        hasNextChapter: true,
+      }));
+      await fixture.whenStable();
+      await clickPage(); // line 0 is the end
+
+      expect(compiled.textContent).toContain('End of chapter.');
+      expect(compiled.textContent).not.toContain('The End.');
+      const nextButton = Array.from(compiled.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Next Chapter'),
+      );
+      expect(nextButton).toBeTruthy();
     });
 
     it('should show the end page if the chapter has no lines', async () => {

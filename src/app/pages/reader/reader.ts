@@ -3,7 +3,7 @@ import { Component, computed, signal, inject } from '@angular/core';
 import { ChoiceOption, Line } from '../../../models/story';
 import { StoryService } from '../../services/story.service';
 
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 // the words to display for prose or a dialogue line for dialogue box
 interface LineText {
@@ -52,7 +52,16 @@ function toLineText(line: Line | undefined): LineText | null {
  *
  */
 export class Reader {
-  protected chapter = inject(StoryService).getFirstChapter();
+  // the story id from the url /read/storyId
+  private storyId = inject(ActivatedRoute).snapshot.paramMap.get('storyId') ?? '';
+
+  // which chapter is being read, 0 is the first chapter
+  private chapterIndex = signal(0); // when this changes, the chapter below reloads
+
+  protected chapter = inject(StoryService).getChapter(
+    () => this.storyId,
+    () => this.chapterIndex(),
+  );
 
   // the line being shown, if null then user is on title page of chapter (before line 0)
   private lineId = signal<number | null>(null); // a signal
@@ -107,6 +116,12 @@ export class Reader {
     } else {
       this.goTo(lineId + 1);
     }
+  }
+
+  // on the end page of a chapter, move on to the next chapter and start from that chapter's title page
+  protected nextChapter() {
+    this.chapterIndex.update((index) => index + 1);
+    this.lineId.set(null);
   }
 
   // called by nextLine() when page is clicked and moves to specified line , and also by the choice buttons

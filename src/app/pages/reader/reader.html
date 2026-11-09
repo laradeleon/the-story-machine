@@ -61,7 +61,15 @@
   <!-- end of the chapter -->
   @if (currentChapter.kind === 'end') {
     <div class="reader-page centered-page">
-      <p class="chapter-title">The End.</p>
+      <!-- if there's still more chapters, go to the next one-->
+      @if (chapter.value()?.hasNextChapter) {
+        <p class="chapter-title">End of chapter.</p>
+        <button type="button" class="primary-button" (click)="nextChapter()">Next Chapter</button>
+      }
+      <!-- otherwise, reached the end of the book -->
+      @else {
+        <p class="chapter-title">The End.</p>
+      }
       <a class="primary-button" routerLink="/">Back to stories</a>
     </div>
   }

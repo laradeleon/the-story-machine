@@ -1,13 +1,15 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, resource } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { APIResponse, StoryResponse, UserResponse, ChapterResponse } from '../../models/api';
+import {
+  APIResponse,
+  StoryResponse,
+  UserResponse,
+  ChapterResponse,
+  ChapterSummaryResponse,
+} from '../../models/api';
 import { StoryDetails } from '../../models/story-details';
 import { Chapter } from '../../models/chapter';
-
-// the mock chapter file the reader loads until getFirstChapter uses the real api
-// exported so the tests answer the same url. delete it when switching, then any test still using it won't compile
-export const MOCK_CHAPTER_URL = 'mock/chapter.json'; //todo: replace with the real chapter endpoints
 
 @Injectable({ providedIn: 'root' }) // global singleton
 export class StoryService {
@@ -25,7 +27,9 @@ export class StoryService {
       loader: async () => {
         //get all the stories that have been published already
         const storiesResponse = await firstValueFrom(
-          this.http.get<APIResponse<StoryResponse[]>>(this.storiesURL),
+          this.http.get<APIResponse<StoryResponse[]>>(this.storiesURL, {
+            params: { status: 'published' }, // only published stories are displayed on home page
+          }),
         );
         const stories = storiesResponse.data;
 
@@ -55,15 +59,36 @@ export class StoryService {
     });
   }
 
-  getFirstChapter() {
-    // gets the chapter title and the list of lines in that chapter (all the text content)
+  // gets one chapter of a story, which includes the chapter title and the lines of content
+  // 0 is the first chapter
+  getChapter(storyId: () => string, chapterIndex: () => number) {
     return resource({
-      loader: async (): Promise<Chapter> => {
-        const response = await firstValueFrom(
-          this.http.get<APIResponse<ChapterResponse>>(MOCK_CHAPTER_URL),
+      params: () => ({ storyId: storyId(), chapterIndex: chapterIndex() }), // id and index are functions, so resourec is reloased whenever user goes to next chapter
+
+      loader: async ({ params }): Promise<Chapter> => {
+        const chaptersURL = `${this.storiesURL}/${params.storyId}/chapter`;
+
+        // the list of chapters comes back in reading order, but without their lines
+        const listResponse = await firstValueFrom(
+          this.http.get<APIResponse<ChapterSummaryResponse[]>>(chaptersURL),
         );
-        const chapter = response.data;
-        return { title: chapter.title, lines: chapter.contents?.story.lines ?? [] }; // a valid chapter with no contents will display nothing
+        const chapters = listResponse.data;
+        const summary = chapters[params.chapterIndex];
+        if (!summary) {
+          throw new Error('This story has no chapter at that position'); // reader shows its sorry message
+        }
+
+        // then get that one chapter by its id, which contains that chapter's content
+        const chapterResponse = await firstValueFrom(
+          this.http.get<APIResponse<ChapterResponse>>(`${chaptersURL}/${summary.chapter_id}`),
+        );
+        const chapter = chapterResponse.data;
+
+        return {
+          title: chapter.chapter_name,
+          lines: chapter.story?.lines ?? [], // a chapter with no script saved yet will display nothing
+          hasNextChapter: params.chapterIndex < chapters.length - 1,
+        };
       },
     });
   }
