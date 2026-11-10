@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ApplicationRef, Injector, runInInjectionContext } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { StoryService } from './story.service';
+import { MOCK_CHAPTER_URL, StoryService } from './story.service';
 
 describe('StoryService', () => {
   let service: StoryService;
@@ -41,7 +41,7 @@ describe('StoryService', () => {
     const chapter = getFirstChapter();
     await waitForResource();
 
-    const request = httpTesting.expectOne('mock/chapter.json');
+    const request = httpTesting.expectOne(MOCK_CHAPTER_URL);
     request.flush({
       success: true,
       message: 'Chapter fetched',
@@ -70,7 +70,7 @@ describe('StoryService', () => {
     const chapter = getFirstChapter();
     await waitForResource();
 
-    const request = httpTesting.expectOne('mock/chapter.json');
+    const request = httpTesting.expectOne(MOCK_CHAPTER_URL);
     request.flush({
       success: true,
       message: 'Chapter fetched',
@@ -85,7 +85,7 @@ describe('StoryService', () => {
     const chapter = getFirstChapter();
     await waitForResource();
 
-    const request = httpTesting.expectOne('mock/chapter.json');
+    const request = httpTesting.expectOne(MOCK_CHAPTER_URL);
     request.flush('Not found', { status: 404, statusText: 'Not Found' });
     await waitForResource();
 
