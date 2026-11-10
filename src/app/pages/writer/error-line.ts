@@ -75,11 +75,24 @@ function line_start(doc: Text, line_number: number): number {
   return doc.line(line).from;
 }
 
-// add this to the editor's extensions to turn the error highlight on
-export const error_line_highlight = error_line_field;
-
 // whether a line is still highlighted. it gets cleared when the writer edits that line,
-// so the writer page uses this to know when to hide the error message too
-export function has_error_line(state: EditorState): boolean {
+// so the listener below uses this to know when to hide the error message too
+function has_error_line(state: EditorState): boolean {
   return state.field(error_line_field, false) != null;
+}
+
+// add this to the editor's extensions to turn the error highlight on.
+// on_cleared is called when an edit removes the highlight (the writer changed the line with the
+// mistake), so the page can hide the error message too
+export function error_line_extension(on_cleared: () => void) {
+  return [
+    error_line_field,
+    EditorView.updateListener.of((update) => {
+      // hide the error message once its line has been edited, since it's out of date.
+      // (edits to other lines keep it, unless the error didn't say which line it was on)
+      if (update.docChanged && !has_error_line(update.state)) {
+        on_cleared();
+      }
+    }),
+  ];
 }
