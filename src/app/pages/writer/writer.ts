@@ -1,29 +1,34 @@
-import { afterNextRender, Component, DestroyRef, inject, signal } from '@angular/core';
+import {
+  afterNextRender,
+  Component,
+  DestroyRef,
+  ElementRef,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { PreviewService } from '../../services/preview.service';
+import { DraftService } from '../../services/draft.service';
 import { MetadataDialog } from '../../components/metadata-dialog/metadata-dialog';
 import { ComingSoonDialog } from '../../components/coming-soon-dialog/coming-soon-dialog';
 import { AstDialog } from '../../components/ast-dialog/ast-dialog';
 import Parser, { MAX_OPTIONS } from '../../../scripting_language/parser';
-import { toJSON } from '../../../scripting_language/to_json';
-import {
-  error_line_highlight,
-  has_error_line,
-  line_from_error,
-  set_error_line,
-} from './error-line';
-import { basicSetup } from 'codemirror';
+import { StoryNode } from '../../../scripting_language/ast';
+import { line_from_error, set_error_line } from './error-line';
+import { create_editor } from './editor-setup';
+import { choice_snippet, insert_on_own_line, SNIPPETS } from './editor-commands';
 import { EditorView } from '@codemirror/view';
 
 const exampleStory = `Welcome to The Story Machine.
 
-This is a platform for writing, reading and sharing interactive fiction. 
+This is a platform for writing, reading and sharing interactive fiction.
 
 You can just have text show up by just writing it on its own like so
 
 Hello, world.
 
-Dialogue is shown with quotes and by specifying the character before 
+Dialogue is shown with quotes and by specifying the character before
 
 For example
 Arthur: “Good morning Lauren, welcome to Interactive fiction!”
@@ -31,7 +36,7 @@ Paul: "We worked very hard on this, Adejare and I got zero sleep!”
 Adejare looks at you with sleepless eyes.
 Krupal: “Wake up dude..”
 
-You can define flags, these are points in the story we can jump to 
+You can define flags, these are points in the story we can jump to
 
 # [a flag]
 
@@ -39,7 +44,7 @@ You can users make a choice like so
 
 Choice:
 [what goes in the text box] -> [a flag]
-move on -> continue 
+move on -> continue
 
 # continue
 
@@ -64,12 +69,16 @@ Sprint 1 was about getting the foundation planted.
   },
 })
 export class Writer {
-  //init an editorview
+  //the CodeMirror editor, made once the page has rendered
   editorView?: EditorView;
 
-  protected previewService = inject(PreviewService); //protected so the template can use the metadata in it
+  private previewService = inject(PreviewService); //plays the script in the reader when Preview is pressed
+  protected draft = inject(DraftService); //protected so the template can use the metadata in it
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
+
+  //the div in the .html the editor goes in
+  private editorHost = viewChild.required<ElementRef<HTMLElement>>('editor');
 
   //whether the metadata popup is showing
   protected metadataOpen = signal(false);
@@ -88,36 +97,15 @@ export class Writer {
   protected astOutput = signal<string | null>(null);
 
   constructor() {
-    //start render prep for the codemirror
+    //the editor div only exists once the page has rendered
     afterNextRender(() => {
-      //get the div where the codemirror will live
-      const targetElement = document.getElementById('mainwriting');
-
-      //if the div exists, make a new CodeMirror EditorView
-      if (targetElement) {
-        this.editorView = new EditorView({
-          //the default text in the editor, replace with chapter text when editing a chapter
-          //coming back to the writer puts the script back how it was left, otherwise start with the example
-          doc: this.previewService.script() ?? exampleStory,
-          extensions: [
-            //some basic extensions for the codemirror
-            basicSetup,
-            //colouring the line a preview error is on
-            error_line_highlight,
-            EditorView.updateListener.of((update) => {
-              if (update.docChanged) {
-                //hide the error message once its line has been edited, since it's out of date.
-                //(edits to other lines keep it, unless the error didn't say which line it was on)
-                if (!has_error_line(update.state)) {
-                  this.previewError.set(null);
-                }
-              }
-            }),
-          ],
-          //the target in the .html
-          parent: targetElement,
-        });
-      }
+      this.editorView = create_editor(
+        this.editorHost().nativeElement,
+        //coming back to the writer puts the script back how it was left, otherwise start with the example
+        //replace with chapter text when editing a chapter
+        this.draft.script() ?? exampleStory,
+        () => this.previewError.set(null),
+      );
     });
 
     //runs when the writer page closes, however the writer leaves (Back, Preview, browser back...)
@@ -130,103 +118,86 @@ export class Writer {
     });
   }
 
-  //saves the editor's text to the preview service and localStorage.
+  //the text in the editor, empty if the editor hasn't been made yet
+  private current_script(): string {
+    return this.editorView?.state.doc.toString() ?? '';
+  }
+
+  //saves the editor's text to the draft service and localStorage.
   //only done when leaving the page, refreshing/closing it or pressing Preview, not on every
   //keystroke, so typing doesn't slow down as the story gets longer
   protected save_script() {
     if (this.editorView) {
-      this.previewService.save_script_now(this.editorView.state.doc.toString());
+      this.draft.save_script_now(this.current_script());
     }
   }
 
   //adds a flag where the cursor is in the editor, with a placeholder for the writer to replace
   protected insert_flag() {
-    this.insert_on_own_line('# [put your flag name here]');
+    this.insert(SNIPPETS.flag);
   }
 
   //adds a goto (jumps to a flag) where the cursor is in the editor
   protected insert_goto() {
-    this.insert_on_own_line('-> [flag name]');
+    this.insert(SNIPPETS.goto);
   }
 
   //adds an end (the story finishes here) where the cursor is in the editor
   protected insert_end() {
-    this.insert_on_own_line('END');
+    this.insert(SNIPPETS.end);
   }
 
   //adds a choice with this many options where the cursor is in the editor
   protected insert_choice(count: number) {
-    const options = Array.from(
-      { length: count },
-      (_, i) => `[option ${i + 1} text] -> [flag name]`,
-    );
-    this.insert_on_own_line(['Choice:', ...options].join('\n'));
+    this.insert(choice_snippet(count));
   }
 
-  //puts text where the cursor is (replacing any selected text) and moves the cursor to the end of it.
-  //flags and choices have to be on their own lines, so line breaks are added if there's text
-  //before or after the cursor on the same line
-  private insert_on_own_line(text: string) {
-    const view = this.editorView;
-    if (!view) {
-      return;
+  //puts text on its own line where the cursor is, see editor-commands.ts
+  private insert(text: string) {
+    if (this.editorView) {
+      insert_on_own_line(this.editorView, text);
     }
-
-    const { from, to } = view.state.selection.main; //the cursor, or the selected text if there is some
-    const startLine = view.state.doc.lineAt(from);
-    const endLine = view.state.doc.lineAt(to);
-
-    const textBefore = startLine.text.slice(0, from - startLine.from);
-    const textAfter = endLine.text.slice(to - endLine.from);
-    const before = textBefore.trim() !== '' ? '\n' : '';
-    const after = textAfter.trim() !== '' ? '\n' : '';
-
-    view.dispatch({
-      changes: { from, to, insert: `${before}${text}${after}` },
-      selection: { anchor: from + before.length + text.length }, //just after the inserted text
-      scrollIntoView: true,
-    });
-    view.focus(); //clicking the button took focus away from the editor, give it back
   }
 
   //parse the script in the editor and show the AST the parser made, before it's turned into JSON
   protected show_ast() {
-    const script = this.editorView?.state.doc.toString() ?? '';
-
-    //the parser throws an Error when the script has a mistake in it,
-    //so show that message to the writer instead of opening the popup
-    try {
-      const ast = new Parser().produceAST(script);
-      this.clear_parse_error();
+    const ast = this.parse_script();
+    if (ast) {
       this.astOutput.set(JSON.stringify(ast, null, 2)); //indented 2 spaces so it's readable
-    } catch (error) {
-      this.show_parse_error(error);
     }
   }
 
   //parse the script in the editor and open it in the reader to play through it
   protected preview() {
-    const script = this.editorView?.state.doc.toString() ?? '';
+    const ast = this.parse_script();
+    if (!ast) {
+      return;
+    }
 
-    //the parser and toJSON throw an Error when the script has a mistake in it,
-    //so show that message to the writer instead of opening the reader
+    //toJSON also throws when the script has a mistake, e.g. a goto to a flag that doesn't exist
     try {
-      const ast = new Parser().produceAST(script);
-      //the title from the metadata popup, author and id are temporary until stories are saved
-      const json = toJSON(ast, {
-        title: this.previewService.metadata().title || 'Untitled Story',
-        author: 'Unknown author',
-        story_id: 'preview', //not saved yet, so it has no real id
-      });
-      this.previewService.chapter.set({ title: json.title, lines: json.story.lines });
+      this.previewService.build_preview(ast);
     } catch (error) {
       this.show_parse_error(error);
       return;
     }
 
-    this.clear_parse_error();
     this.save_script();
     this.router.navigate(['/preview']);
+  }
+
+  //runs the parser on the script in the editor.
+  //the parser throws an Error when the script has a mistake in it, so that message is shown
+  //to the writer and null is given back. otherwise any old error is cleared
+  private parse_script(): StoryNode | null {
+    try {
+      const ast = new Parser().produceAST(this.current_script());
+      this.clear_parse_error();
+      return ast;
+    } catch (error) {
+      this.show_parse_error(error);
+      return null;
+    }
   }
 
   //shows the parser's error message under the editor and colours the line it's on,

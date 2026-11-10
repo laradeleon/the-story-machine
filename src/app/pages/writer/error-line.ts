@@ -6,15 +6,18 @@ import { Decoration, EditorView, GutterMarker, gutterLineClass } from '@codemirr
 // sent to the editor with dispatch() to say which line has the error, or null to clear it
 export const set_error_line = StateEffect.define<number | null>();
 
+// TODO:
+// Make the parser errors share their own class which holds an array of values, rather then grabbing a specific line,
+// we return the array and parse over it for highlights to mark them
+
 // pulls the line number out of a parser error, e.g. "Missing name for flag at line 12"
 // or "Flag does not exist for goto on line: 7", null if the message doesn't have one.
-// convention: the LAST "line N" in an error message is the line number, so the writer's own
-// text quoted earlier in the message (e.g. "Unexpected token 'wait in line 2' at line 40")
-// can't be mistaken for it
+// convention: the FIRST "line N" in an error message is the line number. the parser puts the
+// line number first and any of the writer's own text after it
+// (e.g. "... at line 40\nNo destination provided for choice option: 'go to line 2'")
 export function line_from_error(message: string): number | null {
-  const matches = [...message.matchAll(/\bline:?\s*(\d+)/gi)];
-  const last = matches.at(-1);
-  return last ? Number(last[1]) : null;
+  const match = message.match(/\bline:?\s*(\d+)/i);
+  return match ? Number(match[1]) : null;
 }
 
 // the css classes that get added, styled in writer.css
