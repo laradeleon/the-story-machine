@@ -82,7 +82,8 @@ export function error_line_extension(on_cleared: () => void) {
     EditorView.updateListener.of((update) => {
       // hide the error message once its line has been edited, since it's out of date.
       // (edits to other lines keep it, unless the error didn't say which line it was on)
-      if (update.docChanged && !has_error_line(update.state)) {
+      // only when this edit is the one that removed the highlight, not on every edit after that
+      if (update.docChanged && has_error_line(update.startState) && !has_error_line(update.state)) {
         on_cleared();
       }
     }),
