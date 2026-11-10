@@ -1,23 +1,16 @@
 // a CodeMirror extension that colours the line the parser found a mistake on,
-// both the line itself and its number in the gutter
 import { EditorState, RangeSet, StateEffect, StateField, Text } from '@codemirror/state';
 import { Decoration, EditorView, GutterMarker, gutterLineClass } from '@codemirror/view';
+import { ErrorMessageManager } from '../../../scripting_language/error_message_manager';
 
 // sent to the editor with dispatch() to say which line has the error, or null to clear it
 export const set_error_line = StateEffect.define<number | null>();
 
-// TODO:
-// Make the parser errors share their own class which holds an array of values, rather then grabbing a specific line,
-// we return the array and parse over it for highlights to mark them
-
-// pulls the line number out of a parser error, e.g. "Missing name for flag at line 12"
-// or "Flag does not exist for goto on line: 7", null if the message doesn't have one.
-// convention: the FIRST "line N" in an error message is the line number. the parser puts the
-// line number first and any of the writer's own text after it
-// (e.g. "... at line 40\nNo destination provided for choice option: 'go to line 2'")
-export function line_from_error(message: string): number | null {
-  const match = message.match(/\bline:?\s*(\d+)/i);
-  return match ? Number(match[1]) : null;
+// the line number of a parser error, read from the ScriptError instead of the message text.
+// null for any other error
+const errors = new ErrorMessageManager();
+export function line_from_error(error: unknown): number | null {
+  return errors.line_of(error);
 }
 
 // the css classes that get added, styled in writer.css
@@ -81,7 +74,6 @@ function has_error_line(state: EditorState): boolean {
   return state.field(error_line_field, false) != null;
 }
 
-// add this to the editor's extensions to turn the error highlight on.
 // on_cleared is called when an edit removes the highlight (the writer changed the line with the
 // mistake), so the page can hide the error message too
 export function error_line_extension(on_cleared: () => void) {

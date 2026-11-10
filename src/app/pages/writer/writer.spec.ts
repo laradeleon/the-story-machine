@@ -3,6 +3,9 @@ import { Router, provideRouter } from '@angular/router';
 import { By } from '@angular/platform-browser';
 import { PreviewService } from '../../services/preview.service';
 import { Writer } from './writer';
+import { ErrorKind, ErrorMessageManager } from '../../../scripting_language/error_message_manager';
+
+const errors = new ErrorMessageManager();
 
 describe('Writer', () => {
   let component: Writer;
@@ -105,7 +108,7 @@ describe('Writer', () => {
 
     expect(navigate).not.toHaveBeenCalled();
     expect(fixture.nativeElement.querySelector('.preview-error').textContent).toContain(
-      'Flag does not exist',
+      errors.format_error(ErrorKind.FlagDoesNotExist, 2).message,
     );
   });
 
@@ -150,7 +153,7 @@ describe('Writer', () => {
 
     expect(fixture.nativeElement.querySelector('.ast-output')).toBeNull();
     expect(fixture.nativeElement.querySelector('.preview-error').textContent).toContain(
-      'Missing name for flag',
+      errors.format_error(ErrorKind.MissingFlagName, 1).message,
     );
   });
 });
