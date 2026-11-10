@@ -55,6 +55,11 @@
   margin-bottom: 24px;
 }
 
+.section-actions {
+  display: flex;
+  gap: 16px;
+}
+
 .section-heading {
   margin: 0;
   font-family: 'Source Serif 4', Georgia, serif;

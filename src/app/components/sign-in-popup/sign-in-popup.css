@@ -1,0 +1,58 @@
+/* same look as the story preview popup */
+.sign-in-popup {
+  width: min(90vw, 420px);
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+/* blur the landing page behind the popup */
+.sign-in-popup::backdrop {
+  background: rgba(5, 5, 15, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.popup-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 32px;
+}
+
+.popup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.close-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.close-button:hover {
+  color: var(--color-text);
+}
+
+.signed-in-as {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.signed-in-as strong {
+  color: var(--color-text);
+}
+
+.username {
+  margin-left: 6px;
+}

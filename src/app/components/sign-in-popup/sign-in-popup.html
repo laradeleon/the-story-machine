@@ -1,0 +1,62 @@
+<!-- the linter requires every click to have a keyboard equivalent, but keyboard users can already do that with esc so the check is skipped for that line -->
+<!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+<dialog
+  #dialog
+  class="sign-in-popup"
+  aria-labelledby="sign-in-title"
+  (close)="closed.emit()"
+  (mousedown)="rememberPressStarted($event)"
+  (click)="closeOnBackdropClick($event)"
+>
+  <div class="popup-content">
+    <button type="button" class="close-button" aria-label="Close" (click)="close()">x</button>
+
+    @if (auth.currentUser(); as user) {
+      <!-- already signed in -->
+      <h2 id="sign-in-title" class="auth-title">Your account</h2>
+      <p class="signed-in-as">
+        Signed in as <strong>{{ user.displayName }}</strong>
+        <!-- display name is the username unless they changed it, so only show both when they're different -->
+        @if (user.displayName !== user.username) {
+          <span class="username">&#64;{{ user.username }}</span>
+        }
+      </p>
+      <button type="button" class="primary-button auth-submit" (click)="signOut()">Sign out</button>
+    } @else {
+      <!-- signed out, so show the sign in form -->
+      <h2 id="sign-in-title" class="auth-title">Sign in</h2>
+
+      <form class="popup-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <!-- error from the backend, like wrong details -->
+        @if (errorMessage(); as message) {
+          <p class="form-error" role="alert">{{ message }}</p>
+        }
+
+        <label class="field">
+          <span class="field-label">Email or username</span>
+          <input type="text" formControlName="identifier" autocomplete="username" />
+          @if (form.controls.identifier.touched && form.controls.identifier.hasError('required')) {
+            <span class="field-error">Enter your email or username.</span>
+          }
+        </label>
+
+        <label class="field">
+          <span class="field-label">Password</span>
+          <input type="password" formControlName="password" autocomplete="current-password" />
+          @if (form.controls.password.touched && form.controls.password.hasError('required')) {
+            <span class="field-error">Enter your password.</span>
+          }
+        </label>
+
+        <button type="submit" class="primary-button auth-submit" [disabled]="submitting()">
+          {{ submitting() ? 'Signing in...' : 'Sign in' }}
+        </button>
+      </form>
+
+      <p class="auth-switch">
+        New here?
+        <a routerLink="/register" (click)="close()">Create an account</a>
+      </p>
+    }
+  </div>
+</dialog>
