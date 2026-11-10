@@ -11,7 +11,13 @@
 
     <label class="metadata-field">
       Title
-      <input #titleInput type="text" [value]="metadata().title" placeholder="Untitled Story" />
+      <input
+        #titleInput
+        id="metadata-title"
+        type="text"
+        [value]="metadata().title"
+        placeholder="Untitled Story"
+      />
     </label>
 
     <label class="metadata-field">
