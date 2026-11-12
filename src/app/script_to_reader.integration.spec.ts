@@ -71,7 +71,7 @@ describe('script -> reader (integration)', () => {
         //the reader reads the story id from the url, so pretend we're on /read/story-1
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { paramMap: convertToParamMap({ storyId: 'story-1' }) } },
+          useValue: { snapshot: { paramMap: convertToParamMap({ storyId: 'story-1' }), data: {} } },
         },
       ],
     }).compileComponents();
