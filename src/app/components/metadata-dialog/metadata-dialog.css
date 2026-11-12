@@ -1,0 +1,74 @@
+/* the border, shadow and blurred background come from dialog[appModal] in styles.css */
+.metadata-dialog {
+  --dialog-width: 480px;
+}
+
+.metadata-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 32px;
+}
+
+.metadata-content h2 {
+  font-size: 1.75rem;
+}
+
+/* a label with its box underneath */
+.metadata-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.metadata-field input,
+.metadata-field textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 400;
+}
+
+.metadata-field textarea {
+  resize: vertical; /* only taller or shorter, not wider than the popup */
+}
+
+.metadata-field input:focus,
+.metadata-field textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.metadata-hint {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+/* cancel and save on the right at the bottom */
+.metadata-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* outlined button, same as Edit Story in the story preview */
+.cancel-button {
+  padding: 10px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cancel-button:hover {
+  background: rgba(255, 255, 255, 0.06);
+}

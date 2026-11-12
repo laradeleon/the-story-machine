@@ -1,8 +1,9 @@
 import { Component, computed, signal, inject } from '@angular/core';
 
 import { ChoiceOption, Line } from '../../../models/story';
+import { Chapter } from '../../../models/chapter';
 import { StoryService } from '../../services/story.service';
-import { ChapterNotFoundError } from '../../../models/errors';
+import { PreviewService } from '../../services/preview.service';
 
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
@@ -53,19 +54,27 @@ function toLineText(line: Line | undefined): LineText | null {
  *
  */
 export class Reader {
-  // the story id from the url /read/storyId
-  private storyId = inject(ActivatedRoute).snapshot.paramMap.get('storyId') ?? '';
+  // true when opened by the writer's Preview button (the /preview route)
+  protected isPreview = inject(ActivatedRoute).snapshot.data['preview'] === true;
 
-  // which chapter is being read, 0 is the first chapter
-  private chapterIndex = signal(0); // when this changes, the chapter below reloads
+  // a saved story is loaded from the story service (not used when previewing)
+  private storyChapter = this.isPreview ? null : inject(StoryService).getFirstChapter();
+  // a preview plays the writer's parsed script, which is already in memory
+  private previewChapter = inject(PreviewService).chapter;
 
-  protected chapter = inject(StoryService).getChapter(
-    () => this.storyId,
-    () => this.chapterIndex(),
+  // the chapter being read, undefined while a saved story is still loading
+  protected chapter = computed((): Chapter | null | undefined =>
+    this.isPreview ? this.previewChapter() : this.storyChapter?.value(),
   );
 
-  // true when the story exists but has no chapter at a given index
-  protected chapterMissing = computed(() => this.chapter.error() instanceof ChapterNotFoundError);
+  // only a saved story has to load, a preview is ready straight away
+  protected isLoading = computed(() => this.storyChapter?.isLoading() ?? false);
+
+  // a saved story failed to load, or there was nothing to preview
+  // (e.g. /preview opened without ever pressing Preview)
+  protected hasError = computed(() =>
+    this.isPreview ? this.previewChapter() === null : this.storyChapter?.error() !== undefined,
+  );
 
   // the line being shown, if null then user is on title page of chapter (before line 0)
   private lineId = signal<number | null>(null); // a signal
@@ -73,7 +82,7 @@ export class Reader {
   // determines the type of content (prose, dialogue....)the page should currently display based on the current line id contents
   // reruns by itself whenever a signal it reads changes (when lineId changes)
   protected page = computed((): ReaderPage => {
-    const chapter = this.chapter.value(); // loaded in title and lines
+    const chapter = this.chapter(); // loaded in title and lines
 
     if (!chapter) {
       return { kind: 'end' };
@@ -130,7 +139,7 @@ export class Reader {
 
   // called by nextLine() when page is clicked and moves to specified line , and also by the choice buttons
   protected goTo(lineId: number) {
-    const lines = this.chapter.value()?.lines ?? []; // if the chapter isn't loaded there are no lines to look at
+    const lines = this.chapter()?.lines ?? []; // if the chapter isn't loaded there are no lines to look at
 
     // most lines will get shown straight away except for a goto line, which just jumps to where it points
     // in cases where a goto line points to another goto line, just keep jumping till we land on a line that we actually do display (prose or dialogue....)
@@ -153,7 +162,7 @@ export class Reader {
   // 1 2 3 4 on keyboard selects that option
   protected onKeydown(event: KeyboardEvent) {
     // only count first press and not if the user holds the key down as it skips through everything otherwise
-    if (event.repeat || this.chapter.error()) {
+    if (event.repeat || this.hasError()) {
       return;
     }
     const page = this.page();

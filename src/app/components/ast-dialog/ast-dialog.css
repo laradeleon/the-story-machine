@@ -1,0 +1,41 @@
+/* the border, shadow and blurred background come from dialog[appModal] in styles.css,
+   wider than the other popups to fit the AST */
+.ast-dialog {
+  --dialog-width: 760px;
+}
+
+.ast-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 32px;
+}
+
+.ast-content h2 {
+  font-size: 1.75rem;
+}
+
+.ast-hint {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* the AST itself, in a code font, scrolling inside the popup when it's long */
+.ast-output {
+  margin: 0;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  font-family: ui-monospace, Consolas, 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Close on the right at the bottom */
+.ast-actions {
+  display: flex;
+  justify-content: flex-end;
+}
