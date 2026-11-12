@@ -1,26 +1,4 @@
-/* shared by the sign in and register pages */
-
-.auth-page {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  padding: 24px;
-  box-sizing: border-box;
-}
-
-.auth-card {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-  max-width: 400px;
-  padding: 32px;
-  box-sizing: border-box;
-  border: 1px solid var(--color-border);
-  border-radius: 1rem;
-  background: var(--color-surface-raised);
-}
+/* form styles for the sign in and create account forms */
 
 .auth-title {
   margin: 0 0 8px;
@@ -53,11 +31,6 @@
   outline-offset: 1px;
 }
 
-.field-hint {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-}
-
 /* red message under a field */
 .field-error {
   font-size: 0.85rem;
@@ -74,24 +47,6 @@
   color: #ff8a80;
 }
 
-.password-rules {
-  margin: -6px 0 0;
-  padding: 0;
-  list-style: none;
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-}
-
-.password-rules li {
-  display: flex;
-  gap: 8px;
-}
-
-/* green once the password meets that rule */
-.password-rules .rule-met {
-  color: #8bd49b;
-}
-
 .auth-submit {
   margin-top: 8px;
 }
@@ -101,6 +56,27 @@
   cursor: default;
 }
 
+/* grey help text under a field */
+.field-hint {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+/* the password checklist on the create account form */
+.password-rules {
+  margin: -6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* green once the password meets that rule */
+.password-rules .rule-met {
+  color: #8bd49b;
+}
+
+/* "New here? Create an account" at the bottom */
 .auth-switch {
   margin: 0;
   font-size: 0.9rem;
@@ -108,6 +84,13 @@
   text-align: center;
 }
 
-.auth-switch a {
+/* a button that looks like a link */
+.link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
   color: var(--color-accent);
+  text-decoration: underline;
+  cursor: pointer;
 }

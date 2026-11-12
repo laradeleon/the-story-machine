@@ -2,57 +2,61 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { APIResponse } from '../../models/api';
-import { ApiErrorBody, RegisterDetails, User } from '../../models/auth';
+import { ApiErrorBody, GUEST_USER, LoginResult, RegisterDetails, User } from '../../models/auth';
+import { clearToken, getToken, saveToken } from './auth-token';
 
 /**
  * AuthService
  *
  * Keeps track of who is signed in for the whole app.
- * The backend keeps the session in an http only cookie, so this service never sees the token itself,
- * the browser just sends the cookie with every request to /api automatically.
+ * Signing in gives back a login token, which gets saved in the browser (auth-token.ts)
+ * and added to every request by the auth interceptor (auth.interceptor.ts).
  */
 @Injectable({ providedIn: 'root' }) // global singleton
 export class AuthService {
   private http = inject(HttpClient);
   private authURL = '/api/v1/auth';
+  private usersURL = '/api/v1/user';
 
   // the signed in user, or null if nobody is signed in
   private user = signal<User | null>(null);
-  readonly currentUser = this.user.asReadonly();
-  readonly isSignedIn = computed(() => this.user() !== null);
+  // the guest user until someone signs in, so pages always have a user to show
+  readonly currentUser = computed(() => this.user() ?? GUEST_USER);
+  readonly isSignedIn = computed(() => this.user() !== null); // false while you're the guest
 
-  // asks the backend who is signed in, runs once when the app starts so a refresh keeps you signed in
+  // runs once when the app starts, if there's a saved token it asks the backend who it belongs to
+  // so a refresh keeps you signed in
   async loadCurrentUser() {
+    if (!getToken()) {
+      return; // never signed in, stay the guest
+    }
     try {
       const response = await firstValueFrom(this.http.get<APIResponse<User>>(`${this.authURL}/me`));
       this.user.set(response.data);
     } catch {
-      this.user.set(null); // not signed in, or the session ran out
+      this.logout(); // token ran out or isn't valid any more
     }
   }
 
-  // creates the account, the backend signs the new user in straight away
+  // creates the account then signs straight in with the same details
   async register(details: RegisterDetails) {
-    const response = await firstValueFrom(
-      this.http.post<APIResponse<User>>(`${this.authURL}/register`, details),
-    );
-    this.user.set(response.data);
+    await firstValueFrom(this.http.post(this.usersURL, details));
+    await this.login(details.email, details.password);
   }
 
-  // identifier can be an email or a username
-  async login(identifier: string, password: string) {
+  // the backend checks the email and password and gives back a login token and the user
+  async login(email: string, password: string) {
     const response = await firstValueFrom(
-      this.http.post<APIResponse<User>>(`${this.authURL}/login`, { identifier, password }),
+      this.http.post<APIResponse<LoginResult>>(`${this.authURL}/login`, { email, password }),
     );
-    this.user.set(response.data);
+    saveToken(response.data.accessToken);
+    this.user.set(response.data.user);
   }
 
-  async logout() {
-    try {
-      await firstValueFrom(this.http.post(`${this.authURL}/logout`, {}));
-    } finally {
-      this.user.set(null); // signed out on this page even if the request failed
-    }
+  // the backend has no logout, forgetting the token is enough
+  logout() {
+    clearToken();
+    this.user.set(null);
   }
 }
 

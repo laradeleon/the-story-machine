@@ -11,8 +11,25 @@
     <div class="section-actions">
       <!-- takes the author to the writing page -->
       <a class="primary-button" routerLink="/write">Write Story</a>
-      <!-- takes the author to their profile page -->
-      <a class="primary-button" routerLink="/profile" (click)="showSignIn.set(true)">Profile</a>
+      <!-- guests see "Profile" (opens the sign in popup), signed in users see their username (opens the menu) -->
+      <div class="profile-menu" #profileMenu>
+        <button
+          type="button"
+          class="primary-button"
+          (click)="onProfileClick()"
+          [attr.title]="isSignedIn() ? username() : null"
+          [attr.aria-expanded]="isSignedIn() ? menuOpen() : null"
+        >
+          {{ isSignedIn() ? shortUsername() : 'Profile' }}
+        </button>
+
+        @if (menuOpen()) {
+          <div class="profile-dropdown">
+            <button type="button" (click)="goToMyProfile()">My Profile</button>
+            <button type="button" (click)="signOut()">Sign Out</button>
+          </div>
+        }
+      </div>
     </div>
   </div>
 

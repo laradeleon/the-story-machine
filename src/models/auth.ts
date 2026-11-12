@@ -22,6 +22,14 @@ export interface RegisterDetails {
   password: string;
 }
 
+// what the backend sends back when you sign in
+export interface LoginResult {
+  accessToken: string; // sent on later requests as "Authorization: Bearer <accessToken>"
+  tokenType: 'Bearer';
+  expiresIn: number; // seconds until the token stops working
+  user: User;
+}
+
 // one field that failed the backend's checks, e.g. { field: 'password', message: '...' }
 export interface FieldError {
   field: string;
@@ -34,3 +42,18 @@ export interface ApiErrorBody {
   message: string;
   errors?: FieldError[];
 }
+
+// who you are before signing in, so the app always has a user to show
+export const GUEST_USER: User = {
+  _id: 'guest',
+  email: '',
+  username: 'guest',
+  displayName: 'Guest',
+  roles: ['guest'],
+  bio: '',
+  profileUrl: '',
+  followerCount: 0,
+  followingCount: 0,
+  createdAt: '',
+  updatedAt: '',
+};

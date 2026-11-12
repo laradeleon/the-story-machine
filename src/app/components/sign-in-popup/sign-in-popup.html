@@ -11,39 +11,36 @@
   <div class="popup-content">
     <button type="button" class="close-button" aria-label="Close" (click)="close()">x</button>
 
-    @if (auth.currentUser(); as user) {
-      <!-- already signed in -->
-      <h2 id="sign-in-title" class="auth-title">Your account</h2>
-      <p class="signed-in-as">
-        Signed in as <strong>{{ user.displayName }}</strong>
-        <!-- display name is the username unless they changed it, so only show both when they're different -->
-        @if (user.displayName !== user.username) {
-          <span class="username">&#64;{{ user.username }}</span>
-        }
-      </p>
-      <button type="button" class="primary-button auth-submit" (click)="signOut()">Sign out</button>
-    } @else {
-      <!-- signed out, so show the sign in form -->
+    @if (mode() === 'signIn') {
       <h2 id="sign-in-title" class="auth-title">Sign in</h2>
 
-      <form class="popup-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <form class="popup-form" [formGroup]="signInForm" (ngSubmit)="signIn()" novalidate>
         <!-- error from the backend, like wrong details -->
         @if (errorMessage(); as message) {
           <p class="form-error" role="alert">{{ message }}</p>
         }
 
         <label class="field">
-          <span class="field-label">Email or username</span>
-          <input type="text" formControlName="identifier" autocomplete="username" />
-          @if (form.controls.identifier.touched && form.controls.identifier.hasError('required')) {
-            <span class="field-error">Enter your email or username.</span>
+          <span class="field-label">Email</span>
+          <input type="email" formControlName="email" autocomplete="username" />
+          @if (
+            signInForm.controls.email.touched && signInForm.controls.email.hasError('required')
+          ) {
+            <span class="field-error">Enter your email.</span>
+          } @else if (
+            signInForm.controls.email.touched && signInForm.controls.email.hasError('email')
+          ) {
+            <span class="field-error">That doesn't look like an email.</span>
           }
         </label>
 
         <label class="field">
           <span class="field-label">Password</span>
           <input type="password" formControlName="password" autocomplete="current-password" />
-          @if (form.controls.password.touched && form.controls.password.hasError('required')) {
+          @if (
+            signInForm.controls.password.touched &&
+            signInForm.controls.password.hasError('required')
+          ) {
             <span class="field-error">Enter your password.</span>
           }
         </label>
@@ -55,7 +52,96 @@
 
       <p class="auth-switch">
         New here?
-        <a routerLink="/register" (click)="close()">Create an account</a>
+        <button type="button" class="link-button" (click)="switchTo('createAccount')">
+          Create an account
+        </button>
+      </p>
+    } @else {
+      <h2 id="sign-in-title" class="auth-title">Create an account</h2>
+
+      <form
+        class="popup-form"
+        [formGroup]="createAccountForm"
+        (ngSubmit)="createAccount()"
+        novalidate
+      >
+        <!-- error from the backend, like the email or username being taken -->
+        @if (errorMessage(); as message) {
+          <p class="form-error" role="alert">{{ message }}</p>
+        }
+
+        <label class="field">
+          <span class="field-label">Email</span>
+          <input type="email" formControlName="email" autocomplete="email" />
+          @if (
+            createAccountForm.controls.email.touched &&
+            createAccountForm.controls.email.hasError('required')
+          ) {
+            <span class="field-error">Enter your email.</span>
+          } @else if (
+            createAccountForm.controls.email.touched &&
+            createAccountForm.controls.email.hasError('email')
+          ) {
+            <span class="field-error">That doesn't look like an email.</span>
+          } @else if (fieldErrors()['email']; as message) {
+            <span class="field-error">{{ message }}</span>
+          }
+        </label>
+
+        <label class="field">
+          <span class="field-label">Username</span>
+          <input type="text" formControlName="username" autocomplete="username" maxlength="9" />
+          @if (
+            createAccountForm.controls.username.touched &&
+            createAccountForm.controls.username.hasError('required')
+          ) {
+            <span class="field-error">Pick a username.</span>
+          } @else if (
+            createAccountForm.controls.username.touched &&
+            createAccountForm.controls.username.hasError('pattern')
+          ) {
+            <span class="field-error">3 to 9 characters, only letters, numbers and _</span>
+          } @else if (fieldErrors()['username']; as message) {
+            <span class="field-error">{{ message }}</span>
+          } @else {
+            <span class="field-hint">3 to 9 characters, only letters, numbers and _</span>
+          }
+        </label>
+
+        <label class="field">
+          <span class="field-label">Password</span>
+          <input type="password" formControlName="password" autocomplete="new-password" />
+          @if (fieldErrors()['password']; as message) {
+            <span class="field-error">{{ message }}</span>
+          }
+        </label>
+
+        <!-- each rule turns green once the password meets it -->
+        <ul class="password-rules">
+          @for (check of passwordChecks(); track check.label) {
+            <li [class.rule-met]="check.met">{{ check.met ? '✓' : '•' }} {{ check.label }}</li>
+          }
+        </ul>
+
+        <label class="field">
+          <span class="field-label">Confirm password</span>
+          <input type="password" formControlName="confirmPassword" autocomplete="new-password" />
+          @if (
+            createAccountForm.controls.confirmPassword.touched &&
+            createAccountForm.hasError('passwordsDontMatch')
+          ) {
+            <span class="field-error">The passwords don't match.</span>
+          }
+        </label>
+
+        <button type="submit" class="primary-button auth-submit" [disabled]="submitting()">
+          {{ submitting() ? 'Creating account...' : 'Create account' }}
+        </button>
+      </form>
+
+      <p class="auth-switch">
+        Already have an account?
+        <button type="button" class="link-button" (click)="switchTo('signIn')">Sign in</button>
       </p>
     }
   </div>

@@ -43,16 +43,3 @@
 .close-button:hover {
   color: var(--color-text);
 }
-
-.signed-in-as {
-  margin: 0;
-  color: var(--color-text-muted);
-}
-
-.signed-in-as strong {
-  color: var(--color-text);
-}
-
-.username {
-  margin-left: 6px;
-}
