@@ -1,6 +1,9 @@
 import { toJSON } from './to_json.ts';
 import { ASTNode, StoryNode } from './ast.ts';
 import { StoryInfo } from '../models/story.ts';
+import { ErrorKind, ErrorMessageManager } from './error_message_manager.ts';
+
+const errors = new ErrorMessageManager();
 
 //info for toJSON call, values don't matter for these tests
 const info: StoryInfo = {
@@ -196,13 +199,17 @@ describe('toJSON', () => {
     ]);
 
     //the arrow function matters, without it the error is thrown before expect can catch it
-    expect(() => toJSON(input, info)).toThrow('Flag already exists on line: 3');
+    expect(() => toJSON(input, info)).toThrow(
+      errors.format_error(ErrorKind.FlagAlreadyExists, 3).message,
+    );
   });
 
   it('throws when a goto points at a missing flag', () => {
     const input = story([{ kind: 'GotoNode', lineNumber: 1, destination: 'nowhere' }]);
 
-    expect(() => toJSON(input, info)).toThrow('Flag does not exist for goto on line: 1');
+    expect(() => toJSON(input, info)).toThrow(
+      errors.format_error(ErrorKind.FlagDoesNotExist, 1).message,
+    );
   });
 
   it('throws when a choice option points at a missing flag', () => {
@@ -217,6 +224,8 @@ describe('toJSON', () => {
     ]);
 
     //the error uses the option's line number, not the choice's
-    expect(() => toJSON(input, info)).toThrow('Flag does not exist for goto on line: 2');
+    expect(() => toJSON(input, info)).toThrow(
+      errors.format_error(ErrorKind.FlagDoesNotExist, 2).message,
+    );
   });
 });

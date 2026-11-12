@@ -205,7 +205,7 @@ export class Writer {
   private show_parse_error(error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     this.previewError.set(message);
-    this.editorView?.dispatch({ effects: set_error_line.of(line_from_error(message)) });
+    this.editorView?.dispatch({ effects: set_error_line.of(line_from_error(error)) });
   }
 
   //hides the error message and the line colouring once the script parses again

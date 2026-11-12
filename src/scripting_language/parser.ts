@@ -10,8 +10,11 @@ import {
   GotoNode,
 } from './ast.ts';
 import { tokenize, Token, TokenType } from './lexer.ts';
+import { ErrorKind, ErrorMessageManager } from './error_message_manager.ts';
 
 export const MAX_OPTIONS = 4;
+
+const errors = new ErrorMessageManager();
 
 export default class Parser {
   private tokens: Token[] = [];
@@ -74,7 +77,7 @@ export default class Parser {
         return this.parse_goto();
 
       default:
-        throw new Error(`Unexpected token '${token.value}' at line ${token.lineNumber}`);
+        throw errors.format_error(ErrorKind.UnexpectedToken, token.lineNumber, token.value);
     }
   }
 
@@ -97,9 +100,7 @@ export default class Parser {
       this.current_speaker = speaker_token;
     } else {
       if (this.current_speaker == null) {
-        throw new Error(
-          `Dialogue text has no speaker at line ${this.at().lineNumber}, please add a speaker.`,
-        );
+        throw errors.format_error(ErrorKind.DialogueMissingSpeaker, this.at().lineNumber);
       }
       speaker_token = this.current_speaker;
     }
@@ -124,12 +125,19 @@ export default class Parser {
       const option_token = this.pop(); //get the option information
       //check to see if we have a destination for the choice or if we have too many choices
       if (this.at().type != TokenType.Goto) {
-        throw new Error(
-          `Unexpected token '${this.at().value}' at line ${this.at().lineNumber}\nNo destination provided for choice option: '${option_token.value}'`,
+        throw errors.format_error(
+          ErrorKind.ChoiceOptionMissingDestination,
+          this.at().lineNumber,
+          this.at().value,
+          option_token.value,
         );
       } else if (num_options > MAX_OPTIONS) {
-        throw new Error(
-          `Unexpected token '${this.at().value}' at line ${this.at().lineNumber}\nToo many options, maximum of '${MAX_OPTIONS}' options per choice: '${option_token.value}'`,
+        throw errors.format_error(
+          ErrorKind.TooManyChoiceOptions,
+          this.at().lineNumber,
+          this.at().value,
+          option_token.value,
+          String(MAX_OPTIONS),
         );
       }
 
