@@ -1,6 +1,9 @@
 <!-- if chapter is still loading in, show message -->
 @if (isLoading()) {
   <p>Loading in chapter.....</p>
+} @else if (chapterMissing()) {
+  <!-- the story exists but doesnt have any chapters-->
+  <p>This story doesn't have any chapters yet.</p>
 } @else if (hasError()) {
   <!-- the chapter couldn't be loaded (or there was nothing to preview),
        laid out like the end page with a way back to the story list -->
@@ -66,7 +69,14 @@
   <!-- end of the chapter -->
   @if (currentChapter.kind === 'end') {
     <div class="reader-page centered-page">
-      <p class="chapter-title">The End.</p>
+      <!-- if there's still more chapters, go to the next one-->
+      @if (chapter()?.hasNextChapter) {
+        <p class="chapter-title">End of chapter.</p>
+        <button type="button" class="primary-button" (click)="nextChapter()">Next Chapter</button>
+      } @else {
+        <!-- otherwise, reached the end of the book -->
+        <p class="chapter-title">The End.</p>
+      }
       <!-- a preview goes back to the writer, a normal story goes back to the story list -->
       @if (isPreview) {
         <a class="primary-button" routerLink="/write">Back to writing</a>

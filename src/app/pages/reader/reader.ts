@@ -4,6 +4,7 @@ import { ChoiceOption, Line } from '../../../models/story';
 import { Chapter } from '../../../models/chapter';
 import { StoryService } from '../../services/story.service';
 import { PreviewService } from '../../services/preview.service';
+import { ChapterNotFoundError } from '../../../models/errors';
 
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
@@ -57,8 +58,19 @@ export class Reader {
   // true when opened by the writer's Preview button (the /preview route)
   protected isPreview = inject(ActivatedRoute).snapshot.data['preview'] === true;
 
+  // the story id from the url /read/storyId
+  private storyId = inject(ActivatedRoute).snapshot.paramMap.get('storyId') ?? '';
+
+  // which chapter is being read, 0 is the first chapter
+  private chapterIndex = signal(0); // when this changes, the chapter below reloads
+
   // a saved story is loaded from the story service (not used when previewing)
-  private storyChapter = this.isPreview ? null : inject(StoryService).getFirstChapter();
+  private storyChapter = this.isPreview
+    ? null
+    : inject(StoryService).getChapter(
+        () => this.storyId,
+        () => this.chapterIndex(),
+      );
   // a preview plays the writer's parsed script, which is already in memory
   private previewChapter = inject(PreviewService).chapter;
 
@@ -74,6 +86,11 @@ export class Reader {
   // (e.g. /preview opened without ever pressing Preview)
   protected hasError = computed(() =>
     this.isPreview ? this.previewChapter() === null : this.storyChapter?.error() !== undefined,
+  );
+
+  // true when the story exists but has no chapter at a given index
+  protected chapterMissing = computed(
+    () => this.storyChapter?.error() instanceof ChapterNotFoundError,
   );
 
   // the line being shown, if null then user is on title page of chapter (before line 0)
@@ -129,6 +146,12 @@ export class Reader {
     } else {
       this.goTo(lineId + 1);
     }
+  }
+
+  // on the end page of a chapter, move on to the next chapter and start from that chapter's title page
+  protected nextChapter() {
+    this.chapterIndex.update((index) => index + 1);
+    this.lineId.set(null);
   }
 
   // called by nextLine() when page is clicked and moves to specified line , and also by the choice buttons

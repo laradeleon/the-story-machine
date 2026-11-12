@@ -1,14 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { Reader } from './pages/reader/reader';
 import Parser from '../scripting_language/parser.ts';
 import { toJSON } from '../scripting_language/to_json.ts';
 import { simpleStory, tresspassing } from '../scripting_language/examples/stories.ts';
-import { APIResponse, ChapterResponse } from '../models/api';
+import { APIResponse, ChapterResponse, ChapterSummaryResponse } from '../models/api';
 import { StoryInfo, StoryJSON } from '../models/story';
-import { MOCK_CHAPTER_URL } from './services/story.service';
 
 //runs a script through the whole pipeline (lexer -> parser -> toJSON)
 //new Parser each time since it remembers the last speaker
@@ -28,20 +27,31 @@ const tresspassing_info: StoryInfo = {
   story_id: 'story-2',
 };
 
+//the one chapter in the list the backend sends back for the story
+function chapter_summary(chapter_title: string, info: StoryInfo): ChapterSummaryResponse {
+  return {
+    title: info.title,
+    author: info.author,
+    story_id: info.story_id,
+    chapter_id: 'chapter-1',
+    chapter_name: chapter_title,
+  };
+}
+
 //turns a script into the chapter response the backend would send back
 function chapter_response(
   script: string,
   chapter_title: string,
   info: StoryInfo,
 ): APIResponse<ChapterResponse> {
+  const json = script_to_json(script, info);
   return {
     success: true,
     message: 'ok',
     data: {
-      _id: 'chapter-1',
-      title: chapter_title,
-      order: 0,
-      contents: script_to_json(script, info),
+      ...chapter_summary(chapter_title, info),
+      characters: json.characters,
+      story: json.story,
     },
   };
 }
@@ -58,6 +68,11 @@ describe('script -> reader (integration)', () => {
         provideHttpClient(),
         provideHttpClientTesting(), //catches requests so the test can answer them instead of the backend
         provideRouter([]),
+        //the reader reads the story id from the url, so pretend we're on /read/story-1
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { paramMap: convertToParamMap({ storyId: 'story-1' }), data: {} } },
+        },
       ],
     }).compileComponents();
 
@@ -133,7 +148,16 @@ describe('script -> reader (integration)', () => {
 
   //answers the reader's chapter request with the script turned into JSON
   async function load(script: string, chapter_title: string, info: StoryInfo) {
-    http.expectOne(MOCK_CHAPTER_URL).flush(chapter_response(script, chapter_title, info));
+    http.expectOne('/api/v1/story/story-1/chapter').flush({
+      success: true,
+      message: 'ok',
+      data: [chapter_summary(chapter_title, info)],
+    });
+    //lets the reader send its second request. not whenStable, that waits for the open request and never finishes
+    await new Promise((resolve) => setTimeout(resolve));
+    http
+      .expectOne('/api/v1/story/story-1/chapter/chapter-1')
+      .flush(chapter_response(script, chapter_title, info));
     await fixture.whenStable();
   }
 

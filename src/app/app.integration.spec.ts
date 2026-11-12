@@ -5,7 +5,6 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { routes } from './app.routes';
-import { MOCK_CHAPTER_URL } from './services/story.service';
 
 describe('Integration: finding and reading a story', () => {
   let harness: RouterTestingHarness;
@@ -53,7 +52,7 @@ describe('Integration: finding and reading a story', () => {
 
   // pretends to be the backend answering the landing page's requests
   async function answerStoryList() {
-    httpTesting.expectOne('/api/v1/story').flush({
+    httpTesting.expectOne('/api/v1/story?status=published').flush({
       success: true,
       message: 'ok',
       data: [
@@ -76,28 +75,33 @@ describe('Integration: finding and reading a story', () => {
     await waitForPage();
   }
 
-  // pretends to be the backend answering the reader's chapter request
+  // pretends to be the backend answering the reader's requests: first the list of chapters, then chapter 1
   async function answerChapter() {
-    httpTesting.expectOne(MOCK_CHAPTER_URL).flush({
+    const chapterSummary = {
+      title: 'The Lion at the Door',
+      author: 'lara',
+      story_id: 's1',
+      chapter_id: 'c1',
+      chapter_name: 'Chapter 1: The Lion at the Door',
+    };
+    httpTesting
+      .expectOne('/api/v1/story/s1/chapter')
+      .flush({ success: true, message: 'ok', data: [chapterSummary] });
+    await waitForPage();
+
+    httpTesting.expectOne('/api/v1/story/s1/chapter/c1').flush({
       success: true,
       message: 'ok',
       data: {
-        _id: 'c1',
-        title: 'Chapter 1: The Lion at the Door',
-        order: 0,
-        contents: {
-          title: 'The Lion at the Door',
-          author: 'a1',
-          story_id: 's1',
-          characters: {},
-          story: {
-            flags: {},
-            variables: [],
-            lines: [
-              { line_id: 0, prose: { text: { words: ['Someone', 'knocks.'] }, text_color: null } },
-              { line_id: 1, end: true },
-            ],
-          },
+        ...chapterSummary,
+        characters: {},
+        story: {
+          flags: {},
+          variables: [],
+          lines: [
+            { line_id: 0, prose: { text: { words: ['Someone', 'knocks.'] }, text_color: null } },
+            { line_id: 1, end: true },
+          ],
         },
       },
     });
@@ -161,7 +165,7 @@ describe('Integration: finding and reading a story', () => {
     await waitForPage();
 
     // the backend says the chapter doesn't exist
-    httpTesting.expectOne(MOCK_CHAPTER_URL).flush('Not found', {
+    httpTesting.expectOne('/api/v1/story/s1/chapter').flush('Not found', {
       status: 404,
       statusText: 'Not Found',
     });
@@ -175,7 +179,7 @@ describe('Integration: finding and reading a story', () => {
     await waitForPage();
 
     // the backend is broken and sends back an error
-    httpTesting.expectOne('/api/v1/story').flush('Server error', {
+    httpTesting.expectOne('/api/v1/story?status=published').flush('Server error', {
       status: 500,
       statusText: 'Internal Server Error',
     });

@@ -22,9 +22,17 @@ export interface UserResponse {
   displayName: string;
 }
 
-export interface ChapterResponse {
-  _id: string;
-  title: string;
-  order: number;
-  contents: StoryJSON | null;
+// this is for one chapter in the list from GET /story/:storyId/chapter (but no script)
+export interface ChapterSummaryResponse {
+  title: string; // the STORY title
+  author: string;
+  story_id: string;
+  chapter_id: string;
+  chapter_name: string; // CHAPTER title
+}
+
+// one chapter from GET /story/:storyId/chapter/:id, which includes its script
+export interface ChapterResponse extends ChapterSummaryResponse {
+  characters: StoryJSON['characters'];
+  story: StoryJSON['story']; // would have no lines until the author saves a script
 }

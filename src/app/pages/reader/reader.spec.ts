@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { Reader } from './reader';
 import { StoryService } from '../../services/story.service';
 import { Chapter } from '../../../models/chapter';
+import { ChapterNotFoundError } from '../../../models/errors';
 
 // fake chapter used by most of the tests
 // line 2 is a choice: "Open the door" goes to line 3, "Hide under the table" goes to line 6
@@ -60,7 +61,7 @@ describe('Reader', () => {
         provideRouter([]), // needed for the back to stories link on the end page
         {
           provide: StoryService,
-          useValue: { getFirstChapter: () => resource({ loader: loadChapter }) },
+          useValue: { getChapter: () => resource({ loader: loadChapter }) },
         },
       ],
     }).compileComponents();
@@ -97,6 +98,14 @@ describe('Reader', () => {
       await createReader(() => Promise.reject(new Error('could not load')));
       await fixture.whenStable();
       expect(compiled.textContent).toContain('Sorry, this chapter could not be retrieved.');
+    });
+
+    // testing Chapter error
+    it('should say the story has no chapters if the chapter is missing', async () => {
+      await createReader(() => Promise.reject(new ChapterNotFoundError('s1', 0)));
+      await fixture.whenStable();
+      expect(compiled.textContent).toContain("This story doesn't have any chapters yet.");
+      expect(compiled.textContent).not.toContain('Sorry, this chapter could not be retrieved.');
     });
   });
 
@@ -241,6 +250,23 @@ describe('Reader', () => {
       await clickPage(); // line 0
       await clickPage(); // past the last line
       expect(compiled.textContent).toContain('The End.');
+    });
+
+    it('should show a next chapter button instead of the end if there is another chapter', async () => {
+      await createReader(async () => ({
+        title: 'Chapter 1',
+        lines: [{ line_id: 0, end: true }],
+        hasNextChapter: true,
+      }));
+      await fixture.whenStable();
+      await clickPage(); // line 0 is the end
+
+      expect(compiled.textContent).toContain('End of chapter.');
+      expect(compiled.textContent).not.toContain('The End.');
+      const nextButton = Array.from(compiled.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Next Chapter'),
+      );
+      expect(nextButton).toBeTruthy();
     });
 
     it('should show the end page if the chapter has no lines', async () => {
