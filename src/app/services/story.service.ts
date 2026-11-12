@@ -35,18 +35,22 @@ export class StoryService {
         const stories = storiesResponse.data;
 
         // responses when retrieving stories only return with author id, so need to retrieve each authors name separately using this id
-        const authorIds = [...new Set(stories.map((story) => story.authorId))]; // removes duplicates so a user is only retrieved once
-        // request for all author names at once
-        const authorResponses = await Promise.all(
+        const authorIds = [...new Set(stories.map((story) => story.authorId))];
+
+        const authorResults = await Promise.allSettled(
+          // one failed request only loses that one author's name, not all the authors its already retrieved
           authorIds.map((id) =>
             firstValueFrom(this.http.get<APIResponse<UserResponse>>(`${this.usersURL}/${id}`)),
           ),
         );
 
         // lookup for author id -> name
-        const authorNames = new Map(
-          authorResponses.map((response) => [response.data._id, response.data.displayName]),
-        );
+        const authorNames = new Map<string, string>();
+        for (const result of authorResults) {
+          if (result.status === 'fulfilled') {
+            authorNames.set(result.value.data._id, result.value.data.displayName);
+          }
+        }
 
         // turn backends stories into StoryInfo format for display on landing page
         return stories.map((story) => ({
