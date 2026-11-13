@@ -4,7 +4,6 @@ import { firstValueFrom } from 'rxjs';
 import {
   APIResponse,
   StoryResponse,
-  UserResponse,
   ChapterResponse,
   ChapterSummaryResponse,
 } from '../../models/api';
@@ -18,7 +17,6 @@ export class StoryService {
 
   // api endpoint urls
   private storiesURL = '/api/v1/story';
-  private usersURL = '/api/v1/user';
 
   // gets every published story to show as a card on the landing page
   getStories() {
@@ -34,25 +32,12 @@ export class StoryService {
         );
         const stories = storiesResponse.data;
 
-        // responses when retrieving stories only return with author id, so need to retrieve each authors name separately using this id
-        const authorIds = [...new Set(stories.map((story) => story.authorId))]; // removes duplicates so a user is only retrieved once
-        // request for all author names at once
-        const authorResponses = await Promise.all(
-          authorIds.map((id) =>
-            firstValueFrom(this.http.get<APIResponse<UserResponse>>(`${this.usersURL}/${id}`)),
-          ),
-        );
-
-        // lookup for author id -> name
-        const authorNames = new Map(
-          authorResponses.map((response) => [response.data._id, response.data.displayName]),
-        );
-
         // turn backends stories into StoryInfo format for display on landing page
+        // each story comes with author's display name
         return stories.map((story) => ({
           story_id: story._id,
           title: story.title,
-          author: authorNames.get(story.authorId) ?? 'Unknown author',
+          author: story.author?.displayName ?? 'Unknown author',
           description: story.description,
           updatedAt: story.updatedAt,
         }));

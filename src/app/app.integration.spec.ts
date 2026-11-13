@@ -60,17 +60,11 @@ describe('Integration: finding and reading a story', () => {
           _id: 's1',
           title: 'The Lion at the Door',
           authorId: 'a1',
+          author: { displayName: 'Lara' },
           description: 'Who is there?',
           updatedAt: '2026-10-20',
         },
       ],
-    });
-    await waitForPage();
-
-    httpTesting.expectOne('/api/v1/user/a1').flush({
-      success: true,
-      message: 'ok',
-      data: { _id: 'a1', username: 'lara', displayName: 'Lara' },
     });
     await waitForPage();
   }
