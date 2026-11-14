@@ -49,7 +49,7 @@ function buildDialogue(
 
     const currentLine = src[0]; //extract current line
 
-    if (checkReserved(currentLine) || checkDialogueStart(currentLine)) {
+    if (checkReserved(currentLine.toLowerCase()) || checkDialogueStart(currentLine)) {
       //check if we encounter reserved tokens
       throw errors.format_error(ErrorKind.UnterminatedDialogue, origLineNum, ...reservedStatements);
     }
@@ -196,55 +196,55 @@ export function tokenize(sourceCode: string): Token[] {
   return tokens;
 }
 
-const simpleStory = `Team Beluga arrives at the classroom on time for their meeting with Lauren.
+// const simpleStory = `Team Beluga arrives at the classroom on time for their meeting with Lauren.
 
-Arthur: "Good morning Lauren, welcome to Interactive fiction!"
-Paul: "We worked very hard on this, Adejare and I got zero sleep!"
-Adejare looks at you with sleepless eyes.
-Krupal: "Wake up dude.."
+// Arthur: "Good morning Lauren, welcome to Interactive fiction!"
+// Paul: "We worked very hard on this, Adejare and I got zero sleep!"
+// Adejare looks at you with sleepless eyes.
+// Krupal: "Wake up dude.."
 
-Choice:
-Ignore the group -> end of presentation
-Say goodmorning -> continue presentation
-Immediately give the group an A -> The correct option
+// Choice:
+// Ignore the group -> end of presentation
+// Say goodmorning -> continue presentation
+// Immediately give the group an A -> The correct option
 
-# end of presentation
-The group looks worried that you are unresponsive and calls medical.
-END
+// # end of presentation
+// The group looks worried that you are unresponsive and calls medical.
+// END
 
-# continue presentation
-Lara: "Thank goodness this isn’t a carpooling app am I right?"
+// # continue presentation
+// Lara: "Thank goodness this isn’t a carpooling app am I right?"
 
-Carsten:"We literally had that same idea Lara… We aren’t any better."
+// Carsten:"We literally had that same idea Lara… We aren’t any better."
 
-Choice:
-Give team Beluga an F -> fight lara
-Give team Beluga an A -> the correct option
+// Choice:
+// Give team Beluga an F -> fight lara
+// Give team Beluga an A -> the correct option
 
-# fight lara
-Lara: "Hey! You can’t do that! I have to fight you now."
-You get into a physical altercation with Lara..
-You win without a scratch.
-END
+// # fight lara
+// Lara: "Hey! You can’t do that! I have to fight you now."
+// You get into a physical altercation with Lara..
+// You win without a scratch.
+// END
 
-# the correct option
-Everyone celebrates.
+// # the correct option
+// Everyone celebrates.
 
-Colin wakes up. It was all a dream
-Colin:"I worked
-it was all
-sas
+// Colin wakes up. It was all a dream
+// Colin:"I worked
+// it was all
+// sas
 
-sasd a dream"
+// sasd a dream"
 
-"
-all a dream
-cuh
-"
-END
-`;
+// "
+// all a dream
+// cuh
+// "
+// END
+// `;
 
-//can run the file with "tsx lexer.ts" if you have tsx installed, it will tokenize the whole story we wrote and print it out
-for (const token of tokenize(simpleStory)) {
-  console.log(token);
-}
+// //can run the file with "tsx lexer.ts" if you have tsx installed, it will tokenize the whole story we wrote and print it out
+// for (const token of tokenize(simpleStory)) {
+//   console.log(token);
+// }
