@@ -35,9 +35,9 @@ describe('tokenize', () => {
   });
 
   it('accepts quotes in dialogue', () => {
-    const tokens = tokenize('Krupal: “Wake up dude..”');
+    const tokens = tokenize('Krupal: "Wake up dude.."');
 
-    expect(tokens[1]).toEqual(tok(1, '“Wake up dude..”', TokenType.DialogueText));
+    expect(tokens[1]).toEqual(tok(1, '"Wake up dude.."', TokenType.DialogueText));
   });
 
   it('turns END into an end token, ignoring case', () => {
