@@ -2,6 +2,7 @@ import { ErrorKind, ErrorMessageManager } from './error_message_manager.ts';
 
 const errors = new ErrorMessageManager();
 
+const reservedStatements: string[] = ['choice:', '->', '#', 'end']; //keep all lowercase for case insenitivity, these strings can never be used to start dialogue in multiline dialogue
 //TokenType: All of the types of data that we want present in our scripting language,
 //in this case we want things like characters, dialogue, prose, backgrounds, bgm, etc...
 export enum TokenType {
@@ -24,6 +25,62 @@ export interface Token {
 
 function token(lineNumber: number, value = '', type: TokenType): Token {
   return { lineNumber, value, type };
+}
+
+//a function to build milti line dialogue
+function buildDialogue(
+  dialogue: string,
+  src: string[],
+  origLineNum: number,
+): { linesTraversed: number; dialogue: string } {
+  src.shift(); //done with the speaker line, its text is already in dialogue
+  let linesTraversed = 1;
+
+  while (true) {
+    if (src.length === 0) {
+      //at EOF, not good
+      throw errors.format_error(ErrorKind.UnterminatedDialogue, origLineNum, ...reservedStatements);
+    }
+
+    const currentLine = src[0]; //extract current line
+
+    if (checkReserved(currentLine) || checkDialogueStart(currentLine)) {
+      //check if we encounter reserved tokens
+      throw errors.format_error(ErrorKind.UnterminatedDialogue, origLineNum, ...reservedStatements);
+    }
+
+    linesTraversed++; //in both following cases we increment so do so here
+    if (currentLine.endsWith('"')) {
+      //at end of dialogue
+      if (currentLine.length > 1) {
+        dialogue += ' ' + currentLine;
+      } else {
+        //if we only have a closing quotation, don't add space
+        dialogue += currentLine;
+      }
+      src.shift();
+      break; //we are done with the dialogue
+    }
+    if (dialogue === '"') {
+      //if we only have an open quote so far, dont add a space
+      dialogue += currentLine;
+    } else {
+      dialogue += ' ' + currentLine; //build dialogue
+    }
+    src.shift();
+  }
+
+  return { linesTraversed, dialogue };
+}
+
+//check if the line we are reading starts with a reserved statement(defined at top of file)
+function checkReserved(line: string): boolean {
+  return reservedStatements.some((statement) => line.trim().toLowerCase().startsWith(statement));
+}
+
+//check if this is charcter: dialogue format
+function checkDialogueStart(line: string): boolean {
+  return /^([A-Za-z][A-Za-z0-9 ]*):\s*(.*)$/.test(line.trim());
 }
 
 export function tokenize(sourceCode: string): Token[] {
@@ -83,52 +140,50 @@ export function tokenize(sourceCode: string): Token[] {
       }
       tokens.push(token(lineNum, cleaned_token, TokenType.Goto));
       src.shift();
-    } else if (lowercaseLine.startsWith('"') || lowercaseLine.startsWith('“')) {
+    } else if (lowercaseLine.startsWith('"')) {
       //this line is dialogue but now we need to look for the ending line.
-      let dialogue = ''; //starts empty so the loop below doesn't add the first line twice
+      const dialogue = src[0]; //start the dialogue line
       const original_line_num = lineNum;
-      while (!(src[0].endsWith('"') || src[0].endsWith('”'))) {
-        lineNum++;
-        dialogue += ' ' + src[0];
-        src.shift();
-      }
-      if (src[0].length > 1) {
-        //minor formatting fix for unwanted spaces
-        dialogue += ' ' + src[0];
-      } else {
-        dialogue += src[0];
-      }
-      tokens.push(token(original_line_num, dialogue.trim(), TokenType.DialogueText)); //trim the leading space from the first ' ' + line
+      //function to build dialogue line
+      const { linesTraversed, dialogue: completeDialogue } = buildDialogue(
+        dialogue,
+        src,
+        original_line_num,
+      );
+      lineNum += linesTraversed;
+      tokens.push(token(original_line_num, completeDialogue, TokenType.DialogueText));
       src.shift();
     } else {
       //we want to check now that its dialogue by ensuring it follows dialogue format of: Colin: "heyo guys"
       const dialogueMatch = src[0].match(/^([A-Za-z][A-Za-z0-9 ]*):\s*(.*)$/);
       if (dialogueMatch) {
-        tokens.push(token(lineNum, dialogueMatch[1], TokenType.DialogueSpeaker));
-        if (!(dialogueMatch[2].startsWith('"') || dialogueMatch[2].startsWith('“'))) {
-          throw errors.format_error(ErrorKind.MissingOpenQuotation, lineNum);
-        }
-        if (!(dialogueMatch[2].endsWith('"') || dialogueMatch[2].endsWith('”'))) {
-          //if the dialogue is on more than one line, Not very clean
-          const original_line_num = lineNum;
-          src.shift(); //done with the speaker line, its text is already in dialogueMatch[2]
-          lineNum++;
-          while (!(src[0].endsWith('"') || src[0].endsWith('”'))) {
-            lineNum++;
-            dialogueMatch[2] += ' ' + src[0];
+        if (dialogueMatch && !dialogueMatch[2]) {
+          //no dialogue text provided, this is only a speaker switch
+          //[TODO] ADD A SPEAKER SWITCH TOKEN FOR REFACTOR!!!!!!!!!!!!!!!!!!!!!
+        } else {
+          //we have some dialogue
+          tokens.push(token(lineNum, dialogueMatch[1], TokenType.DialogueSpeaker));
+          if (!dialogueMatch[2].startsWith('"')) {
+            //make sure open quotations are used
+            throw errors.format_error(ErrorKind.MissingOpenQuotation, lineNum);
+          }
+
+          if (!dialogueMatch[2].endsWith('"')) {
+            //if the dialogue is on more than one line
+            const original_line_num = lineNum;
+            const { linesTraversed, dialogue: completeDialogue } = buildDialogue(
+              dialogueMatch[2],
+              src,
+              original_line_num,
+            );
+            lineNum += linesTraversed;
+            tokens.push(token(original_line_num, completeDialogue, TokenType.DialogueText));
+            src.shift();
+          } else {
+            //one line dialogue
+            tokens.push(token(lineNum, dialogueMatch[2], TokenType.DialogueText));
             src.shift();
           }
-          if (src[0].length > 1) {
-            //minor formatting fix for unwanted spaces
-            dialogueMatch[2] += ' ' + src[0];
-          } else {
-            dialogueMatch[2] += src[0];
-          }
-          tokens.push(token(original_line_num, dialogueMatch[2], TokenType.DialogueText));
-          src.shift();
-        } else {
-          tokens.push(token(lineNum, dialogueMatch[2], TokenType.DialogueText));
-          src.shift();
         }
       } else {
         //if all checks fail, then the line MUST be prose
@@ -144,10 +199,10 @@ export function tokenize(sourceCode: string): Token[] {
 
 // const simpleStory = `Team Beluga arrives at the classroom on time for their meeting with Lauren.
 
-// Arthur: “Good morning Lauren, welcome to Interactive fiction!”
-// Paul: “We worked very hard on this, Adejare and I got zero sleep!”
+// Arthur: "Good morning Lauren, welcome to Interactive fiction!"
+// Paul: "We worked very hard on this, Adejare and I got zero sleep!"
 // Adejare looks at you with sleepless eyes.
-// Krupal: “Wake up dude..”
+// Krupal: "Wake up dude.."
 
 // Choice:
 // Ignore the group -> end of presentation
@@ -159,16 +214,16 @@ export function tokenize(sourceCode: string): Token[] {
 // END
 
 // # continue presentation
-// Lara: “Thank goodness this isn’t a carpooling app am I right?”
+// Lara: "Thank goodness this isn’t a carpooling app am I right?"
 
-// Carsten:”We literally had that same idea Lara… We aren’t any better.”
+// Carsten:"We literally had that same idea Lara… We aren’t any better."
 
 // Choice:
 // Give team Beluga an F -> fight lara
 // Give team Beluga an A -> the correct option
 
 // # fight lara
-// Lara: “Hey! You can’t do that! I have to fight you now.”
+// Lara: "Hey! You can’t do that! I have to fight you now."
 // You get into a physical altercation with Lara..
 // You win without a scratch.
 // END
@@ -177,10 +232,20 @@ export function tokenize(sourceCode: string): Token[] {
 // Everyone celebrates.
 
 // Colin wakes up. It was all a dream
+// Colin:"I worked
+// it was all
+// sas
+
+// sasd a dream"
+
+// "
+// all a dream
+// cuh
+// "
 // END
 // `;
 
-//can run the file with "tsx lexer.ts" if you have tsx installed, it will tokenize the whole story we wrote and print it out
+// //can run the file with "tsx lexer.ts" if you have tsx installed, it will tokenize the whole story we wrote and print it out
 // for (const token of tokenize(simpleStory)) {
 //   console.log(token);
 // }

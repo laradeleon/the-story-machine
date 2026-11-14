@@ -8,6 +8,7 @@ export enum ErrorKind {
   MissingFlagName = 'missing_flag_name',
   MissingGotoDestination = 'missing_goto_destination',
   MissingOpenQuotation = 'missing_open_quotation',
+  UnterminatedDialogue = 'unterminated_dialogue',
 
   // parser.ts
   UnexpectedToken = 'unexpected_token',
@@ -32,6 +33,8 @@ const message_templates: Record<ErrorKind, (line: number, ...details: string[]) 
     `Line ${line} has a goto without a destination. Goto syntax: -> destination name`,
   [ErrorKind.MissingOpenQuotation]: (line) =>
     `Line ${line} is missing quotation marks. Dialogue syntax: Character name: "dialogue"`,
+  [ErrorKind.UnterminatedDialogue]: (line, ...reservedStatements: string[]) =>
+    `Line ${line} has dialogue that is missing a closing quotation mark. Also make sure no dialogue line begins with reserved statements: '${reservedStatements.join(', ')}'`,
 
   // parser.ts
   [ErrorKind.UnexpectedToken]: (line, token) => `Line ${line} has an unexpected token: '${token}'`,
