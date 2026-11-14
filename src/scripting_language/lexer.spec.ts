@@ -171,4 +171,16 @@ describe('tokenize', () => {
       errors.format_error(ErrorKind.MissingOpenQuotation, 1).message,
     );
   });
+
+  it('throws an error when dialogue is missing its closing quote at EOF', () => {
+    expect(() => tokenize('Grandpa: "Hello')).toThrow(
+      errors.format_error(ErrorKind.UnterminatedDialogue, 1, 'choice:', '->', '#', 'end').message,
+    );
+  });
+
+  it('throws an error when dialogue is cut off by a reserved statement', () => {
+    expect(() => tokenize('Grandpa: "Hello\n# flag')).toThrow(
+      errors.format_error(ErrorKind.UnterminatedDialogue, 1, 'choice:', '->', '#', 'end').message,
+    );
+  });
 });
