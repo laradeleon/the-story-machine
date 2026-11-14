@@ -34,13 +34,13 @@ function buildDialogue(
   origLineNum: number,
 ): { linesTraversed: number; dialogue: string } {
   //check single line dialogue
+  let linesTraversed = 0;
 
-  let linesTraversed = 1;
-  src.shift(); //done with the speaker line, its text is already in dialogue
-  if (dialogue.endsWith('"')) {
+  if (dialogue.endsWith('"') && dialogue.length > 1) {
     return { linesTraversed, dialogue };
   }
-
+  src.shift(); //done with the speaker line, its text is already in dialogue
+  linesTraversed++;
   while (true) {
     if (src.length === 0) {
       //at EOF, not good
@@ -54,7 +54,6 @@ function buildDialogue(
       throw errors.format_error(ErrorKind.UnterminatedDialogue, origLineNum, ...reservedStatements);
     }
 
-    linesTraversed++; //in both following cases we increment so do so here
     if (currentLine.endsWith('"')) {
       //at end of dialogue
       if (currentLine.length > 1) {
@@ -63,9 +62,10 @@ function buildDialogue(
         //if we only have a closing quotation, don't add space
         dialogue += currentLine;
       }
-      src.shift();
       break; //we are done with the dialogue
     }
+
+    linesTraversed++; //only increment here as previous case is incremented by big loop
     if (dialogue === '"') {
       //if we only have an open quote so far, dont add a space
       dialogue += currentLine;
@@ -173,22 +173,16 @@ export function tokenize(sourceCode: string): Token[] {
             throw errors.format_error(ErrorKind.MissingOpenQuotation, lineNum);
           }
 
-          if (!dialogueMatch[2].endsWith('"')) {
-            //if the dialogue is on more than one line
-            const original_line_num = lineNum;
-            const { linesTraversed, dialogue: completeDialogue } = buildDialogue(
-              dialogueMatch[2],
-              src,
-              original_line_num,
-            );
-            lineNum += linesTraversed;
-            tokens.push(token(original_line_num, completeDialogue, TokenType.DialogueText));
-            src.shift();
-          } else {
-            //one line dialogue
-            tokens.push(token(lineNum, dialogueMatch[2], TokenType.DialogueText));
-            src.shift();
-          }
+          const original_line_num = lineNum;
+          const { linesTraversed, dialogue: completeDialogue } = buildDialogue(
+            dialogueMatch[2],
+            src,
+            original_line_num,
+          );
+
+          lineNum += linesTraversed;
+          tokens.push(token(original_line_num, completeDialogue, TokenType.DialogueText));
+          src.shift();
         }
       } else {
         //if all checks fail, then the line MUST be prose

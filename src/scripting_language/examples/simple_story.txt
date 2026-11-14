@@ -14,7 +14,6 @@ Immediately give the group an A -> The correct option
 The group looks worried that you are unresponsive and calls medical.
 END
 
-
 # continue presentation
 Lara: "Thank goodness this isn’t a carpooling app am I right?"
 
@@ -30,9 +29,18 @@ You get into a physical altercation with Lara..
 You win without a scratch.
 END
 
-# the correct option 
-Everyone celebrates. 
+# the correct option
+Everyone celebrates.
 
 Colin wakes up. It was all a dream
+Colin:"I worked
+it was all
+sas
 
+sasd a dream"
+
+"
+all a dream
+cuh
+"
 END
