@@ -1,6 +1,6 @@
 # The Story Machine
 
-The Story Machine is a platform where anyone can write, publish, read, and discuss interactive stories in which readers shape the story through their choices, bringing authors and readers together in one community.
+The Story Machine is a platform where anyone can write, publish, read and discuss interactive stories in which readers shape the story through their choices, bringing authors and readers together in one community.
 
 This repository contains the client application built with Angular. The server application, built with NestJS and MongoDB, lives in a [separate repository](https://github.com/nifemi-cd/the-story-machine).
 

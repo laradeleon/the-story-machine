@@ -8,8 +8,29 @@
 <main class="stories-section">
   <div class="section-header">
     <h2 class="section-heading">Stories</h2>
-    <!-- takes the author to the writing page -->
-    <a class="primary-button" routerLink="/write">Write Story</a>
+    <div class="section-actions">
+      <!-- takes the author to the writing page -->
+      <a class="primary-button" routerLink="/write">Write Story</a>
+      <!-- guests see "Profile" (opens the sign in popup), signed in users see their username (opens the menu) -->
+      <div class="profile-menu" #profileMenu>
+        <button
+          type="button"
+          class="primary-button"
+          (click)="onProfileClick()"
+          [attr.title]="isSignedIn() ? username() : null"
+          [attr.aria-expanded]="isSignedIn() ? menuOpen() : null"
+        >
+          {{ isSignedIn() ? shortUsername() : 'Profile' }}
+        </button>
+
+        @if (menuOpen()) {
+          <div class="profile-dropdown">
+            <button type="button" (click)="goToMyProfile()">My Profile</button>
+            <button type="button" (click)="signOut()">Sign Out</button>
+          </div>
+        }
+      </div>
+    </div>
   </div>
 
   <!-- shows loading message if stories are still being retrieved -->
@@ -40,4 +61,9 @@
 <!-- preview popup for the story that got clicked -->
 @if (selectedStory(); as story) {
   <app-story-preview [story]="story" (closed)="selectedStory.set(null)" />
+}
+
+<!-- sign in popup opened by the profile button -->
+@if (showSignIn()) {
+  <app-sign-in-popup (closed)="showSignIn.set(false)" />
 }
