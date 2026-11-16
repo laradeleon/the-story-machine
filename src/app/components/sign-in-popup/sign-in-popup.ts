@@ -20,13 +20,16 @@ import { AuthService, readApiError } from '../../services/auth.service';
 import { AUTH_MESSAGES } from '../../../models/auth-messages';
 import { GUEST_USER } from '../../../models/auth';
 
+// the symbols the backend accepts
+const PASSWORD_SYMBOLS = /[-#!$@£%^&*()_+|~=`{}[\]:";'<>?,./\\ ]/;
+
 // the same password rules the backend checks, shown as a checklist while you type
 const PASSWORD_RULES = [
   { label: 'At least 8 characters', test: (password: string) => password.length >= 8 },
   { label: 'An uppercase letter', test: (password: string) => /[A-Z]/.test(password) },
   { label: 'A lowercase letter', test: (password: string) => /[a-z]/.test(password) },
   { label: 'A number', test: (password: string) => /\d/.test(password) },
-  { label: 'A symbol, like ! or ?', test: (password: string) => /[^A-Za-z0-9]/.test(password) },
+  { label: 'A symbol, like ! or ?', test: (password: string) => PASSWORD_SYMBOLS.test(password) },
 ];
 
 // fails until the password passes every rule above
@@ -97,7 +100,10 @@ export class SignInPopup {
           notReservedUsername,
         ],
       }),
-      password: new FormControl('', { nonNullable: true, validators: [strongPassword] }),
+      password: new FormControl('', {
+        nonNullable: true,
+        validators: [strongPassword],
+      }),
       confirmPassword: new FormControl('', { nonNullable: true }),
     },
     { validators: passwordsMatch },
