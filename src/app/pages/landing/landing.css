@@ -55,6 +55,114 @@
   margin-bottom: 24px;
 }
 
+/* bar on top right of page for account menu */
+.top-bar {
+  position: absolute;
+  top: 32px;
+  right: 32px;
+}
+
+/* the account button, its menu is placed under it */
+.profile-menu {
+  position: relative;
+}
+
+.profile-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 6px;
+  font: inherit;
+  font-weight: 500;
+  color: white;
+  background: rgba(13, 12, 23, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 1rem;
+  cursor: pointer;
+}
+
+/* yellow outline when hoveered*/
+.profile-button:hover,
+.profile-button:focus-visible {
+  border-color: var(--color-accent);
+}
+
+.profile-icon {
+  width: 28px;
+  height: 28px;
+  background-color: currentColor;
+  mask: url('/images/user.png') center / contain no-repeat; /* user icon matches text color, original text icon is black*/
+}
+
+/* down arrow, flips up when pressed*/
+.profile-arrow {
+  width: 7px;
+  height: 7px;
+  margin: 0 2px 4px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+.profile-arrow.open {
+  margin-bottom: -2px;
+  transform: rotate(-135deg);
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 6px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* when user is logged in and presses the profile button on top right/*
+/* username and email go on top */
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px 10px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.profile-details-name {
+  font-weight: 600;
+}
+
+.profile-details-email {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere; /* wrap long emails*/
+}
+
+.profile-dropdown button {
+  /* undo default button styles */
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 10px 12px;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.profile-dropdown button:hover,
+.profile-dropdown button:focus-visible {
+  background: var(--color-surface);
+  color: var(--color-accent);
+}
+
 .section-heading {
   margin: 0;
   font-family: 'Source Serif 4', Georgia, serif;

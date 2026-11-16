@@ -4,6 +4,8 @@ import { Landing } from './landing';
 import { provideRouter } from '@angular/router';
 import { StoryService } from '../../services/story.service';
 import { StoryDetails } from '../../../models/story-details';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 // fake stories for the landing page to show
 const mockStories: StoryDetails[] = [
@@ -32,6 +34,8 @@ describe('Landing', () => {
     await TestBed.configureTestingModule({
       imports: [Landing],
       providers: [
+        provideHttpClient(), // the profile button uses the auth service, which needs http
+        provideHttpClientTesting(), // so nothing actually gets sent to the backend
         provideRouter([]), // gives the test a router with no routes, fails otherwise as routerlink needs routes to exist
         // fake story service so the test doesnt try to get the stories from the backend
         {
