@@ -5,6 +5,7 @@ export const AUTH_MESSAGES = {
   usernameRequired: 'Choose a username.',
   // hint under the username field and also shows as an error if the rules arent met
   usernameRules: 'Use 3 to 9 letters, numbers or underscores (_).',
+  usernameReserved: "That username isn't available. Please choose a different one.",
   passwordsDontMatch:
     "The passwords don't match. Make sure to enter the same password in both fields.",
 

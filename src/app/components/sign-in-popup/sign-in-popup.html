@@ -101,6 +101,11 @@
             createAccountForm.controls.username.hasError('pattern')
           ) {
             <span class="field-error">{{ messages.usernameRules }}</span>
+          } @else if (
+            createAccountForm.controls.username.touched &&
+            createAccountForm.controls.username.hasError('reservedUsername')
+          ) {
+            <span class="field-error">{{ messages.usernameReserved }}</span>
           } @else if (fieldErrors()['username']; as message) {
             <span class="field-error">{{ message }}</span>
           } @else {

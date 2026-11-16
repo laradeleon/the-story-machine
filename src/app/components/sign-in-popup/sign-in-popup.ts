@@ -18,6 +18,7 @@ import {
 } from '@angular/forms';
 import { AuthService, readApiError } from '../../services/auth.service';
 import { AUTH_MESSAGES } from '../../../models/auth-messages';
+import { GUEST_USER } from '../../../models/auth';
 
 // the same password rules the backend checks, shown as a checklist while you type
 const PASSWORD_RULES = [
@@ -32,6 +33,17 @@ const PASSWORD_RULES = [
 const strongPassword: ValidatorFn = (control) =>
   PASSWORD_RULES.every((rule) => rule.test(control.value)) ? null : { weakPassword: true };
 
+// usernames nobody can register with (for now just 'guest')
+const RESERVED_USERNAMES = [GUEST_USER.username];
+
+// fails for a reserved username
+const notReservedUsername: ValidatorFn = (control) => {
+  const username = control.value.trim().toLowerCase();
+  if (RESERVED_USERNAMES.includes(username)) {
+    return { reservedUsername: true };
+  }
+  return null;
+};
 // fails when the two password boxes are different
 const passwordsMatch: ValidatorFn = (form) =>
   form.get('password')?.value === form.get('confirmPassword')?.value
@@ -76,10 +88,14 @@ export class SignInPopup {
         nonNullable: true,
         validators: [Validators.required, Validators.email],
       }),
-      // 3 to 9 characters, only letters, numbers and underscores
+      // 3 to 9 characters, only letters, numbers and underscores, and not a reserved name
       username: new FormControl('', {
         nonNullable: true,
-        validators: [Validators.required, Validators.pattern(/^[a-zA-Z0-9_]{3,9}$/)],
+        validators: [
+          Validators.required,
+          Validators.pattern(/^[a-zA-Z0-9_]{3,9}$/),
+          notReservedUsername,
+        ],
       }),
       password: new FormControl('', { nonNullable: true, validators: [strongPassword] }),
       confirmPassword: new FormControl('', { nonNullable: true }),
