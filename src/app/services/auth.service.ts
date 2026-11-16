@@ -3,6 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { APIResponse } from '../../models/api';
 import { ApiErrorBody, GUEST_USER, LoginResult, RegisterDetails, User } from '../../models/auth';
+import { AUTH_MESSAGES } from '../../models/auth-messages';
 import { clearToken, getToken, saveToken } from './auth-token';
 
 /**
@@ -65,16 +66,29 @@ export function readApiError(error: unknown): {
   message: string;
   fieldErrors: Record<string, string>;
 } {
-  if (error instanceof HttpErrorResponse) {
-    if (error.status === 0) {
-      return { message: "Can't reach the server right now, try again.", fieldErrors: {} };
-    }
-    const body = error.error as Partial<ApiErrorBody> | null;
-    const fieldErrors: Record<string, string> = {};
-    for (const fieldError of body?.errors ?? []) {
-      fieldErrors[fieldError.field] ??= fieldError.message; // first message for each field
-    }
-    return { message: body?.message ?? 'Something went wrong, try again.', fieldErrors };
+  if (!(error instanceof HttpErrorResponse)) {
+    return { message: AUTH_MESSAGES.unknownError, fieldErrors: {} };
   }
-  return { message: 'Something went wrong, try again.', fieldErrors: {} };
+
+  // request never reached the server
+  if (error.status === 0) {
+    return { message: AUTH_MESSAGES.serverUnreachable, fieldErrors: {} };
+  }
+
+  // error for taken email or username
+  if (error.status === 409) {
+    return { message: AUTH_MESSAGES.accountTaken, fieldErrors: {} };
+  }
+
+  const body = error.error as Partial<ApiErrorBody> | null;
+  const fieldErrors: Record<string, string> = {};
+  for (const fieldError of body?.errors ?? []) {
+    fieldErrors[fieldError.field] ??= fieldError.message; // first message for each field
+  }
+
+  // errors with username and password fields
+  if (Object.keys(fieldErrors).length > 0) {
+    return { message: AUTH_MESSAGES.checkFields, fieldErrors };
+  }
+  return { message: body?.message ?? AUTH_MESSAGES.unknownError, fieldErrors };
 }

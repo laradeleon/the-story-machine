@@ -8,7 +8,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import {
   FormControl,
   FormGroup,
@@ -17,6 +17,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { AuthService, readApiError } from '../../services/auth.service';
+import { AUTH_MESSAGES } from '../../../models/auth-messages';
 
 // the same password rules the backend checks, shown as a checklist while you type
 const PASSWORD_RULES = [
@@ -56,6 +57,8 @@ export class SignInPopup {
   private auth = inject(AuthService);
   private dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog'); // popup
   private pressStartedOutside = false; // whether the mouse was pressed down outside the popup
+
+  protected readonly messages = AUTH_MESSAGES; // shared error messages
 
   protected mode = signal<'signIn' | 'createAccount'>('signIn'); // which form is showing
 
@@ -98,6 +101,21 @@ export class SignInPopup {
 
   constructor() {
     afterNextRender(() => this.dialog().nativeElement.showModal()); // show popup once it exists
+
+    // once backend says a field is invalid and the user edits the field to fix it, don't show the error anymore
+    for (const [field, control] of Object.entries(this.createAccountForm.controls)) {
+      control.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.clearFieldError(field));
+    }
+  }
+
+  // removes the backend message for one field once the user starts to edit what was causing the error
+  private clearFieldError(field: string) {
+    if (!(field in this.fieldErrors())) {
+      return;
+    }
+    this.fieldErrors.update((errors) =>
+      Object.fromEntries(Object.entries(errors).filter(([name]) => name !== field)),
+    );
   }
 
   protected close() {

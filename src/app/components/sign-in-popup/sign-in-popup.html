@@ -26,11 +26,11 @@
           @if (
             signInForm.controls.email.touched && signInForm.controls.email.hasError('required')
           ) {
-            <span class="field-error">Enter your email.</span>
+            <span class="field-error">{{ messages.emailRequired }}</span>
           } @else if (
             signInForm.controls.email.touched && signInForm.controls.email.hasError('email')
           ) {
-            <span class="field-error">That doesn't look like an email.</span>
+            <span class="field-error">{{ messages.emailInvalid }}</span>
           }
         </label>
 
@@ -41,7 +41,7 @@
             signInForm.controls.password.touched &&
             signInForm.controls.password.hasError('required')
           ) {
-            <span class="field-error">Enter your password.</span>
+            <span class="field-error">{{ messages.passwordRequired }}</span>
           }
         </label>
 
@@ -77,12 +77,12 @@
             createAccountForm.controls.email.touched &&
             createAccountForm.controls.email.hasError('required')
           ) {
-            <span class="field-error">Enter your email.</span>
+            <span class="field-error">{{ messages.emailRequired }}</span>
           } @else if (
             createAccountForm.controls.email.touched &&
             createAccountForm.controls.email.hasError('email')
           ) {
-            <span class="field-error">That doesn't look like an email.</span>
+            <span class="field-error">{{ messages.emailInvalid }}</span>
           } @else if (fieldErrors()['email']; as message) {
             <span class="field-error">{{ message }}</span>
           }
@@ -95,16 +95,16 @@
             createAccountForm.controls.username.touched &&
             createAccountForm.controls.username.hasError('required')
           ) {
-            <span class="field-error">Pick a username.</span>
+            <span class="field-error">{{ messages.usernameRequired }}</span>
           } @else if (
             createAccountForm.controls.username.touched &&
             createAccountForm.controls.username.hasError('pattern')
           ) {
-            <span class="field-error">3 to 9 characters, only letters, numbers and _</span>
+            <span class="field-error">{{ messages.usernameRules }}</span>
           } @else if (fieldErrors()['username']; as message) {
             <span class="field-error">{{ message }}</span>
           } @else {
-            <span class="field-hint">3 to 9 characters, only letters, numbers and _</span>
+            <span class="field-hint">{{ messages.usernameRules }}</span>
           }
         </label>
 
@@ -130,7 +130,7 @@
             createAccountForm.controls.confirmPassword.touched &&
             createAccountForm.hasError('passwordsDontMatch')
           ) {
-            <span class="field-error">The passwords don't match.</span>
+            <span class="field-error">{{ messages.passwordsDontMatch }}</span>
           }
         </label>
 
