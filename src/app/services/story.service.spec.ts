@@ -162,20 +162,27 @@ describe('StoryService', () => {
       success: true,
       message: 'ok',
       data: [
-        { _id: 's1', title: 'Story 1', authorId: 'a1', description: 'd1', updatedAt: '2026-10-01' },
-        { _id: 's2', title: 'Story 2', authorId: 'a1', description: 'd2', updatedAt: '2026-10-02' },
+        {
+          _id: 's1',
+          title: 'Story 1',
+          authorId: 'a1',
+          author: { displayName: 'Lara' },
+          description: 'd1',
+          updatedAt: '2026-10-01',
+        },
+        {
+          _id: 's2',
+          title: 'Story 2',
+          authorId: 'a1',
+          author: { displayName: 'Lara' },
+          description: 'd2',
+          updatedAt: '2026-10-02',
+        },
       ],
     });
     await waitForResource();
 
-    // both stories have author a1, so only ONE user request should be sent
-    httpTesting.expectOne('/api/v1/user/a1').flush({
-      success: true,
-      message: 'ok',
-      data: { _id: 'a1', displayName: 'Lara' },
-    });
-    await waitForResource();
-
+    // the name comes with each story
     expect(stories.value()).toEqual([
       {
         story_id: 's1',
@@ -194,10 +201,11 @@ describe('StoryService', () => {
     ]);
   });
 
-  it("should use 'Unknown author' if the name can't be matched", async () => {
+  it("should use 'Unknown author' if the story has no author name", async () => {
     const stories = getStories();
     await waitForResource();
 
+    // no author object on the story
     httpTesting.expectOne('/api/v1/story?status=published').flush({
       success: true,
       message: 'ok',
@@ -207,33 +215,10 @@ describe('StoryService', () => {
     });
     await waitForResource();
 
-    // the user that comes back has a different id than the story's authorId, so no name matches
-    httpTesting.expectOne('/api/v1/user/a1').flush({
-      success: true,
-      message: 'ok',
-      data: { _id: 'someone-else', username: 'other', displayName: 'Other' },
-    });
-    await waitForResource();
-
     expect(stories.value()[0].author).toBe('Unknown author');
   });
 
-  it('should send no user requests if there are no stories', async () => {
-    const stories = getStories();
-    await waitForResource();
-
-    httpTesting.expectOne('/api/v1/story?status=published').flush({
-      success: true,
-      message: 'ok',
-      data: [],
-    });
-    await waitForResource();
-
-    // verify() in afterEach fails the test if any /api/v1/user request was sent
-    expect(stories.value()).toEqual([]);
-  });
-
-  it('should send no user requests if there are no stories', async () => {
+  it('should give back no stories if there are none published', async () => {
     const stories = getStories();
     await waitForResource();
 

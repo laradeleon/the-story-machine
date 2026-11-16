@@ -11,15 +11,10 @@ export interface APIResponse<T> {
 export interface StoryResponse {
   _id: string;
   authorId: string;
+  author: { displayName: string }; // the author's public name
   title: string;
   description: string;
   updatedAt: string;
-}
-
-export interface UserResponse {
-  _id: string;
-  username: string;
-  displayName: string;
 }
 
 // this is for one chapter in the list from GET /story/:storyId/chapter (but no script)
