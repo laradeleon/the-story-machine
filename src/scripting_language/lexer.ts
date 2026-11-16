@@ -1,3 +1,7 @@
+import { ErrorKind, ErrorMessageManager } from './error_message_manager.ts';
+
+const errors = new ErrorMessageManager();
+
 //TokenType: All of the types of data that we want present in our scripting language,
 //in this case we want things like characters, dialogue, prose, backgrounds, bgm, etc...
 export enum TokenType {
@@ -50,13 +54,9 @@ export function tokenize(sourceCode: string): Token[] {
         //if the line has a goto, we know it's a choice option, we add the option and the Goto token right after
         const choiceSplit = src[0].split('->').map((str) => str.trim()); //split the choice text and goto token
         if (choiceSplit[0].length <= 0) {
-          throw new Error(
-            `Missing choice text choice at line ${lineNum}. Choice syntax: choice text -> destination flag`,
-          );
+          throw errors.format_error(ErrorKind.MissingChoiceText, lineNum);
         } else if (choiceSplit[1].length <= 0) {
-          throw new Error(
-            `Missing destination for choice at line ${lineNum}. Choice syntax: choice text -> destination flag`,
-          );
+          throw errors.format_error(ErrorKind.MissingChoiceDestination, lineNum);
         }
         tokens.push(token(lineNum, choiceSplit[0], TokenType.ChoiceOption));
         tokens.push(token(lineNum++, choiceSplit[1], TokenType.Goto)); //lineNum++ again
@@ -68,7 +68,7 @@ export function tokenize(sourceCode: string): Token[] {
       const flag_name = src.shift()?.slice(1).trim(); //remove the # and trim to be cleaner
       if (flag_name == undefined || flag_name?.length <= 0) {
         //check if we have a name
-        throw new Error(`Missing name for flag at line ${lineNum}. flag syntax: # flag name`);
+        throw errors.format_error(ErrorKind.MissingFlagName, lineNum);
       }
       tokens.push(token(lineNum, flag_name, TokenType.Flag));
     } else if (lowercaseLine == 'end') {
@@ -79,9 +79,7 @@ export function tokenize(sourceCode: string): Token[] {
       const cleaned_token = src[0].slice(2).trim();
       if (cleaned_token?.length <= 0) {
         //check if we have a destination
-        throw new Error(
-          `Missing destination for goto at line ${lineNum}. Goto syntax: -> destination name`,
-        );
+        throw errors.format_error(ErrorKind.MissingGotoDestination, lineNum);
       }
       tokens.push(token(lineNum, cleaned_token, TokenType.Goto));
       src.shift();
@@ -108,9 +106,7 @@ export function tokenize(sourceCode: string): Token[] {
       if (dialogueMatch) {
         tokens.push(token(lineNum, dialogueMatch[1], TokenType.DialogueSpeaker));
         if (!(dialogueMatch[2].startsWith('"') || dialogueMatch[2].startsWith('“'))) {
-          throw new Error(
-            `Missing open quotations at line ${lineNum}. Dialogue syntax: Character name: "dialogue"`,
-          );
+          throw errors.format_error(ErrorKind.MissingOpenQuotation, lineNum);
         }
         if (!(dialogueMatch[2].endsWith('"') || dialogueMatch[2].endsWith('”'))) {
           //if the dialogue is on more than one line, Not very clean

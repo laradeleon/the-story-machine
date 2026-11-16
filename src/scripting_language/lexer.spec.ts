@@ -1,4 +1,7 @@
 import { tokenize, Token, TokenType } from './lexer.ts';
+import { ErrorKind, ErrorMessageManager } from './error_message_manager.ts';
+
+const errors = new ErrorMessageManager();
 
 //shorthand for writing the tokens we expect
 function tok(lineNumber: number, value: string, type: TokenType): Token {
@@ -142,24 +145,30 @@ describe('tokenize', () => {
   // ---------- Errors ----------
 
   it('throws an error when a flag has no name', () => {
-    expect(() => tokenize('#')).toThrow('Missing name for flag at line 1');
+    expect(() => tokenize('#')).toThrow(errors.format_error(ErrorKind.MissingFlagName, 1).message);
   });
 
   it('throws an error when a goto has no destination', () => {
-    expect(() => tokenize('->')).toThrow('Missing destination for goto at line 1');
+    expect(() => tokenize('->')).toThrow(
+      errors.format_error(ErrorKind.MissingGotoDestination, 1).message,
+    );
   });
 
   it('throws an error when a choice option has no text', () => {
-    expect(() => tokenize('Choice:\n-> left')).toThrow('Missing choice text choice at line 2');
+    expect(() => tokenize('Choice:\n-> left')).toThrow(
+      errors.format_error(ErrorKind.MissingChoiceText, 2).message,
+    );
   });
 
   it('throws an error when a choice option has no destination', () => {
     expect(() => tokenize('Choice:\nGo left ->')).toThrow(
-      'Missing destination for choice at line 2',
+      errors.format_error(ErrorKind.MissingChoiceDestination, 2).message,
     );
   });
 
   it('throws an error when dialogue is missing its opening quote', () => {
-    expect(() => tokenize('Grandpa: Hello."')).toThrow('Missing open quotations at line 1');
+    expect(() => tokenize('Grandpa: Hello."')).toThrow(
+      errors.format_error(ErrorKind.MissingOpenQuotation, 1).message,
+    );
   });
 });

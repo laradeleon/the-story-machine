@@ -1,6 +1,9 @@
 // takes an AST from the parser and converts it to JSON
 import { StoryNode } from './ast.ts';
 import { StoryInfo, StoryJSON, Text } from '../models/story.ts';
+import { ErrorKind, ErrorMessageManager } from './error_message_manager.ts';
+
+const errors = new ErrorMessageManager();
 
 // ---------- Main function ----------
 
@@ -94,7 +97,7 @@ function find_flags(story: StoryNode): Map<string, number> {
 
       //check for duplicate names of flags
       if (flags.has(name)) {
-        throw new Error('Flag already exists on line: ' + node.lineNumber);
+        throw errors.format_error(ErrorKind.FlagAlreadyExists, node.lineNumber);
       }
 
       flags.set(name, count);
@@ -110,7 +113,7 @@ function resolve_flag(flags: Map<string, number>, destination: string, lineNumbe
   const result = flags.get(destination.toLowerCase());
 
   if (result === undefined) {
-    throw new Error('Flag does not exist for goto on line: ' + lineNumber);
+    throw errors.format_error(ErrorKind.FlagDoesNotExist, lineNumber);
   }
 
   return result;
