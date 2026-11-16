@@ -4,4 +4,5 @@ import { Line } from './story';
 export interface Chapter {
   title: string;
   lines: Line[];
+  hasNextChapter?: boolean; // if the story has another chapter after the current one
 }

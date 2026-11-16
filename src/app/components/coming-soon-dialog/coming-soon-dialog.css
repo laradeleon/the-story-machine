@@ -1,0 +1,25 @@
+/* the border, shadow and blurred background come from dialog[appModal] in styles.css */
+.coming-soon-dialog {
+  --dialog-width: 400px;
+}
+
+.coming-soon-content {
+  padding: 32px;
+}
+
+.coming-soon-content h2 {
+  margin-bottom: 8px;
+  font-size: 1.5rem;
+}
+
+.coming-soon-content p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* OK on the right at the bottom */
+.coming-soon-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+}

@@ -1,0 +1,11 @@
+<!-- appModal opens this as a popup, closed fires on esc or OK so the writer can remove it -->
+<dialog appModal #modal="appModal" class="coming-soon-dialog" (closed)="closed.emit()">
+  <div class="coming-soon-content">
+    <h2>{{ feature() }} is coming soon</h2>
+    <p>This button doesn't do anything yet, it's still being worked on.</p>
+
+    <div class="coming-soon-actions">
+      <button type="button" class="primary-button" (click)="modal.close()">OK</button>
+    </div>
+  </div>
+</dialog>

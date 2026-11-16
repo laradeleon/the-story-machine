@@ -1,4 +1,7 @@
 import Parser, { MAX_OPTIONS } from './parser.ts';
+import { ErrorKind, ErrorMessageManager } from './error_message_manager.ts';
+
+const errors = new ErrorMessageManager();
 
 //new Parser each time, it remembers the last speaker between produceAST calls
 function parse(source: string) {
@@ -121,13 +124,15 @@ describe('Parser', () => {
   // ---------- Errors ----------
 
   it('throws an error when dialogue has no speaker and no one has spoken yet', () => {
-    expect(() => parse('"Hello."')).toThrow('Dialogue text has no speaker at line 1');
+    expect(() => parse('"Hello."')).toThrow(
+      errors.format_error(ErrorKind.DialogueMissingSpeaker, 1).message,
+    );
   });
 
   it('throws an error when the first speaker is only named after speakerless dialogue', () => {
     //the speaker has to come before, not after
     expect(() => parse('"Hello."\nGrandpa: "Hi."')).toThrow(
-      'Dialogue text has no speaker at line 1',
+      errors.format_error(ErrorKind.DialogueMissingSpeaker, 1).message,
     );
   });
 
@@ -138,7 +143,14 @@ describe('Parser', () => {
     );
 
     expect(() => parse('Choice:\n' + options.join('\n'))).toThrow(
-      `Too many options, maximum of '${MAX_OPTIONS}' options per choice: 'Option ${MAX_OPTIONS + 1}'`,
+      // the error points at the goto after the extra option, which is on line MAX_OPTIONS + 2
+      errors.format_error(
+        ErrorKind.TooManyChoiceOptions,
+        MAX_OPTIONS + 2,
+        `f${MAX_OPTIONS + 1}`,
+        `Option ${MAX_OPTIONS + 1}`,
+        String(MAX_OPTIONS),
+      ).message,
     );
   });
 });
