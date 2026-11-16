@@ -109,6 +109,7 @@ export function tokenize(sourceCode: string): Token[] {
     const lowercaseLine = src[0].toLowerCase(); //make sure we are case insensitive
 
     if (lowercaseLine.startsWith('choice:')) {
+      let numChoices = 0;
       //this line is the start of a choice selection
       tokens.push(token(lineNum++, src.shift(), TokenType.ChoiceStart)); //need lineNum++ since we evaluate choices next and linenumber will not be accurate without updating
       //Now we loop to get each option for this choice
@@ -122,8 +123,13 @@ export function tokenize(sourceCode: string): Token[] {
         }
         tokens.push(token(lineNum, choiceSplit[0], TokenType.ChoiceOption));
         tokens.push(token(lineNum++, choiceSplit[1], TokenType.Goto)); //lineNum++ again
+        numChoices++;
         src.shift(); //keep movin since not done in push() this time
       } //when no choices remain, continue back to start of loop to preserve lineNum
+      if (numChoices == 0) {
+        //user made a choice clause but provided no choices
+        throw errors.format_error(ErrorKind.NoChoicesProvided, lineNum - 1);
+      }
       continue;
     } else if (lowercaseLine.startsWith('#')) {
       //this line is a flag that we can jump to

@@ -183,4 +183,10 @@ describe('tokenize', () => {
       errors.format_error(ErrorKind.UnterminatedDialogue, 1, 'choice:', '->', '#', 'end').message,
     );
   });
+
+  it('throws an error when a choice block is started and no options are present', () => {
+    expect(() => tokenize('Choice:\n')).toThrow(
+      errors.format_error(ErrorKind.NoChoicesProvided, 1).message,
+    );
+  });
 });

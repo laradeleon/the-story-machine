@@ -5,6 +5,7 @@ export enum ErrorKind {
   // lexer.ts
   MissingChoiceText = 'missing_choice_text',
   MissingChoiceDestination = 'missing_choice_destination',
+  NoChoicesProvided = 'no_choices_provided',
   MissingFlagName = 'missing_flag_name',
   MissingGotoDestination = 'missing_goto_destination',
   MissingOpenQuotation = 'missing_open_quotation',
@@ -35,6 +36,8 @@ const message_templates: Record<ErrorKind, (line: number, ...details: string[]) 
     `Line ${line} is missing quotation marks. Dialogue syntax: Character name: "dialogue"`,
   [ErrorKind.UnterminatedDialogue]: (line, ...reservedStatements: string[]) =>
     `Line ${line} has dialogue that is missing a closing quotation mark. Also make sure no dialogue line begins with reserved statements: '${reservedStatements.join(', ')}'`,
+  [ErrorKind.NoChoicesProvided]: (line) =>
+    `Line ${line} starts a choice block but has zero choices, please add choices. Choice syntax: choice text -> destination flag'`,
 
   // parser.ts
   [ErrorKind.UnexpectedToken]: (line, token) => `Line ${line} has an unexpected token: '${token}'`,
