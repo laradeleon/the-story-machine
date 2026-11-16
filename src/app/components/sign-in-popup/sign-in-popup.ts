@@ -119,6 +119,7 @@ export class SignInPopup {
 
   protected submitting = signal(false);
   protected errorMessage = signal<string | null>(null); // shown above the form
+  protected noticeMessage = signal<string | null>(null); // note above the sign in form
   protected fieldErrors = signal<Record<string, string>>({}); // backend messages under each field
 
   constructor() {
@@ -148,6 +149,7 @@ export class SignInPopup {
   protected switchTo(mode: 'signIn' | 'createAccount') {
     this.mode.set(mode);
     this.errorMessage.set(null);
+    this.noticeMessage.set(null);
     this.fieldErrors.set({});
   }
 
@@ -159,6 +161,7 @@ export class SignInPopup {
 
     this.submitting.set(true);
     this.errorMessage.set(null);
+    this.noticeMessage.set(null);
     try {
       const { email, password } = this.signInForm.getRawValue();
       await this.auth.login(email, password);
@@ -182,15 +185,29 @@ export class SignInPopup {
     this.submitting.set(true);
     this.errorMessage.set(null);
     this.fieldErrors.set({});
+    const { email, username, password } = this.createAccountForm.getRawValue();
+
     try {
-      const { email, username, password } = this.createAccountForm.getRawValue();
       await this.auth.register({ email, username, password });
-      this.close(); // account made and signed in
     } catch (error) {
-      // e.g. "Email or Username has been taken", or a field the backend didn't like
+      // the account wasn't made
       const { message, fieldErrors } = readApiError(error);
       this.errorMessage.set(message);
       this.fieldErrors.set(fieldErrors);
+      this.submitting.set(false);
+      return;
+    }
+
+    try {
+      await this.auth.login(email, password);
+      this.close(); // account made and signed in
+    } catch {
+      // if account was properly registered but autosign in failed
+      // submitting this form again would only say it's taken
+      // move to the sign in form with their email filled in so they just need their password
+      this.switchTo('signIn');
+      this.signInForm.setValue({ email, password: '' });
+      this.noticeMessage.set(AUTH_MESSAGES.accountCreatedSignIn);
     } finally {
       this.submitting.set(false);
     }

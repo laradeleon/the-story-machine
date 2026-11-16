@@ -39,10 +39,10 @@ export class AuthService {
     }
   }
 
-  // creates the account then signs straight in with the same details
+  // creates the account
+  // signing in is a separate step so the popup can tell "the account wasn't made" apart from "the account was made but signing in failed"
   async register(details: RegisterDetails) {
     await firstValueFrom(this.http.post(this.usersURL, details));
-    await this.login(details.email, details.password);
   }
 
   // the backend checks the email and password and gives back a login token and the user

@@ -47,6 +47,16 @@
   color: #ff8a80;
 }
 
+/* box at the top of the form for notes that arent errors */
+.form-notice {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
 .auth-submit {
   margin-top: 8px;
 }

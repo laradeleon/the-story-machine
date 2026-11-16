@@ -15,6 +15,11 @@
       <h2 id="sign-in-title" class="auth-title">Sign in</h2>
 
       <form class="popup-form" [formGroup]="signInForm" (ngSubmit)="signIn()" novalidate>
+        <!-- a note that isnt an error, like when the account was made but signing in didn't work -->
+        @if (noticeMessage(); as message) {
+          <p class="form-notice" role="status">{{ message }}</p>
+        }
+
         <!-- error from the backend, like wrong details -->
         @if (errorMessage(); as message) {
           <p class="form-error" role="alert">{{ message }}</p>
