@@ -1,3 +1,38 @@
+<!-- account menu in the top right corner -->
+<!-- shows "Guest" until someone signs in, then itll show their username -->
+<nav class="top-bar" aria-label="Account">
+  <div class="profile-menu" #profileMenu>
+    <button
+      type="button"
+      class="profile-button"
+      (click)="toggleMenu()"
+      aria-controls="profile-dropdown"
+      [attr.aria-expanded]="menuOpen()"
+      [attr.title]="isSignedIn() ? username() : null"
+    >
+      <span class="profile-icon" aria-hidden="true"></span>
+      <span>{{ isSignedIn() ? shortUsername() : 'Guest' }}</span>
+      <span class="profile-arrow" [class.open]="menuOpen()" aria-hidden="true"></span>
+    </button>
+
+    @if (menuOpen()) {
+      <div id="profile-dropdown" class="profile-dropdown">
+        @if (isSignedIn()) {
+          <!-- shows which account is signed in -->
+          <div class="profile-details">
+            <span class="profile-details-name">{{ username() }}</span>
+            <span class="profile-details-email">{{ email() }}</span>
+          </div>
+          <button type="button" (click)="signOut()">Sign out</button>
+        } @else {
+          <button type="button" (click)="openSignIn('signIn')">Sign in</button>
+          <button type="button" (click)="openSignIn('createAccount')">Create account</button>
+        }
+      </div>
+    }
+  </div>
+</nav>
+
 <!-- banner at the top of the page with the wallpaper behind the site name -->
 <header class="hero">
   <h1 class="website-name">The Story Machine</h1>
@@ -8,28 +43,8 @@
 <main class="stories-section">
   <div class="section-header">
     <h2 class="section-heading">Stories</h2>
-    <div class="section-actions">
-      <!-- takes the author to the writing page -->
-      <a class="primary-button" routerLink="/write">Write Story</a>
-      <!-- guests see "Profile" (opens the sign in popup), signed in users see their username (opens the menu) -->
-      <div class="profile-menu" #profileMenu>
-        <button
-          type="button"
-          class="primary-button"
-          (click)="onProfileClick()"
-          [attr.title]="isSignedIn() ? username() : null"
-          [attr.aria-expanded]="isSignedIn() ? menuOpen() : null"
-        >
-          {{ isSignedIn() ? shortUsername() : 'Profile' }}
-        </button>
-
-        @if (menuOpen()) {
-          <div class="profile-dropdown">
-            <button type="button" (click)="signOut()">Sign Out</button>
-          </div>
-        }
-      </div>
-    </div>
+    <!-- takes the author to the writing page -->
+    <a class="primary-button" routerLink="/write">Write Story</a>
   </div>
 
   <!-- shows loading message if stories are still being retrieved -->
@@ -62,7 +77,7 @@
   <app-story-preview [story]="story" (closed)="selectedStory.set(null)" />
 }
 
-<!-- sign in popup opened by the profile button -->
+<!-- sign in popup opened from the profile menu on whichever form was picked -->
 @if (showSignIn()) {
-  <app-sign-in-popup (closed)="showSignIn.set(false)" />
+  <app-sign-in-popup [startMode]="signInMode()" (closed)="showSignIn.set(false)" />
 }

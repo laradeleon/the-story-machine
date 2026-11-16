@@ -4,6 +4,8 @@ import {
   afterNextRender,
   computed,
   inject,
+  input,
+  linkedSignal,
   output,
   signal,
   viewChild,
@@ -47,6 +49,9 @@ const notReservedUsername: ValidatorFn = (control) => {
   }
   return null;
 };
+// the two forms the popup can show
+export type AuthFormMode = 'signIn' | 'createAccount';
+
 // fails when the two password boxes are different
 const passwordsMatch: ValidatorFn = (form) =>
   form.get('password')?.value === form.get('confirmPassword')?.value
@@ -57,6 +62,7 @@ const passwordsMatch: ValidatorFn = (form) =>
  * SignInPopup
  *
  * Opened by the Profile button on the landing page, only shown to guests.
+ * startMode picks which form shows first (Sign in or Create account in the menu)
  * Has two forms: sign in, and create account. A link at the bottom switches between them.
  * Closes the same ways as the story preview: the x, esc, or clicking the background.
  */
@@ -67,6 +73,7 @@ const passwordsMatch: ValidatorFn = (form) =>
   templateUrl: './sign-in-popup.html',
 })
 export class SignInPopup {
+  startMode = input<AuthFormMode>('signIn'); // which form to show when the popup opens
   closed = output<void>(); // tells the landing page it was closed
 
   private auth = inject(AuthService);
@@ -75,7 +82,7 @@ export class SignInPopup {
 
   protected readonly messages = AUTH_MESSAGES; // shared error messages
 
-  protected mode = signal<'signIn' | 'createAccount'>('signIn'); // which form is showing
+  protected mode = linkedSignal(() => this.startMode()); // which form is showing
 
   protected signInForm = new FormGroup({
     email: new FormControl('', {
@@ -146,7 +153,7 @@ export class SignInPopup {
   }
 
   // swaps between the sign in and create account forms
-  protected switchTo(mode: 'signIn' | 'createAccount') {
+  protected switchTo(mode: AuthFormMode) {
     this.mode.set(mode);
     this.errorMessage.set(null);
     this.noticeMessage.set(null);
