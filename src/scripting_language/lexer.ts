@@ -166,7 +166,7 @@ export function tokenize(sourceCode: string): Token[] {
       src.shift();
     } else {
       //we want to check now that its dialogue by ensuring it follows dialogue format of: Colin: "heyo guys"
-      const dialogueMatch = src[0].match(/^([A-Za-z][A-Za-z0-9 ]*):\s*(.*)$/);
+      const dialogueMatch = src[0].match(/^([A-Za-z][A-Za-z ]*):\s*(.*)$/);
       if (dialogueMatch) {
         if (dialogueMatch && !dialogueMatch[2]) {
           //no dialogue text provided, this is only a speaker switch
