@@ -85,7 +85,7 @@ function checkReserved(line: string): boolean {
 
 //check if this is charcter: dialogue format
 function checkDialogueStart(line: string): boolean {
-  return /^([A-Za-z][A-Za-z0-9 ]*):\s*(.*)$/.test(line.trim());
+  return /^([A-Za-z][A-Za-z ]*):\s*(.*)$/.test(line.trim());
 }
 
 export function tokenize(sourceCode: string): Token[] {
