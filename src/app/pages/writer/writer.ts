@@ -31,10 +31,10 @@ Hello, world.
 Dialogue is shown with quotes and by specifying the character before
 
 For example
-Arthur: “Good morning Lauren, welcome to Interactive fiction!”
-Paul: "We worked very hard on this, Adejare and I got zero sleep!”
+Arthur: "Good morning Lauren, welcome to Interactive fiction!"
+Paul: "We worked very hard on this, Adejare and I got zero sleep!"
 Adejare looks at you with sleepless eyes.
-Krupal: “Wake up dude..”
+Krupal: "Wake up dude.."
 
 You can define flags, these are points in the story we can jump to
 
