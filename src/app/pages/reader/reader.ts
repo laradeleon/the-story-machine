@@ -1,12 +1,14 @@
-import { Component, computed, signal, inject } from '@angular/core';
+import { Component, computed, effect, signal, inject } from '@angular/core';
 
 import { ChoiceOption, Line } from '../../../models/story';
 import { Chapter } from '../../../models/chapter';
 import { StoryService } from '../../services/story.service';
 import { PreviewService } from '../../services/preview.service';
+import { ReadingProgressService } from '../../services/reading-progress.service';
 import { ChapterNotFoundError } from '../../../models/errors';
+import { ExitReaderDialog } from '../../components/exit-reader-dialog/exit-reader-dialog';
 
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 // the words to display for prose or a dialogue line for dialogue box
 interface LineText {
@@ -33,7 +35,7 @@ function toLineText(line: Line | undefined): LineText | null {
 }
 
 @Component({
-  imports: [RouterLink],
+  imports: [RouterLink, ExitReaderDialog],
   selector: 'app-read',
   styleUrl: './reader.css',
   templateUrl: './reader.html',
@@ -53,6 +55,10 @@ function toLineText(line: Line | undefined): LineText | null {
  * - goTo() goes to the specified line. its used by next() and by the choice buttons. it also skips over goto lines,
  *   since we dont actually display the content in a goto line, the reader just jumps to that line.
  *
+ * Where the reader is (using chapterIndex and lineId) is saved as they read so opening the story again picks up from the same place.
+ * - if a story is finished, it clears the progress so it starts from the beginning next time.
+ *
+ * The Exit button (or Esc) asks before leaving the story.
  */
 export class Reader {
   // true when opened by the writer's Preview button (the /preview route)
@@ -61,8 +67,14 @@ export class Reader {
   // the story id from the url /read/storyId
   private storyId = inject(ActivatedRoute).snapshot.paramMap.get('storyId') ?? '';
 
+  private router = inject(Router);
+  private progress = inject(ReadingProgressService);
+
+  // where the reader stopped last time, so the story opens there
+  private savedPosition = this.isPreview || !this.storyId ? null : this.progress.get(this.storyId);
+
   // which chapter is being read, 0 is the first chapter
-  private chapterIndex = signal(0); // when this changes, the chapter below reloads
+  private chapterIndex = signal(this.savedPosition?.chapterIndex ?? 0); // when this changes, the chapter below reloads
 
   // a saved story is loaded from the story service (not used when previewing)
   private storyChapter = this.isPreview
@@ -94,7 +106,53 @@ export class Reader {
   );
 
   // the line being shown, if null then user is on title page of chapter (before line 0)
-  private lineId = signal<number | null>(null); // a signal
+  private lineId = signal<number | null>(this.savedPosition?.lineId ?? null); // a signal
+
+  protected exitConfirmOpen = signal(false); // whether "are you sure you want to exit?" popup is open
+
+  // true until a restored position has been checked against the chapter it points to
+  private checkingSavedPosition = this.savedPosition !== null;
+
+  constructor() {
+    // saves the reader's place every time it changes
+    effect(() => {
+      // a saved position might be at a point in a chapter the author has deleted since
+      // so just go back to the first one in that case
+      if (this.checkingSavedPosition && this.chapterMissing() && this.chapterIndex() > 0) {
+        this.checkingSavedPosition = false;
+        this.chapterIndex.set(0);
+        this.lineId.set(null);
+        return;
+      }
+
+      // no progress to save if a chapter couldnt be loaded in
+      if (this.isPreview || !this.storyId || this.isLoading() || this.hasError()) {
+        return;
+      }
+      const chapter = this.chapter();
+      const lineId = this.lineId();
+      if (!chapter) {
+        return;
+      }
+
+      // if author shortens chapter and saved position may be past the end of a chapter, just start from beginning
+      if (this.checkingSavedPosition) {
+        this.checkingSavedPosition = false;
+        if (lineId !== null && lineId > chapter.lines.length) {
+          this.lineId.set(null);
+          return;
+        }
+      }
+
+      // finished the whole story, so next time it opens from the beginning
+      if (this.page().kind === 'end' && !chapter.hasNextChapter) {
+        this.progress.clear(this.storyId);
+        return;
+      }
+
+      this.progress.save(this.storyId, { chapterIndex: this.chapterIndex(), lineId });
+    });
+  }
 
   // determines the type of content (prose, dialogue....)the page should currently display based on the current line id contents
   // reruns by itself whenever a signal it reads changes (when lineId changes)
@@ -175,13 +233,35 @@ export class Reader {
     this.lineId.set(lineId);
   }
 
+  // leaves the reader
+  // preview goes back to writer, a story goes back to the story list
+  protected exit() {
+    this.router.navigate([this.isPreview ? '/write' : '/']);
+  }
+
   // space or enter goes to the next line
   // 1 2 3 4 on keyboard selects that option
+  // esc asks if they want to exit
   protected onKeydown(event: KeyboardEvent) {
+    if (this.exitConfirmOpen()) {
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      this.exitConfirmOpen.set(true);
+      return;
+    }
+
     // only count first press and not if the user holds the key down as it skips through everything otherwise
     if (event.repeat || this.hasError()) {
       return;
     }
+
+    // space or enter on the exit button should press it, not move the story on
+    if (event.target instanceof Element && event.target.closest('.exit-button')) {
+      return;
+    }
+
     const page = this.page();
 
     // should not skip through choice page
