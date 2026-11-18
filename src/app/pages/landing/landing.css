@@ -72,3 +72,12 @@
   gap: 24px; /*space between each story*/
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
 }
+
+/* the continue reading list above full story list */
+.continue-section {
+  margin-bottom: 48px;
+}
+
+.continue-heading {
+  margin-bottom: 24px;
+}

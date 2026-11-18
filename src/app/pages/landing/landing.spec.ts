@@ -6,6 +6,7 @@ import { StoryService } from '../../services/story.service';
 import { StoryDetails } from '../../../models/story-details';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { ReadingProgressService } from '../../services/reading-progress.service';
 
 // fake stories for the landing page to show
 const mockStories: StoryDetails[] = [
@@ -33,6 +34,7 @@ describe('Landing', () => {
   let compiled: HTMLElement;
 
   beforeEach(async () => {
+    localStorage.clear(); // reading progress is saved here, so no story starts as "in progress"
     await TestBed.configureTestingModule({
       imports: [Landing],
       providers: [
@@ -89,6 +91,73 @@ describe('Landing', () => {
     await fixture.whenStable();
 
     expect(compiled.querySelector('app-story-preview')).toBeNull();
+  });
+
+  describe('continue reading', () => {
+    afterEach(() => localStorage.clear());
+
+    // the titles shown in the continue reading list
+    function continueTitles() {
+      return Array.from(compiled.querySelectorAll('.continue-section .story-title')).map(
+        (title) => title.textContent,
+      );
+    }
+
+    // a reader who hasnt started anything shouldnt see an empty section
+    it('should not show the list if no stories have been started', () => {
+      expect(compiled.querySelector('.continue-section')).toBeNull();
+    });
+
+    // started stories get their own list (continue reading list), with the chapter the user was last on
+    it('should list the stories the reader has started', async () => {
+      TestBed.inject(ReadingProgressService).save('2', { chapterIndex: 1, lineId: 4 });
+      await fixture.whenStable();
+
+      expect(continueTitles()).toEqual(['Escape From Room 404']);
+      expect(compiled.querySelector('.continue-section .story-progress')?.textContent).toContain(
+        'Chapter 2',
+      );
+      // the full list still has every story
+      expect(
+        compiled.querySelectorAll('.story-grid')[1].querySelectorAll('.story-card').length,
+      ).toBe(2);
+    });
+
+    // the story they read last should be furthest left, even if it comes later in the full story list
+    it('should put the most recently read story first', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] }); // so the two saves happen at different times
+      const progress = TestBed.inject(ReadingProgressService);
+      vi.setSystemTime(1000);
+      progress.save('1', { chapterIndex: 0, lineId: 1 });
+      vi.setSystemTime(2000);
+      progress.save('2', { chapterIndex: 0, lineId: 1 }); // read after story 1
+      vi.useRealTimers();
+      await fixture.whenStable();
+
+      expect(continueTitles()).toEqual(['Escape From Room 404', 'The Lighthouse Keeper']);
+    });
+
+    // progress saved for a story that isn't in the story list any more (deleted or unpublished) is left out
+    it('should leave out started stories that are no longer listed', async () => {
+      TestBed.inject(ReadingProgressService).save('gone', { chapterIndex: 0, lineId: 1 });
+      await fixture.whenStable();
+
+      expect(compiled.querySelector('.continue-section')).toBeNull();
+    });
+
+    // clicking a continue reading card opens the same preview, which then offers continue reading
+    it('should open the preview with continue reading when a started story is clicked', async () => {
+      TestBed.inject(ReadingProgressService).save('2', { chapterIndex: 0, lineId: 1 });
+      await fixture.whenStable();
+
+      (compiled.querySelector('.continue-section .story-card') as HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      expect(compiled.querySelector('#preview-title')?.textContent).toContain(
+        'Escape From Room 404',
+      );
+      expect(compiled.querySelector('.preview-actions')?.textContent).toContain('Continue Reading');
+    });
   });
 });
 

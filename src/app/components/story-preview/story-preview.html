@@ -23,8 +23,14 @@
     <p class="preview-updated">Last updated {{ story().updatedAt | date: 'mediumDate' }}</p>
 
     <div class="preview-actions">
-      <!-- takes the reader to /read/<story id> -->
-      <a class="primary-button" [routerLink]="['/read', story().story_id]">Read Story</a>
+      <!-- show "show continue reading" "instead of "read story" if the user has made progress in this book -->
+      @if (hasProgress()) {
+        <a class="primary-button" [routerLink]="['/read', story().story_id]">Continue Reading</a>
+        <!-- clears their saved place first, so the reader opens on the first page -->
+        <button type="button" class="preview-button" (click)="startOver()">Start Over</button>
+      } @else {
+        <a class="primary-button" [routerLink]="['/read', story().story_id]">Read Story</a>
+      }
     </div>
   </div>
 </dialog>
