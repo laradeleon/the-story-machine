@@ -410,6 +410,15 @@ describe('Reader progress and exit', () => {
       expect(page().querySelector('.dialogue-box')?.textContent).toContain('You hide.');
     });
 
+    // opening a story and leaving on its first page isn't really starting it so it shouldn't show up in the continue reading list
+    it("doesn't count a story as started until the reader goes past the first page", async () => {
+      await openStory();
+      expect(progress.get('s1')).toBeNull(); // on chapter 1's title page
+
+      await clickPage(); // line 0
+      expect(progress.get('s1')).toEqual({ chapterIndex: 0, lineId: 0 });
+    });
+
     // once they've finished, there's nothing to resume, so opening it again starts from the beginning
     it('opens from the beginning after finishing the story', async () => {
       progress.save('s1', { chapterIndex: 0, lineId: 6 }); // one page before the end

@@ -89,4 +89,73 @@ describe('ReadingProgressService', () => {
     localStorage.setItem('tsm_reading_progress_guest', 'null');
     expect(progress.get('s1')).toBeNull();
   });
+
+  // the landing page's continue reading list
+  it('lists the stories this reader has started', () => {
+    progress.save('s1', { chapterIndex: 0, lineId: 2 });
+    progress.save('s2', { chapterIndex: 1, lineId: null });
+    expect(progress.inProgressStoryIds()).toHaveLength(2);
+
+    // starting over (or finishing) clears a story, so it drops off the list
+    progress.clear('s1');
+    expect(progress.inProgressStoryIds()).toEqual(['s2']);
+  });
+
+  // story that the user read most recently goes first (furthest left)
+  describe('order', () => {
+    // fake clock to set the time
+    beforeEach(() => vi.useFakeTimers({ toFake: ['Date'] }));
+    afterEach(() => vi.useRealTimers());
+
+    it('puts the most recently read story first', () => {
+      vi.setSystemTime(1000);
+      progress.save('s1', { chapterIndex: 0, lineId: 2 });
+      vi.setSystemTime(2000);
+      progress.save('s2', { chapterIndex: 0, lineId: 5 });
+      vi.setSystemTime(3000);
+      progress.save('s3', { chapterIndex: 1, lineId: 0 });
+
+      expect(progress.inProgressStoryIds()).toEqual(['s3', 's2', 's1']);
+    });
+
+    // going back to an older story (every page turn saves) should move it back to the front
+    it('moves a story to the front when it is read again', () => {
+      vi.setSystemTime(1000);
+      progress.save('s1', { chapterIndex: 0, lineId: 2 });
+      vi.setSystemTime(2000);
+      progress.save('s2', { chapterIndex: 0, lineId: 5 });
+      vi.setSystemTime(3000);
+      progress.save('s1', { chapterIndex: 0, lineId: 3 }); // turned a page in s1
+
+      expect(progress.inProgressStoryIds()).toEqual(['s1', 's2']);
+    });
+
+    // a time that's missing or broken shouldn't hide the story, it just goes last in the last
+    it('puts a story with no read time last', () => {
+      localStorage.setItem(
+        'tsm_reading_progress_guest',
+        JSON.stringify({
+          s1: { chapterIndex: 0, lineId: 2 }, // no lastReadAt
+          s2: { chapterIndex: 0, lineId: 5, lastReadAt: 2000 },
+        }),
+      );
+      expect(progress.inProgressStoryIds()).toEqual(['s2', 's1']);
+    });
+  });
+
+  // another reader's stories shouldn't show up in your list
+  it("only lists the signed in reader's stories", () => {
+    progress.save('s1', { chapterIndex: 0, lineId: 2 }); // as a guest
+    currentUser.set(ada);
+    expect(progress.inProgressStoryIds()).toEqual([]);
+  });
+
+  //positions that can't be used to put the user back in the same spot they left off are skipped instead of showing a story that won't open properly
+  it("leaves out saved positions it can't use", () => {
+    localStorage.setItem(
+      'tsm_reading_progress_guest',
+      JSON.stringify({ s1: { chapterIndex: 0, lineId: 2 }, s2: { chapterIndex: 'x', lineId: 0 } }),
+    );
+    expect(progress.inProgressStoryIds()).toEqual(['s1']);
+  });
 });

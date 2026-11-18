@@ -71,7 +71,7 @@ export class Reader {
   private progress = inject(ReadingProgressService);
 
   // where the reader stopped last time, so the story opens there
-  private savedPosition = this.isPreview || !this.storyId ? null : this.progress.get(this.storyId);
+  private savedPosition = this.loadSavedPosition();
 
   // which chapter is being read, 0 is the first chapter
   private chapterIndex = signal(this.savedPosition?.chapterIndex ?? 0); // when this changes, the chapter below reloads
@@ -146,6 +146,13 @@ export class Reader {
 
       // finished the whole story, so next time it opens from the beginning
       if (this.page().kind === 'end' && !chapter.hasNextChapter) {
+        this.progress.clear(this.storyId);
+        return;
+      }
+
+      // still on the very first page (chapter 1's title) so there's nothing to resume from yet
+      // prevents just opening a story or pressing start over and leaving straight away from putting it in the continue reading list
+      if (this.chapterIndex() === 0 && lineId === null) {
         this.progress.clear(this.storyId);
         return;
       }
@@ -236,7 +243,20 @@ export class Reader {
   // leaves the reader
   // preview goes back to writer, a story goes back to the story list
   protected exit() {
-    this.router.navigate([this.isPreview ? '/write' : '/']);
+    if (this.isPreview) {
+      this.router.navigate(['/write']);
+    } else {
+      this.router.navigate(['/']);
+    }
+  }
+
+  // the saved position for this story, or null to start from the beginning
+  // previews always start from the beginning and without a story id there's nothing to look up
+  private loadSavedPosition() {
+    if (this.isPreview || !this.storyId) {
+      return null;
+    }
+    return this.progress.get(this.storyId);
   }
 
   // space or enter goes to the next line
