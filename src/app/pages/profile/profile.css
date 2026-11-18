@@ -1,0 +1,147 @@
+:host {
+  --profile-page: #1d1b33; /* page background */
+  --profile-card: #2a2747; /* the about card */
+  --profile-card-border: rgba(255, 255, 255, 0.14);
+
+  display: block;
+  min-height: 100vh;
+  background: var(--profile-page);
+}
+
+/* back button to return to stories*/
+.back-link {
+  position: absolute;
+  top: 32px;
+  left: 32px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(13, 12, 23, 0.45);
+  backdrop-filter: blur(6px);
+  color: white;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.back-link:hover,
+.back-link:focus-visible {
+  border-color: var(--color-accent);
+}
+
+/* the banner on top */
+.profile-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 16px;
+  padding: 96px 24px 48px;
+  border-radius: 1.5rem;
+  text-align: center;
+  color: white;
+  background:
+    linear-gradient(rgba(134, 115, 201, 0.55), rgba(52, 44, 99, 0.85)),
+    url('/images/wallpaper.jpg') center / cover;
+}
+
+/* default profile picture */
+.profile-picture {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 12px;
+  border: 4px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.profile-name {
+  margin: 0;
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 2.25rem;
+  font-weight: 600;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+.profile-username {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1.05rem;
+}
+
+/* everything under the banner */
+.profile-body {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 16px 24px 48px;
+}
+
+.about-card {
+  max-width: 360px;
+  padding: 24px;
+  border: 1px solid var(--profile-card-border);
+  border-radius: 1rem;
+  background: var(--profile-card);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.about-card h2 {
+  margin: 0 0 16px;
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* grey heading above the profile link */
+.about-label {
+  margin: 0 0 4px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.profile-link {
+  color: var(--color-accent);
+  overflow-wrap: anywhere;
+}
+
+.about-placeholder {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.about-joined {
+  margin: 16px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--profile-card-border);
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+/* not found, error and loading messages, in the middle of the page */
+.profile-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.profile-message h1 {
+  margin: 0;
+  font-family: 'Source Serif 4', Georgia, serif;
+}
+
+.profile-message p {
+  margin: 0 0 8px;
+  color: var(--color-text-muted);
+}

@@ -1,0 +1,60 @@
+<!-- back to the story list in the top left, account menu in the top right -->
+<a class="back-link" routerLink="/">← Stories</a>
+<app-account-menu />
+
+<!-- the banner across the top with user's picture and name in the middle -->
+@if (profile(); as person) {
+  <header class="profile-banner">
+    <img class="profile-picture" src="/images/profile.png" alt="" width="120" height="120" />
+    <h1 class="profile-name">{{ person.displayName }}</h1>
+    @if (person.username) {
+      <!-- shows @username -->
+      <p class="profile-username">&#64;{{ person.username }}</p>
+    }
+  </header>
+
+  <!-- the about card  -->
+  @if (isOwnProfile()) {
+    <main class="profile-body">
+      <section class="about-card">
+        <h2>About</h2>
+        <p class="about-label">Profile link</p>
+        @if (person.profileUrl) {
+          <a
+            class="profile-link"
+            [href]="person.profileUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ profileLinkText() }}
+          </a>
+        } @else {
+          <p class="about-placeholder">You haven't added a profile link yet.</p>
+        }
+        <!-- display what date they created their account -->
+        @if (person.joinedAt) {
+          <p class="about-joined">Joined {{ person.joinedAt | date: 'MMMM y' }}</p>
+        }
+      </section>
+    </main>
+  }
+} @else if (profile() === null) {
+  <!-- no user with this id or they haven't published anything -->
+  <main class="profile-message">
+    <h1>Profile not found</h1>
+    <p>
+      We couldn't find this profile. It may not exist or the author hasn't published a story yet.
+    </p>
+    <a class="primary-button" routerLink="/">Back to stories</a>
+  </main>
+} @else if (hasError()) {
+  <main class="profile-message">
+    <h1>Something went wrong</h1>
+    <p>Sorry, this profile couldn't be loaded right now. Please try again in a moment.</p>
+    <a class="primary-button" routerLink="/">Back to stories</a>
+  </main>
+} @else if (isLoading()) {
+  <main class="profile-message">
+    <p>Loading profile...</p>
+  </main>
+}

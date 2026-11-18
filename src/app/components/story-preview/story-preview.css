@@ -53,6 +53,21 @@
   font-size: 0.875rem;
 }
 
+/* author's name on the story card preview popup, can be clicked to see their profile*/
+.author-link {
+  color: var(--color-text);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: var(--color-border);
+  text-underline-offset: 3px;
+}
+
+.author-link:hover,
+.author-link:focus-visible {
+  color: var(--color-accent);
+  text-decoration-color: currentColor;
+}
+
 .preview-description {
   line-height: 1.6;
 }

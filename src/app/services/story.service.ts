@@ -38,6 +38,7 @@ export class StoryService {
           story_id: story._id,
           title: story.title,
           author: story.author?.displayName ?? 'Unknown author',
+          author_id: story.authorId,
           description: story.description,
           updatedAt: story.updatedAt,
         }));
