@@ -9,8 +9,9 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { PreviewService } from '../../services/preview.service';
-import { DraftService } from '../../services/draft.service';
+import { WriterStateService } from '../../services/writer-state.service';
 import { MetadataDialog } from '../../components/metadata-dialog/metadata-dialog';
+import { CharactersDialog } from '../../components/characters-dialog/characters-dialog';
 import { ComingSoonDialog } from '../../components/coming-soon-dialog/coming-soon-dialog';
 import { AstDialog } from '../../components/ast-dialog/ast-dialog';
 import Parser, { MAX_OPTIONS } from '../../../scripting_language/parser';
@@ -59,7 +60,7 @@ Sprint 1 was about getting the foundation planted.
 
 //setup for writer component
 @Component({
-  imports: [RouterLink, MetadataDialog, ComingSoonDialog, AstDialog],
+  imports: [RouterLink, MetadataDialog, CharactersDialog, ComingSoonDialog, AstDialog],
   selector: 'app-writer',
   styleUrl: './writer.css',
   templateUrl: './writer.html',
@@ -73,7 +74,7 @@ export class Writer {
   editorView?: EditorView;
 
   private previewService = inject(PreviewService); //plays the script in the reader when Preview is pressed
-  protected draft = inject(DraftService); //protected so the template can use the metadata in it
+  protected state = inject(WriterStateService); //protected so the template can use the metadata in it
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
 
@@ -82,6 +83,9 @@ export class Writer {
 
   //whether the metadata popup is showing
   protected metadataOpen = signal(false);
+
+  //whether the characters popup is showing
+  protected charactersOpen = signal(false);
 
   //TEMPORARY: the name of the unfinished button that was clicked, shown in the coming soon popup.
   //null when the popup is closed
@@ -103,7 +107,7 @@ export class Writer {
         this.editorHost().nativeElement,
         //coming back to the writer puts the script back how it was left, otherwise start with the example
         //replace with chapter text when editing a chapter
-        this.draft.script() ?? exampleStory,
+        this.state.script() ?? exampleStory,
         () => this.previewError.set(null),
       );
     });
@@ -123,12 +127,12 @@ export class Writer {
     return this.editorView?.state.doc.toString() ?? '';
   }
 
-  //saves the editor's text to the draft service and localStorage.
+  //saves the editor's text to the writer state service and localStorage.
   //only done when leaving the page, refreshing/closing it or pressing Preview, not on every
   //keystroke, so typing doesn't slow down as the story gets longer
   protected save_script() {
     if (this.editorView) {
-      this.draft.save_script_now(this.current_script());
+      this.state.save_script_now(this.current_script());
     }
   }
 

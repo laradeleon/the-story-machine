@@ -2,8 +2,8 @@ import { effect, inject, Injectable, signal } from '@angular/core';
 import { Chapter } from '../../models/chapter';
 import { StoryNode } from '../../scripting_language/ast';
 import { toJSON } from '../../scripting_language/to_json';
-import { DraftService } from './draft.service';
 import { load, save } from './local-storage';
+import { WriterStateService } from './writer-state.service';
 
 // the key the chapter is saved under in the browser's localStorage
 const CHAPTER_KEY = 'story-machine:preview-chapter';
@@ -14,7 +14,7 @@ const CHAPTER_KEY = 'story-machine:preview-chapter';
 // also saved in localStorage so refreshing the /preview page still plays it
 @Injectable({ providedIn: 'root' }) // global singleton
 export class PreviewService {
-  private draft = inject(DraftService); // the title comes from the writer's metadata
+  private state = inject(WriterStateService); // the title comes from the writer's metadata
 
   chapter = signal<Chapter | null>(load(CHAPTER_KEY, null)); // the parsed script for the reader to play
 
@@ -28,7 +28,7 @@ export class PreviewService {
   build_preview(ast: StoryNode) {
     // the title from the metadata popup, author and id are temporary until stories are saved
     const json = toJSON(ast, {
-      title: this.draft.metadata().title || 'Untitled Story',
+      title: this.state.metadata().title || 'Untitled Story',
       author: 'Unknown author',
       story_id: 'preview', // not saved yet, so it has no real id
     });

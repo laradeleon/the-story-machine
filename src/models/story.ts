@@ -8,7 +8,23 @@ export interface StoryInfo {
   story_id: string;
 }
 
-export type Character = unknown; //todo later sprint
+// one picture of a character, shown when a line uses this keyword as its emotion
+export interface Emotion {
+  id: string; // unique key, so the emotion can be renamed without losing its place in the list
+  keyword: string; // the word the author types to pick this portrait, e.g. "happy"
+  image_url: string | null; // where the portrait image is (a data URL for now), null until one is uploaded
+  portrait_x: number; // how far the portrait is moved sideways, as a % of the upload area (0 = centred)
+  portrait_y: number; // how far the portrait is moved down, as a % of the upload area (0 = centred)
+  zoom: number; // how big the portrait is, as a % (100 = fits the upload area)
+}
+
+// a character the author defined in the editor
+export interface Character {
+  id: string; // unique key, used to refer to the character
+  name: string; // the name shown in dialogue
+  description: string; // free-text description the author writes about the character (can be empty)
+  emotions: Emotion[]; // every portrait this character has
+}
 
 export interface Text {
   words: string[];

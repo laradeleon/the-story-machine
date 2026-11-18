@@ -86,6 +86,13 @@ describe('Writer', () => {
     expect(fixture.debugElement.query(By.css('app-metadata-dialog'))).not.toBeNull();
   });
 
+  it('should open the characters popup when Characters is pressed', () => {
+    button_named('Characters').click();
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.css('app-characters-dialog'))).not.toBeNull();
+  });
+
   it('should go to the reader when Preview is pressed with a valid script', () => {
     const router = TestBed.inject(Router);
     const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);

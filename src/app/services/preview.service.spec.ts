@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import Parser from '../../scripting_language/parser';
-import { DraftService } from './draft.service';
 import { PreviewService } from './preview.service';
+import { WriterStateService } from './writer-state.service';
 
 // the key PreviewService saves the chapter under (not exported from preview.service.ts, so it's copied here)
 const CHAPTER_KEY = 'story-machine:preview-chapter';
@@ -32,7 +32,7 @@ describe('PreviewService', () => {
   });
 
   it('should use the title from the metadata popup', () => {
-    TestBed.inject(DraftService).metadata.set({
+    TestBed.inject(WriterStateService).metadata.set({
       title: 'The Lighthouse',
       genres: [],
       description: '',
