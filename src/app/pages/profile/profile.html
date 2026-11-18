@@ -18,19 +18,60 @@
     <main class="profile-body">
       <section class="about-card">
         <h2>About</h2>
-        <p class="about-label">Profile link</p>
-        @if (person.profileUrl) {
-          <a
-            class="profile-link"
-            [href]="person.profileUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {{ profileLinkText() }}
-          </a>
+
+        <!-- their bio or a box to edit it in -->
+        @if (editingBio()) {
+          <textarea
+            #bioBox
+            class="bio-box"
+            rows="5"
+            [maxLength]="bioMaxLength"
+            [value]="bioDraft()"
+            (input)="bioDraft.set(bioBox.value)"
+            placeholder="Tell readers a bit about yourself and what you write"
+          ></textarea>
+          <!-- how much of the 500 max characters theyve used -->
+          <p class="bio-count">{{ bioDraft().length }}/{{ bioMaxLength }}</p>
+          @if (bioError(); as message) {
+            <p class="bio-error">{{ message }}</p>
+          }
+          <div class="bio-actions">
+            <button
+              type="button"
+              class="cancel-button"
+              [disabled]="savingBio()"
+              (click)="cancelEditingBio()"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="primary-button"
+              [disabled]="savingBio()"
+              (click)="saveBio()"
+            >
+              @if (savingBio()) {
+                Saving...
+              } @else {
+                Save
+              }
+            </button>
+          </div>
         } @else {
-          <p class="about-placeholder">You haven't added a profile link yet.</p>
+          @if (person.bio) {
+            <p class="bio-text">{{ person.bio }}</p>
+          } @else {
+            <p class="about-placeholder">Help readers get to know you by adding a bio.</p>
+          }
+          <button type="button" class="edit-bio-button" (click)="startEditingBio()">
+            @if (person.bio) {
+              Edit bio
+            } @else {
+              Add bio
+            }
+          </button>
         }
+
         <!-- display what date they created their account -->
         @if (person.joinedAt) {
           <p class="about-joined">Joined {{ person.joinedAt | date: 'MMMM y' }}</p>

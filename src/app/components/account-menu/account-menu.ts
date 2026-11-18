@@ -1,5 +1,5 @@
 import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { AuthFormMode, SignInPopup } from '../sign-in-popup/sign-in-popup';
 
@@ -26,6 +26,7 @@ import { AuthFormMode, SignInPopup } from '../sign-in-popup/sign-in-popup';
 })
 export class AccountMenu {
   private auth = inject(AuthService);
+  private router = inject(Router);
   private profileMenu = viewChild.required<ElementRef<HTMLElement>>('profileMenu');
 
   protected menuOpen = signal(false); // whether the dropdown is showing
@@ -69,9 +70,11 @@ export class AccountMenu {
     this.showSignIn.set(true);
   }
 
+  // go back to the landing page after sign out
   protected signOut() {
     this.menuOpen.set(false);
     this.auth.logout(); // the button goes back to "Guest"
+    this.router.navigate(['/']);
   }
 
   protected closeMenuOnOutsideClick(event: MouseEvent) {

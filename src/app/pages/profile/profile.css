@@ -80,7 +80,7 @@
 }
 
 .about-card {
-  max-width: 360px;
+  max-width: 1200px;
   padding: 24px;
   border: 1px solid var(--profile-card-border);
   border-radius: 1rem;
@@ -95,18 +95,96 @@
   font-weight: 600;
 }
 
-/* grey heading above the profile link */
-.about-label {
-  margin: 0 0 4px;
+/* the bio */
+.bio-text {
+  margin: 0;
+  line-height: 1.6;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* edit bio */
+.edit-bio-button {
+  margin-top: 12px;
+  padding: 6px 14px;
+  border: 1px solid var(--profile-card-border);
+  border-radius: 0.5rem;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.edit-bio-button:hover,
+.edit-bio-button:focus-visible {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* the box for writing the bio */
+.bio-box {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--profile-card-border);
+  border-radius: 0.5rem;
+  background: var(--profile-page);
+  color: var(--color-text);
+  font: inherit;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.bio-box:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* display the character count out of 500 (max)*/
+.bio-count {
+  margin: 4px 0 0;
+  text-align: right;
   font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: var(--color-text-muted);
 }
 
-.profile-link {
-  color: var(--color-accent);
-  overflow-wrap: anywhere;
+.bio-error {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: #ff8a80;
+}
+
+/* cancel and save on the right */
+.bio-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.bio-actions .primary-button {
+  padding: 8px 16px;
+}
+
+.bio-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.cancel-button {
+  padding: 8px 16px;
+  border: 1px solid var(--profile-card-border);
+  border-radius: 0.5rem;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cancel-button:hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .about-placeholder {

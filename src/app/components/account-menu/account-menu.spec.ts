@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { computed, signal } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { AccountMenu } from './account-menu';
 import { AuthService } from '../../services/auth.service';
 import { GUEST_USER, User } from '../../../models/auth';
@@ -75,5 +75,20 @@ describe('AccountMenu', () => {
     const button = compiled.querySelector('.profile-button');
     expect(button?.textContent).toContain('averyvery…');
     expect(button?.getAttribute('title')).toBe('averyveryverylongname');
+  });
+
+  // when you sign out, you get put back to the landing page
+  it('goes back to the landing page after signing out', async () => {
+    currentUser.set(ada);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    await openMenu();
+
+    const signOut = Array.from(compiled.querySelectorAll('.profile-dropdown button')).find((b) =>
+      b.textContent?.includes('Sign out'),
+    ) as HTMLButtonElement;
+    signOut.click();
+
+    expect(currentUser()._id).toBe(GUEST_USER._id);
+    expect(navigate).toHaveBeenCalledWith(['/']);
   });
 });

@@ -13,7 +13,6 @@ const ada: User = {
   _id: '6afb4da918c4151edefe4593',
   username: 'ada_writes',
   displayName: 'Ada Lovelace',
-  profileUrl: 'https://example.com/ada/',
   createdAt: '2026-11-02T10:00:00.000Z',
 };
 
@@ -24,6 +23,7 @@ describe('Profile', () => {
   let harness: RouterTestingHarness;
   const currentUser = signal<User>(GUEST_USER); // who's signed in
   let getDisplayName: ReturnType<typeof vi.fn>;
+  let updateProfile: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     currentUser.set(GUEST_USER);
@@ -32,6 +32,10 @@ describe('Profile', () => {
         return 'Bola Writes';
       }
       return null;
+    });
+
+    updateProfile = vi.fn(async (changes: Partial<User>) => {
+      currentUser.update((user) => ({ ...user, ...changes }));
     });
 
     TestBed.configureTestingModule({
@@ -44,6 +48,7 @@ describe('Profile', () => {
             currentUser,
             isSignedIn: computed(() => currentUser()._id !== GUEST_USER._id),
             logout: () => currentUser.set(GUEST_USER),
+            updateProfile,
           },
         },
         { provide: ProfileService, useValue: { getDisplayName } },
@@ -65,23 +70,12 @@ describe('Profile', () => {
   describe('your own profile', () => {
     beforeEach(() => currentUser.set(ada));
 
-    // make sure it shows display name, username and profile link
-    it('shows your display name, username and profile link', async () => {
+    // make sure it shows display name and username
+    it('shows your display name and username', async () => {
       await openProfile(ada._id);
 
       expect(page().querySelector('.profile-name')?.textContent).toContain('Ada Lovelace');
       expect(page().querySelector('.profile-username')?.textContent).toContain('@ada_writes');
-      const link = page().querySelector<HTMLAnchorElement>('.profile-link');
-      expect(link?.getAttribute('href')).toBe('https://example.com/ada/');
-      expect(link?.textContent?.trim()).toBe('example.com/ada');
-    });
-
-    // new accounts don't have a profile link, so the page should properly indicate this
-    it("says so when you haven't added a profile link", async () => {
-      currentUser.set({ ...ada, profileUrl: '' });
-      await openProfile(ada._id);
-      expect(page().querySelector('.profile-link')).toBeNull();
-      expect(page().textContent).toContain("You haven't added a profile link yet.");
     });
 
     // default profile photo
@@ -130,5 +124,94 @@ describe('Profile', () => {
 
     expect(getDisplayName).toHaveBeenCalledWith(ada._id);
     expect(page().querySelector('.profile-username')).toBeNull();
+  });
+
+  describe('bio', () => {
+    beforeEach(() => currentUser.set({ ...ada, bio: 'I write mysteries.' }));
+
+    function button(text: string) {
+      return Array.from(page().querySelectorAll('button')).find((b) =>
+        b.textContent?.includes(text),
+      ) as HTMLButtonElement;
+    }
+
+    // types into the bio box
+    async function typeBio(text: string) {
+      const box = page().querySelector<HTMLTextAreaElement>('.bio-box')!;
+      box.value = text;
+      box.dispatchEvent(new Event('input'));
+      await harness.fixture.whenStable();
+    }
+
+    it('shows your bio', async () => {
+      await openProfile(ada._id);
+      expect(page().querySelector('.bio-text')?.textContent).toContain('I write mysteries.');
+    });
+
+    // new accounts start with no bio, so they get an add bio button
+    it("asks you to add one when you don't have one", async () => {
+      currentUser.set({ ...ada, bio: '' });
+      await openProfile(ada._id);
+
+      expect(page().textContent).toContain('Help readers get to know you by adding a bio.');
+      expect(button('Add bio')).toBeTruthy();
+    });
+
+    // the main flow of bios is edit, type, save and the new bio shows straight away
+    it('saves a new bio and shows it', async () => {
+      await openProfile(ada._id);
+      button('Edit bio').click();
+      await harness.fixture.whenStable();
+
+      // if they edit it and already have a bio,
+      // the edit box should have their current bio in there
+      expect(page().querySelector<HTMLTextAreaElement>('.bio-box')?.value).toBe(
+        'I write mysteries.',
+      );
+
+      await typeBio('  I write mysteries and sci-fi.  ');
+      button('Save').click();
+      await harness.fixture.whenStable();
+      expect(updateProfile).toHaveBeenCalledWith({ bio: 'I write mysteries and sci-fi.' });
+      expect(page().querySelector('.bio-box')).toBeNull();
+      expect(page().querySelector('.bio-text')?.textContent).toContain(
+        'I write mysteries and sci-fi.',
+      );
+    });
+
+    it("doesn't save anything when cancelled", async () => {
+      await openProfile(ada._id);
+      button('Edit bio').click();
+      await harness.fixture.whenStable();
+      await typeBio('something else');
+
+      button('Cancel').click();
+      await harness.fixture.whenStable();
+
+      expect(updateProfile).not.toHaveBeenCalled();
+      expect(page().querySelector('.bio-text')?.textContent).toContain('I write mysteries.');
+    });
+
+    // if saving fails, the edit box stays open with what they still typed
+    it('keeps the box open and says why if saving fails', async () => {
+      updateProfile.mockRejectedValue(new Error('server down'));
+      await openProfile(ada._id);
+      button('Edit bio').click();
+      await harness.fixture.whenStable();
+      await typeBio('A new bio');
+
+      button('Save').click();
+      await harness.fixture.whenStable();
+
+      expect(page().querySelector('.bio-error')?.textContent).toContain('Something went wrong');
+      expect(page().querySelector<HTMLTextAreaElement>('.bio-box')?.value).toBe('A new bio');
+    });
+
+    // the backend only lets you edit your own profile so there should be no edit bio on someone elses profile
+    it("can't be edited on someone else's profile", async () => {
+      await openProfile(BOLA_ID);
+      expect(button('Edit bio')).toBeUndefined();
+      expect(button('Add bio')).toBeUndefined();
+    });
   });
 });

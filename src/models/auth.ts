@@ -15,6 +15,11 @@ export interface User {
   updatedAt: string;
 }
 
+// changes that the signed in user can make to their own profile
+export interface ProfileChanges {
+  bio?: string;
+}
+
 // what the register form sends
 export interface RegisterDetails {
   email: string;
