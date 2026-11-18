@@ -16,13 +16,11 @@
       <div class="story-grid">
         <!-- same cards as the full list but displays which chapter theyre on -->
         @for (item of inProgressStories(); track item.story.story_id) {
-          <button type="button" class="story-card" (click)="selectedStory.set(item.story)">
-            <div class="story-container">
-              <h3 class="story-title">{{ item.story.title }}</h3>
-              <p class="story-progress">Chapter {{ item.chapter }}</p>
-              <p class="story-author">{{ item.story.author }}</p>
-            </div>
-          </button>
+          <app-story-card
+            [story]="item.story"
+            [chapter]="item.chapter"
+            (click)="selectedStory.set(item.story)"
+          />
         }
       </div>
     </section>

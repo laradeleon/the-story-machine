@@ -15,4 +15,6 @@ import { StoryDetails } from '../../../models/story-details';
 })
 export class StoryCard {
   story = input.required<StoryDetails>();
+  // which chapter the reader is on, only used by the continue reading list
+  chapter = input<number | null>(null);
 }

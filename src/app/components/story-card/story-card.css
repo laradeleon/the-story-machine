@@ -63,3 +63,10 @@
   font-size: 0.875rem;
   color: var(--color-text-muted);
 }
+
+/* which chapter they're on, shows under the title in the continue reading list */
+.story-progress {
+  margin: 8px 0 0;
+  font-size: 0.875rem;
+  color: var(--color-accent);
+}
