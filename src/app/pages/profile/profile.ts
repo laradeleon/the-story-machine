@@ -6,6 +6,9 @@ import { map } from 'rxjs';
 import { AuthService, readApiError } from '../../services/auth.service';
 import { ProfileService } from '../../services/profile.service';
 import { AccountMenu } from '../../components/account-menu/account-menu';
+import { StoryCard } from '../../components/story-card/story-card';
+import { StoryPreview } from '../../components/story-preview/story-preview';
+import { StoryDetails } from '../../../models/story-details';
 
 // what the page shows about someone
 interface ProfileDetails {
@@ -21,11 +24,12 @@ interface ProfileDetails {
  * The page at /profile/<user id>
  * - your own profile (signed in, your id) shows your username, bio and when you joined
  * - anyone else's shows their display name only
+ * - everyone's shows the stories they've published, clicking one opens the same popup as the landing page
  * - a profile we can't find shows a not found message
  * - everyone gets the same profile picture for now
  */
 @Component({
-  imports: [AccountMenu, RouterLink, DatePipe],
+  imports: [AccountMenu, RouterLink, DatePipe, StoryCard, StoryPreview],
   selector: 'app-profile',
   styleUrl: './profile.css',
   templateUrl: './profile.html',
@@ -45,19 +49,26 @@ export class Profile {
     () => this.auth.isSignedIn() && this.auth.currentUser()._id === this.userId(),
   );
 
-  // someone else's profile has to be looked up
-  private otherProfile = resource({
-    params: () => {
-      if (this.isOwnProfile()) {
-        return undefined;
-      }
-      return this.userId();
-    },
-    loader: ({ params }) => this.profiles.getDisplayName(params),
+  // the stories this user has published, shown on every profile
+  // on someone else's profile it's also where their name comes from
+  private stories = resource({
+    params: () => this.userId(),
+    loader: ({ params }) => this.profiles.getPublishedStories(params),
   });
 
-  protected isLoading = computed(() => this.otherProfile.isLoading());
-  protected hasError = computed(() => this.otherProfile.error() !== undefined);
+  protected isLoading = computed(() => this.stories.isLoading());
+  protected hasError = computed(() => this.stories.error() !== undefined);
+
+  // the stories to show as cards, empty while they're loading or if they couldn't be loaded
+  protected publishedStories = computed(() => {
+    if (!this.stories.hasValue()) {
+      return [];
+    }
+    return this.stories.value();
+  });
+
+  // the story shown in the preview popup, null when it's closed
+  protected selectedStory = signal<StoryDetails | null>(null);
 
   // everything the page shows
   protected profile = computed((): ProfileDetails | null | undefined => {
@@ -71,14 +82,14 @@ export class Profile {
       };
     }
 
-    if (this.hasError() || !this.otherProfile.hasValue()) {
+    if (this.hasError() || !this.stories.hasValue()) {
       return undefined;
     }
-    const displayName = this.otherProfile.value();
-    if (displayName === null) {
+    const stories = this.stories.value();
+    if (stories.length === 0) {
       return null;
     }
-    return { displayName, bio: null, username: null, joinedAt: null };
+    return { displayName: stories[0].author, bio: null, username: null, joinedAt: null };
   });
 
   // editing your bio, on your own profile only

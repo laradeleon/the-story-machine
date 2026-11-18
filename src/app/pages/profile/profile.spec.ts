@@ -6,6 +6,7 @@ import { Profile } from './profile';
 import { AuthService } from '../../services/auth.service';
 import { ProfileService } from '../../services/profile.service';
 import { GUEST_USER, User } from '../../../models/auth';
+import { StoryDetails } from '../../../models/story-details';
 
 // the signed in user
 const ada: User = {
@@ -19,19 +20,41 @@ const ada: User = {
 // another author
 const BOLA_ID = '6ad98c2a10ebb64e958ee717';
 
+// a published story by this author
+function storyBy(authorId: string, author: string, title: string): StoryDetails {
+  return {
+    story_id: title.toLowerCase().replace(/ /g, '-'),
+    title,
+    author,
+    author_id: authorId,
+    description: `A story called ${title}`,
+    updatedAt: '2026-11-10T10:00:00.000Z',
+  };
+}
+
+const bolaStories = [
+  storyBy(BOLA_ID, 'Bola Writes', 'The Lighthouse Keeper'),
+  storyBy(BOLA_ID, 'Bola Writes', 'Escape From Room 404'),
+];
+
 describe('Profile', () => {
   let harness: RouterTestingHarness;
   const currentUser = signal<User>(GUEST_USER); // who's signed in
-  let getDisplayName: ReturnType<typeof vi.fn>;
+  let getPublishedStories: ReturnType<typeof vi.fn>;
+  let adaStories: StoryDetails[]; // ada's published stories, tests change this
   let updateProfile: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     currentUser.set(GUEST_USER);
-    getDisplayName = vi.fn(async (userId: string) => {
+    adaStories = [storyBy(ada._id, 'Ada Lovelace', 'Gerald Has Your Keys')];
+    getPublishedStories = vi.fn(async (userId: string) => {
       if (userId === BOLA_ID) {
-        return 'Bola Writes';
+        return bolaStories;
       }
-      return null;
+      if (userId === ada._id) {
+        return adaStories;
+      }
+      return [];
     });
 
     updateProfile = vi.fn(async (changes: Partial<User>) => {
@@ -51,7 +74,7 @@ describe('Profile', () => {
             updateProfile,
           },
         },
-        { provide: ProfileService, useValue: { getDisplayName } },
+        { provide: ProfileService, useValue: { getPublishedStories } },
       ],
     });
     harness = await RouterTestingHarness.create();
@@ -106,7 +129,7 @@ describe('Profile', () => {
     });
 
     it("says something went wrong if it couldn't be loaded", async () => {
-      getDisplayName.mockRejectedValue(new Error('server down'));
+      getPublishedStories.mockRejectedValue(new Error('server down'));
       await openProfile(BOLA_ID);
 
       expect(page().textContent).toContain("this profile couldn't be loaded right now");
@@ -122,8 +145,10 @@ describe('Profile', () => {
     currentUser.set(GUEST_USER);
     await harness.fixture.whenStable();
 
-    expect(getDisplayName).toHaveBeenCalledWith(ada._id);
+    // still ada's page, but only what anyone else would see: her name and stories
+    expect(page().querySelector('.profile-name')?.textContent).toContain('Ada Lovelace');
     expect(page().querySelector('.profile-username')).toBeNull();
+    expect(page().querySelector('.about-card')).toBeNull();
   });
 
   describe('bio', () => {
@@ -212,6 +237,71 @@ describe('Profile', () => {
       await openProfile(BOLA_ID);
       expect(button('Edit bio')).toBeUndefined();
       expect(button('Add bio')).toBeUndefined();
+    });
+  });
+
+  describe('stories', () => {
+    // the titles on the story cards
+    function cardTitles() {
+      return Array.from(page().querySelectorAll('.story-title')).map((title) =>
+        title.textContent?.trim(),
+      );
+    }
+
+    function heading() {
+      return page().querySelector('.profile-section-heading')?.textContent?.trim();
+    }
+
+    it('shows your published stories under "Your Stories"', async () => {
+      currentUser.set(ada);
+      await openProfile(ada._id);
+
+      expect(heading()).toBe('Your Stories');
+      expect(cardTitles()).toEqual(['Gerald Has Your Keys']);
+    });
+
+    // a new author with nothing published gets a message instead of an empty space
+    it("says so when you haven't published anything yet", async () => {
+      adaStories = [];
+      currentUser.set(ada);
+      await openProfile(ada._id);
+
+      expect(page().textContent).toContain("You haven't published any stories yet.");
+      expect(page().querySelector('app-story-card')).toBeNull();
+    });
+
+    it("shows someone else's stories under their name", async () => {
+      await openProfile(BOLA_ID);
+
+      expect(heading()).toBe('Stories by Bola Writes');
+      expect(cardTitles()).toEqual(['The Lighthouse Keeper', 'Escape From Room 404']);
+    });
+
+    // banner and about card come from signing in, so they still show if only the stories fail
+    it('still shows your own profile if your stories fail to load', async () => {
+      getPublishedStories.mockRejectedValue(new Error('server down'));
+      currentUser.set(ada);
+      await openProfile(ada._id);
+
+      expect(page().querySelector('.profile-name')?.textContent).toContain('Ada Lovelace');
+      expect(page().textContent).toContain("these stories couldn't be loaded right now");
+    });
+
+    // clicking a card works the same as on the landing page by opening the story's preview popup
+    it('opens the story preview when a card is clicked', async () => {
+      const realShowModal = HTMLDialogElement.prototype.showModal;
+      HTMLDialogElement.prototype.showModal = vi.fn(); // the test browser can't open popups
+      try {
+        await openProfile(BOLA_ID);
+        page().querySelectorAll<HTMLButtonElement>('.story-card')[1].click();
+        await harness.fixture.whenStable();
+
+        expect(page().querySelector('#preview-title')?.textContent).toContain(
+          'Escape From Room 404',
+        );
+      } finally {
+        HTMLDialogElement.prototype.showModal = realShowModal;
+      }
     });
   });
 });

@@ -13,9 +13,9 @@
     }
   </header>
 
-  <!-- the about card  -->
-  @if (isOwnProfile()) {
-    <main class="profile-body">
+  <main class="profile-body">
+    <!-- the about card, only on your own profile since we don't have these details for other people -->
+    @if (isOwnProfile()) {
       <section class="about-card">
         <h2>About</h2>
 
@@ -77,8 +77,34 @@
           <p class="about-joined">Joined {{ person.joinedAt | date: 'MMMM y' }}</p>
         }
       </section>
-    </main>
-  }
+    }
+
+    <!-- the stories they've published, as the same cards as the landing page -->
+    <section class="profile-stories">
+      <h2 class="profile-section-heading">
+        @if (isOwnProfile()) {
+          Your Stories
+        } @else {
+          Stories by {{ person.displayName }}
+        }
+      </h2>
+
+      @if (isLoading()) {
+        <p class="profile-section-message">Loading stories...</p>
+      } @else if (hasError()) {
+        <p class="profile-section-message">Sorry, these stories couldn't be loaded right now.</p>
+      } @else {
+        <div class="story-grid">
+          @for (story of publishedStories(); track story.story_id) {
+            <app-story-card [story]="story" (click)="selectedStory.set(story)" />
+          } @empty {
+            <!-- only happens on your own profile, someone with no stories shows as not found -->
+            <p class="profile-section-message">You haven't published any stories yet.</p>
+          }
+        </div>
+      }
+    </section>
+  </main>
 } @else if (profile() === null) {
   <!-- no user with this id or they haven't published anything -->
   <main class="profile-message">
@@ -98,4 +124,9 @@
   <main class="profile-message">
     <p>Loading profile...</p>
   </main>
+}
+
+<!-- preview popup for the story that got clicked -->
+@if (selectedStory(); as story) {
+  <app-story-preview [story]="story" (closed)="selectedStory.set(null)" />
 }

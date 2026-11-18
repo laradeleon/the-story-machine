@@ -26,12 +26,7 @@
     <div class="story-grid">
       <!-- display every story that was retrieved -->
       @for (story of stories.value(); track story.story_id) {
-        <button type="button" class="story-card" (click)="selectedStory.set(story)">
-          <div class="story-container">
-            <h3 class="story-title">{{ story.title }}</h3>
-            <p class="story-author">{{ story.author }}</p>
-          </div>
-        </button>
+        <app-story-card [story]="story" (click)="selectedStory.set(story)" />
       } @empty {
         <!-- if there's no stories to display -->
         <p class="section-message">No stories yet so stay tuned!</p>
