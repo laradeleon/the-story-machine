@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ImageService } from '../../services/image.service';
 import { WriterStateService } from '../../services/writer-state.service';
 import { CharactersDialog } from './characters-dialog';
 
@@ -334,6 +335,240 @@ describe('CharactersDialog', () => {
     expect(state.characters()[0].emotions.map((e) => e.emotion)).toEqual(['Emotion 2']);
     expect(dialog.selected_emotion_id()).toBeNull();
     expect(state.characters().length).toBe(1);
+  });
+
+  describe('through the buttons and boxes', () => {
+    // finds a button by the words on it
+    function button_named(text: string): HTMLButtonElement | undefined {
+      return Array.from(compiled.querySelectorAll('button')).find(
+        (button) => button.textContent?.trim() === text,
+      ) as HTMLButtonElement | undefined;
+    }
+
+    function click(text: string) {
+      button_named(text)!.click();
+      fixture.detectChanges();
+    }
+
+    // types into a box the way the writer does, then reports the input
+    function type(selector: string, value: string) {
+      const box = compiled.querySelector(selector) as HTMLInputElement;
+      box.value = value;
+      box.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    }
+
+    // the text of every row in a list
+    function rows(selector: string): string[] {
+      return Array.from(compiled.querySelectorAll(`${selector} .item-name`)).map((name) =>
+        name.textContent!.trim(),
+      );
+    }
+
+    it('should add a character from the Add character button and show it selected', () => {
+      click('Add character');
+
+      expect(rows('.character-list')).toEqual(['Character 1']);
+      expect(compiled.querySelector('.character-list .item.selected')).not.toBeNull();
+    });
+
+    it('should select a character when its row is clicked', () => {
+      click('Add character');
+      click('Add character');
+      const first = compiled.querySelectorAll('.character-list .item')[0] as HTMLButtonElement;
+
+      first.click();
+      fixture.detectChanges();
+
+      expect(dialog.selected_character_id()).toBe(state.characters()[0].id);
+    });
+
+    it('should rename a character and describe it from the boxes in the middle column', () => {
+      click('Add character');
+
+      type('.column-character input[type="text"]', 'Dave');
+      type('.column-character textarea', 'A sailor');
+
+      expect(state.characters()[0]).toMatchObject({ name: 'Dave', description: 'A sailor' });
+      expect(rows('.character-list')).toEqual(['Dave']);
+    });
+
+    it('should show "Unnamed" for a character with a blank name in the list', () => {
+      click('Add character');
+      type('.column-character input[type="text"]', '   ');
+
+      expect(rows('.character-list')).toEqual(['Unnamed']);
+    });
+
+    it('should add an emotion from the Add emotion button and list it', () => {
+      click('Add character');
+      click('Add emotion');
+
+      expect(rows('.emotion-list')).toEqual(['Emotion 1']);
+      expect(compiled.querySelector('.emotion-list .item.selected')).not.toBeNull();
+    });
+
+    it('should rename the selected emotion from the emotion name box', () => {
+      click('Add character');
+      click('Add emotion');
+
+      type('.column-emotion input[type="text"]', 'happy');
+
+      expect(rows('.emotion-list')).toEqual(['happy']);
+    });
+
+    it('should select an emotion when its row is clicked', () => {
+      click('Add character');
+      click('Add emotion');
+      click('Add emotion');
+      const first = compiled.querySelectorAll('.emotion-list .item')[0] as HTMLButtonElement;
+
+      first.click();
+      fixture.detectChanges();
+
+      expect(dialog.selected_emotion_id()).toBe(state.characters()[0].emotions[0].id);
+    });
+
+    it('should tell the writer when two characters share a name', () => {
+      click('Add character');
+      click('Add character');
+
+      dialog.rename_character(state.characters()[0].id, 'Dave');
+      dialog.rename_character(state.characters()[1].id, 'Dave');
+      fixture.detectChanges();
+
+      expect(compiled.querySelector('.modal-warning')!.textContent).toContain(
+        'Two or more characters share a name.',
+      );
+      expect(compiled.querySelectorAll('.tag-warning').length).toBe(2);
+    });
+
+    it('should show the error message when an emotion is added with no character', () => {
+      dialog.add_emotion();
+      fixture.detectChanges();
+
+      expect(compiled.querySelector('.modal-error')!.textContent).toContain(
+        'Select or add a character first.',
+      );
+    });
+
+    it('should show the empty messages when a character has no emotions and nothing is selected', () => {
+      expect(compiled.querySelector('.column-character > .column-empty')!.textContent).toContain(
+        'Select a character, or add one.',
+      );
+      click('Add character');
+
+      expect(compiled.querySelector('.emotion-list .column-empty')!.textContent).toContain(
+        'No emotions yet.',
+      );
+      expect(compiled.querySelector('.column-emotion > .column-empty')!.textContent).toContain(
+        'Select an emotion to see its portrait.',
+      );
+    });
+
+    it('should remove the selected character once Remove character is confirmed', () => {
+      click('Add character');
+      click('Remove character');
+
+      expect(compiled.querySelector('app-confirm-dialog')).not.toBeNull();
+      click('Delete');
+
+      expect(state.characters()).toEqual([]);
+    });
+
+    it('should keep the character when its delete popup is closed without confirming', () => {
+      click('Add character');
+      click('Remove character');
+
+      const confirm = compiled.querySelector('app-confirm-dialog dialog') as HTMLDialogElement;
+      confirm.dispatchEvent(new Event('close'));
+      fixture.detectChanges();
+
+      expect(compiled.querySelector('app-confirm-dialog')).toBeNull();
+      expect(state.characters().length).toBe(1);
+    });
+
+    it('should remove the selected emotion from the Delete emotion button once confirmed', () => {
+      click('Add character');
+      click('Add emotion');
+      click('Delete emotion');
+
+      expect(compiled.querySelector('app-confirm-dialog')).not.toBeNull();
+      click('Delete');
+
+      expect(state.characters()[0].emotions).toEqual([]);
+    });
+
+    it('should hide and show the see-through guide from the outline button', () => {
+      click('Add character');
+      click('Add emotion');
+      expect(compiled.querySelector('.silhouette')).not.toBeNull();
+
+      click('Hide outline');
+      expect(compiled.querySelector('.silhouette')).toBeNull();
+      expect(button_named('Show outline')).toBeDefined();
+
+      click('Show outline');
+      expect(compiled.querySelector('.silhouette')).not.toBeNull();
+    });
+
+    it('should show the empty picture as a darker square in the emotion list', () => {
+      click('Add character');
+      click('Add emotion');
+
+      expect(compiled.querySelector('.emotion-list .thumbnail-empty')).not.toBeNull();
+    });
+
+    it('should show the picture error when the file cannot be read', async () => {
+      const images = TestBed.inject(ImageService);
+      vi.spyOn(images, 'read_image').mockRejectedValue(new Error('The file is damaged.'));
+      click('Add character');
+      click('Add emotion');
+
+      await dialog.set_image_from_file(png());
+      fixture.detectChanges();
+
+      expect(compiled.querySelector('.modal-error')!.textContent).toContain('The file is damaged.');
+    });
+
+    it('should use a general message when the read fails with something that is not an error', async () => {
+      const images = TestBed.inject(ImageService);
+      vi.spyOn(images, 'read_image').mockRejectedValue('oops');
+      click('Add character');
+      click('Add emotion');
+
+      await dialog.set_image_from_file(png());
+
+      expect(dialog.error()).toBe('Could not read the image.');
+    });
+
+    it('should do nothing for emotion actions when no emotion is selected', () => {
+      click('Add character');
+      const before = JSON.stringify(state.characters());
+
+      dialog.rename_emotion('missing', 'x');
+      dialog.delete_image();
+      dialog.remove_selected_emotion();
+      dialog.set_placement({ x: 5, y: 5, zoom: 200 });
+
+      expect(JSON.stringify(state.characters())).toBe(before);
+    });
+
+    it('should do nothing for emotion actions when no character is selected', () => {
+      dialog.rename_emotion('missing', 'x');
+      dialog.delete_image();
+      dialog.remove_selected_emotion();
+      dialog.remove_selected_character();
+
+      expect(state.characters()).toEqual([]);
+    });
+
+    it('should ask for an emotion before a picture is put on a character', async () => {
+      click('Add character');
+
+      expect(await dialog.set_image_from_file(png())).toBe(false);
+      expect(dialog.error()).toBe('Select an emotion first.');
+    });
   });
 
   it('should close the popup when Close is pressed and there are no problems', () => {

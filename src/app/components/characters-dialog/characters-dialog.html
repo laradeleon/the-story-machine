@@ -40,7 +40,7 @@
                   [placement]="first?.image_url ? to_placement(first) : null"
                 />
                 <span class="item-name">{{ character.name.trim() || 'Unnamed' }}</span>
-                @if (duplicate_character_names().has(character.name.trim().toLowerCase())) {
+                @if (duplicate_character_names().has(name_key(character.name))) {
                   <span class="tag tag-warning">duplicate</span>
                 }
               </button>
@@ -94,7 +94,7 @@
                     [placement]="emotion.image_url ? to_placement(emotion) : null"
                   />
                   <span class="item-name">{{ emotion.emotion.trim() || 'Unnamed' }}</span>
-                  @if (duplicate_emotion_keys().has(emotion.emotion.trim().toLowerCase())) {
+                  @if (duplicate_emotion_keys().has(name_key(emotion.emotion))) {
                     <span class="tag tag-warning">duplicate</span>
                   }
                 </button>

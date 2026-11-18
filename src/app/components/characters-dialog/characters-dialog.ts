@@ -7,65 +7,20 @@ import { ImageEditor } from '../image-editor/image-editor';
 import { default_placement, Placement } from '../image-editor/placement';
 import { ImageThumbnail } from '../image-thumbnail/image-thumbnail';
 import { ConfirmDialog } from '../confirm-dialog/confirm-dialog';
-
-// a new id that doesn't depend on the name, so things can share a name (the popup won't close until they're renamed)
-function new_id(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
-}
-
-// names are compared ignoring capitals and spaces at the ends
-function name_key(name: string): string {
-  return name.trim().toLowerCase();
-}
-
-// the names that appear more than once in a list (compared with name_key)
-function duplicated_keys(names: string[]): Set<string> {
-  const seen = new Set<string>();
-  const duplicates = new Set<string>();
-  for (const name of names) {
-    const key = name_key(name);
-    if (seen.has(key)) {
-      duplicates.add(key);
-    }
-    seen.add(key);
-  }
-  return duplicates;
-}
-
-// the first free name in a list, such as "Character 2" when "Character 1" and "Character 3" exist
-function next_name(prefix: string, existing: string[]): string {
-  const taken = new Set(existing.map(name_key));
-  let number = 1;
-  while (taken.has(name_key(`${prefix} ${number}`))) {
-    number++;
-  }
-  return `${prefix} ${number}`;
-}
-
-// an emotion stores its placement as portrait_x, portrait_y and zoom (see docs/story-json.md),
-// the image editor works with x, y and zoom. these two convert between them
-function placement_of(emotion?: Emotion): Placement {
-  if (!emotion) {
-    return { ...default_placement };
-  }
-  return { x: emotion.portrait_x, y: emotion.portrait_y, zoom: emotion.zoom };
-}
-
-function placement_fields(placement: Placement) {
-  return { portrait_x: placement.x, portrait_y: placement.y, zoom: placement.zoom };
-}
-
-// TODO: the script can only refer to emotions by words it understands, so an emotion name should
-// only use the characters the lexer allows. the rule isn't decided yet, so nothing checks it.
-// once it is, this returns the characters in the name that aren't allowed
-export function unapproved_characters(name: string): string[] {
-  void name;
-  return [];
-}
+import {
+  character_problems,
+  duplicated_keys,
+  name_key,
+  new_character,
+  new_emotion,
+  placement_fields,
+  placement_of,
+} from './characters-rules';
 
 // the popup opened by the Characters button. three columns: the character list, the selected
-// character's details and emotions, and the selected emotion's portrait. the writer's characters
-// live in WriterStateService, so anything changed here is kept while the writer is open
+// character's details and emotions, and the selected emotion's picture. the rules for names, duplicates
+// and placement are in characters-rules.ts. the writer's characters live in WriterStateService,
+// so anything changed here is kept while the writer is open
 @Component({
   imports: [ModalDialog, ImageEditor, ImageThumbnail, ConfirmDialog],
   selector: 'app-characters-dialog',
@@ -76,9 +31,12 @@ export class CharactersDialog {
   closed = output<void>(); // tells the writer the popup was closed (Close, Esc, or after a valid close)
 
   protected state = inject(WriterStateService); // holds the characters the writer has made so far
-  private images = inject(ImageService); // checks and reads the uploaded portrait files
+  private images = inject(ImageService); // checks and reads the uploaded picture files
 
   private modal = viewChild.required(ModalDialog); // the popup, opened by the appModal directive
+
+  // the name rule, so the template can compare names the same way the rules do
+  protected readonly name_key = name_key;
 
   error = signal<string | null>(null); // a message for the writer, null when there isn't one
   selected_character_id = signal<string | null>(null); // the character shown in the middle column
@@ -106,39 +64,16 @@ export class CharactersDialog {
   );
 
   // the things still wrong that stop the popup closing, shown as messages above the columns
-  problems = computed(() => {
-    const messages: string[] = [];
-    const characters = this.state.characters();
-
-    if (characters.some((character) => name_key(character.name) === '')) {
-      messages.push('A character has no name.');
-    }
-    if (this.duplicate_character_names().size > 0) {
-      messages.push('Two or more characters share a name.');
-    }
-    if (
-      characters.some((character) => {
-        const names = character.emotions.map((emotion) => emotion.emotion);
-        return names.some((name) => name_key(name) === '') || duplicated_keys(names).size > 0;
-      })
-    ) {
-      messages.push('An emotion has no name, or a character has two emotions with the same name.');
-    }
-    return messages;
-  });
+  problems = computed(() => character_problems(this.state.characters()));
 
   has_problems = computed(() => this.problems().length > 0);
 
   // adds a character called "Character 1", "Character 2", ... and selects it
   add_character() {
     this.error.set(null);
-    const id = new_id();
-    const name = next_name(
-      'Character',
-      this.state.characters().map((c) => c.name),
-    );
-    this.state.characters.update((list) => [...list, { id, name, description: '', emotions: [] }]);
-    this.select_character(id);
+    const character = new_character(this.state.characters());
+    this.state.characters.update((list) => [...list, character]);
+    this.select_character(character.id);
   }
 
   // changes a character's name. duplicates are allowed here, the popup just won't close yet
@@ -170,7 +105,7 @@ export class CharactersDialog {
     }
   }
 
-  // removes the selected emotion, and its portrait, once the user has confirmed it
+  // removes the selected emotion, and its picture, once the user has confirmed it
   remove_selected_emotion() {
     this.error.set(null);
     const character = this.selected_character();
@@ -201,19 +136,9 @@ export class CharactersDialog {
       return;
     }
 
-    const id = new_id();
-    const emotion = next_name(
-      'Emotion',
-      character.emotions.map((e) => e.emotion),
-    );
-    this.update_character(character.id, (c) => ({
-      ...c,
-      emotions: [
-        ...c.emotions,
-        { id, emotion, image_url: null, ...placement_fields(default_placement) },
-      ],
-    }));
-    this.selected_emotion_id.set(id);
+    const emotion = new_emotion(character.emotions);
+    this.update_character(character.id, (c) => ({ ...c, emotions: [...c.emotions, emotion] }));
+    this.selected_emotion_id.set(emotion.id);
   }
 
   // changes an emotion's name. duplicates are allowed here, the popup just won't close yet
@@ -226,7 +151,7 @@ export class CharactersDialog {
     this.update_emotion(character.id, id, (e) => ({ ...e, emotion: name }));
   }
 
-  // shows an emotion's portrait on the right
+  // shows an emotion's picture on the right
   select_emotion(id: string) {
     this.error.set(null);
     this.selected_emotion_id.set(id);
@@ -237,7 +162,7 @@ export class CharactersDialog {
     return placement_of(emotion);
   }
 
-  // puts an image on the selected emotion. the file is checked and read first, so this waits.
+  // puts a picture on the selected emotion. the file is checked and read first, so this waits.
   // returns false (and sets the error) if it can't be used
   async set_image_from_file(file: File | null): Promise<boolean> {
     this.error.set(null);
@@ -262,7 +187,7 @@ export class CharactersDialog {
       return false;
     }
 
-    // a new portrait starts centred at 100%, so the old position doesn't carry over
+    // a new picture starts centred at 100%, so the old position doesn't carry over
     this.update_emotion(character_id, emotion_id, (e) => ({
       ...e,
       image_url,
@@ -276,7 +201,7 @@ export class CharactersDialog {
     this.update_selected_emotion((e) => ({ ...e, ...placement_fields(placement) }));
   }
 
-  // removes the selected emotion's portrait. the emotion stays in the list
+  // removes the selected emotion's picture. the emotion stays in the list
   delete_image() {
     this.error.set(null);
     const character = this.selected_character();

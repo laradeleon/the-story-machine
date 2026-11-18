@@ -208,6 +208,202 @@ describe('ImageEditor', () => {
     expect(picker.value).toBe('');
   });
 
+  it('should highlight the area and allow the drop while a file is dragged over it', () => {
+    const preventDefault = vi.fn();
+
+    editor.on_drag_over({ preventDefault } as unknown as DragEvent);
+
+    expect(preventDefault).toHaveBeenCalled();
+    expect(editor.dragging()).toBe(true);
+  });
+
+  it('should not pass anything up when a drop has no file', () => {
+    const onChosen = vi.fn();
+    editor.image_chosen.subscribe(onChosen);
+    editor.dragging.set(true);
+
+    editor.on_drop({
+      preventDefault: () => undefined,
+      dataTransfer: { files: [] },
+    } as unknown as DragEvent);
+
+    expect(onChosen).not.toHaveBeenCalled();
+    expect(editor.dragging()).toBe(false);
+  });
+
+  it('should highlight the area when a file is dragged over it in the DOM', () => {
+    const area = compiled.querySelector('.portrait-area') as HTMLElement;
+
+    area.dispatchEvent(new Event('dragover', { cancelable: true }));
+    fixture.detectChanges();
+
+    expect(area.classList).toContain('dragging');
+  });
+
+  it('should pass a file dropped on the area up in the DOM', () => {
+    const onChosen = vi.fn();
+    editor.image_chosen.subscribe(onChosen);
+    const file = new File(['x'], 'hero.png', { type: 'image/png' });
+    const drop = new Event('drop', { cancelable: true });
+    Object.defineProperty(drop, 'dataTransfer', { value: { files: [file] } });
+
+    (compiled.querySelector('.portrait-area') as HTMLElement).dispatchEvent(drop);
+
+    expect(onChosen).toHaveBeenCalledWith(file);
+  });
+
+  describe('dragging the picture', () => {
+    // a fake pointer event with the position given, and an area of a known size
+    function pointer(x: number, y: number) {
+      return { clientX: x, clientY: y, pointerId: 1 } as unknown as PointerEvent;
+    }
+
+    function sized_area(width: number, height: number): HTMLElement {
+      const area = compiled.querySelector('.portrait-area') as HTMLElement;
+      Object.defineProperty(area, 'clientWidth', { value: width });
+      Object.defineProperty(area, 'clientHeight', { value: height });
+      area.setPointerCapture = vi.fn();
+      return area;
+    }
+
+    it('should move the picture by the pointer distance as a % of the area', () => {
+      show_picture({ x: 5, y: 0, zoom: 100 });
+      const area = sized_area(200, 400);
+      const changes: Placement[] = [];
+      editor.placement_changed.subscribe((p) => changes.push(p));
+
+      editor.on_pointer_down(pointer(100, 100), area);
+      editor.on_pointer_move(pointer(120, 140));
+
+      // 20px of 200px is 10%, 40px of 400px is 10%, added to where the drag started
+      expect(changes[0]).toEqual({ x: 15, y: 10, zoom: 100 });
+      expect(area.setPointerCapture).toHaveBeenCalledWith(1);
+    });
+
+    it('should stop moving the picture once the pointer is let go', () => {
+      show_picture();
+      const area = sized_area(200, 400);
+      const onChange = vi.fn();
+      editor.placement_changed.subscribe(onChange);
+
+      editor.on_pointer_down(pointer(0, 0), area);
+      editor.on_pointer_up();
+      editor.on_pointer_move(pointer(50, 50));
+
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('should not move the picture when there is no picture to drag', () => {
+      const area = sized_area(200, 400);
+      const onChange = vi.fn();
+      editor.placement_changed.subscribe(onChange);
+
+      editor.on_pointer_down(pointer(0, 0), area);
+      editor.on_pointer_move(pointer(50, 50));
+
+      expect(onChange).not.toHaveBeenCalled();
+      expect(area.setPointerCapture).not.toHaveBeenCalled();
+    });
+
+    it('should keep a dragged picture within 100% of the area', () => {
+      show_picture({ x: 90, y: -90, zoom: 100 });
+      const area = sized_area(100, 100);
+      const changes: Placement[] = [];
+      editor.placement_changed.subscribe((p) => changes.push(p));
+
+      editor.on_pointer_down(pointer(0, 0), area);
+      editor.on_pointer_move(pointer(100, -100));
+
+      expect(changes[0]).toMatchObject({ x: 100, y: -100 });
+    });
+  });
+
+  it('should set the zoom from the slider and the offsets from their boxes in the DOM', () => {
+    show_picture();
+    const onChange = vi.fn();
+    editor.placement_changed.subscribe(onChange);
+
+    const slider = compiled.querySelector('input[type="range"]') as HTMLInputElement;
+    slider.value = '200';
+    slider.dispatchEvent(new Event('input'));
+
+    const zoom_number = compiled.querySelector('input[aria-label="Zoom"]') as HTMLInputElement;
+    zoom_number.value = '250';
+    zoom_number.dispatchEvent(new Event('change'));
+
+    const offset_y = compiled.querySelector('input[aria-label="Offset Y"]') as HTMLInputElement;
+    offset_y.value = '-15';
+    offset_y.dispatchEvent(new Event('change'));
+
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ zoom: 200 }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ y: -15 }));
+  });
+
+  it('should stop dragging the picture when the pointer is released or cancelled in the DOM', () => {
+    show_picture();
+    const area = compiled.querySelector('.portrait-area') as HTMLElement;
+    Object.defineProperty(area, 'clientWidth', { value: 200 });
+    Object.defineProperty(area, 'clientHeight', { value: 400 });
+    area.setPointerCapture = vi.fn();
+    const onChange = vi.fn();
+    editor.placement_changed.subscribe(onChange);
+
+    const press = new Event('pointerdown');
+    Object.assign(press, { clientX: 0, clientY: 0, pointerId: 1 });
+    area.dispatchEvent(press);
+    area.dispatchEvent(new Event('pointerup'));
+    const move = new Event('pointermove');
+    Object.assign(move, { clientX: 50, clientY: 50 });
+    area.dispatchEvent(move);
+
+    area.dispatchEvent(new Event('pointercancel'));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('should open the file picker from the keyboard on an empty area', () => {
+    const picker = vi
+      .spyOn(HTMLInputElement.prototype, 'click')
+      .mockImplementation(() => undefined);
+    const area = compiled.querySelector('.portrait-area') as HTMLElement;
+
+    area.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+
+    expect(picker).toHaveBeenCalled();
+  });
+
+  it('should pass a picked file up when the Upload input changes in the DOM', () => {
+    const onChosen = vi.fn();
+    editor.image_chosen.subscribe(onChosen);
+    const file = new File(['x'], 'hero.png', { type: 'image/png' });
+    const picker = compiled.querySelector('input[type="file"]') as HTMLInputElement;
+    Object.defineProperty(picker, 'files', { value: [file] });
+
+    picker.dispatchEvent(new Event('change'));
+
+    expect(onChosen).toHaveBeenCalledWith(file);
+  });
+
+  it('should disable Delete image while there is no picture', () => {
+    const del = button_named('Delete image');
+
+    expect(del.disabled).toBe(true);
+  });
+
+  it('should drop the delete popup when it closes without a confirm', () => {
+    show_picture();
+    button_named('Delete image').click();
+    fixture.detectChanges();
+    expect(editor.confirm_delete_open()).toBe(true);
+
+    // closing the popup (Cancel, Esc) fires the dialog's close event, which the parent listens for.
+    // the test browser can't really close it, so the event is sent by hand
+    const confirm = compiled.querySelector('app-confirm-dialog dialog') as HTMLDialogElement;
+    confirm.dispatchEvent(new Event('close'));
+    fixture.detectChanges();
+
+    expect(editor.confirm_delete_open()).toBe(false);
+  });
+
   it('should remove the picture only after the delete is confirmed', () => {
     show_picture();
     const onDeleted = vi.fn();
