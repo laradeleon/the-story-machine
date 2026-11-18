@@ -93,8 +93,8 @@
                     [image_url]="emotion.image_url"
                     [placement]="emotion.image_url ? to_placement(emotion) : null"
                   />
-                  <span class="item-name">{{ emotion.keyword.trim() || 'Unnamed' }}</span>
-                  @if (duplicate_emotion_keys().has(emotion.keyword.trim().toLowerCase())) {
+                  <span class="item-name">{{ emotion.emotion.trim() || 'Unnamed' }}</span>
+                  @if (duplicate_emotion_keys().has(emotion.emotion.trim().toLowerCase())) {
                     <span class="tag tag-warning">duplicate</span>
                   }
                 </button>
@@ -124,7 +124,7 @@
                 <input
                   #emotionName
                   type="text"
-                  [value]="emotion.keyword"
+                  [value]="emotion.emotion"
                   (input)="rename_emotion(emotion.id, emotionName.value)"
                 />
               </label>
@@ -142,7 +142,7 @@
           <app-image-editor
             [image_url]="emotion.image_url"
             [placement]="to_placement(emotion)"
-            [alt_text]="emotion.keyword"
+            [alt_text]="emotion.emotion"
             [guide]="true"
             [guide_visible]="outline_visible()"
             (guide_visible_changed)="outline_visible.set($event)"

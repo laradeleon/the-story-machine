@@ -157,7 +157,7 @@ describe('CharactersDialog', () => {
     dialog.add_emotion();
 
     const emotions = state.characters()[0].emotions;
-    expect(emotions.map((e) => e.keyword)).toEqual(['Emotion 1', 'Emotion 2']);
+    expect(emotions.map((e) => e.emotion)).toEqual(['Emotion 1', 'Emotion 2']);
     expect(emotions[1].image_url).toBeNull();
     expect(dialog.selected_emotion_id()).toBe(emotions[1].id);
   });
@@ -188,7 +188,7 @@ describe('CharactersDialog', () => {
 
     dialog.rename_emotion(first, 'happy');
 
-    expect(state.characters()[0].emotions.map((e) => e.keyword)).toEqual(['happy', 'Emotion 2']);
+    expect(state.characters()[0].emotions.map((e) => e.emotion)).toEqual(['happy', 'Emotion 2']);
   });
 
   it('should flag two emotions with the same name and stop the popup closing', () => {
@@ -281,7 +281,7 @@ describe('CharactersDialog', () => {
     dialog.delete_image();
 
     expect(state.characters()[0].emotions[0]).toMatchObject({
-      keyword: 'Emotion 1',
+      emotion: 'Emotion 1',
       image_url: null,
     });
   });
@@ -331,7 +331,7 @@ describe('CharactersDialog', () => {
 
     dialog.remove_selected_emotion();
 
-    expect(state.characters()[0].emotions.map((e) => e.keyword)).toEqual(['Emotion 2']);
+    expect(state.characters()[0].emotions.map((e) => e.emotion)).toEqual(['Emotion 2']);
     expect(dialog.selected_emotion_id()).toBeNull();
     expect(state.characters().length).toBe(1);
   });

@@ -102,7 +102,7 @@ export class CharactersDialog {
 
   // emotion names used by more than one emotion in the selected character
   duplicate_emotion_keys = computed(() =>
-    duplicated_keys(this.selected_character()?.emotions.map((e) => e.keyword) ?? []),
+    duplicated_keys(this.selected_character()?.emotions.map((e) => e.emotion) ?? []),
   );
 
   // the things still wrong that stop the popup closing, shown as messages above the columns
@@ -118,7 +118,7 @@ export class CharactersDialog {
     }
     if (
       characters.some((character) => {
-        const names = character.emotions.map((emotion) => emotion.keyword);
+        const names = character.emotions.map((emotion) => emotion.emotion);
         return names.some((name) => name_key(name) === '') || duplicated_keys(names).size > 0;
       })
     ) {
@@ -202,28 +202,28 @@ export class CharactersDialog {
     }
 
     const id = new_id();
-    const keyword = next_name(
+    const emotion = next_name(
       'Emotion',
-      character.emotions.map((e) => e.keyword),
+      character.emotions.map((e) => e.emotion),
     );
     this.update_character(character.id, (c) => ({
       ...c,
       emotions: [
         ...c.emotions,
-        { id, keyword, image_url: null, ...placement_fields(default_placement) },
+        { id, emotion, image_url: null, ...placement_fields(default_placement) },
       ],
     }));
     this.selected_emotion_id.set(id);
   }
 
   // changes an emotion's name. duplicates are allowed here, the popup just won't close yet
-  rename_emotion(id: string, keyword: string) {
+  rename_emotion(id: string, name: string) {
     this.error.set(null);
     const character = this.selected_character();
     if (!character) {
       return;
     }
-    this.update_emotion(character.id, id, (emotion) => ({ ...emotion, keyword }));
+    this.update_emotion(character.id, id, (e) => ({ ...e, emotion: name }));
   }
 
   // shows an emotion's portrait on the right

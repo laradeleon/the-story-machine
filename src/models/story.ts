@@ -8,10 +8,10 @@ export interface StoryInfo {
   story_id: string;
 }
 
-// one picture of a character, shown when a line uses this keyword as its emotion
+// one picture of a character, shown when a line uses this emotion as its emotion
 export interface Emotion {
   id: string; // unique key, so the emotion can be renamed without losing its place in the list
-  keyword: string; // the word the author types to pick this portrait, e.g. "happy"
+  emotion: string; // the word the author types to pick this portrait, e.g. "happy"
   image_url: string | null; // where the portrait image is (a data URL for now), null until one is uploaded
   portrait_x: number; // how far the portrait is moved sideways, as a % of the upload area (0 = centred)
   portrait_y: number; // how far the portrait is moved down, as a % of the upload area (0 = centred)
