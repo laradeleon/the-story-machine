@@ -41,6 +41,25 @@
 
 <!-- the stories get their own panel over top the wallpaper -->
 <main class="stories-section">
+  <!-- stories the reader started but hasnt finished -->
+  @if (inProgressStories().length > 0) {
+    <section class="continue-section" aria-labelledby="continue-heading">
+      <h2 id="continue-heading" class="section-heading continue-heading">Continue Reading</h2>
+      <div class="story-grid">
+        <!-- same cards as the full list but displays which chapter theyre on -->
+        @for (item of inProgressStories(); track item.story.story_id) {
+          <button type="button" class="story-card" (click)="selectedStory.set(item.story)">
+            <div class="story-container">
+              <h3 class="story-title">{{ item.story.title }}</h3>
+              <p class="story-progress">Chapter {{ item.chapter }}</p>
+              <p class="story-author">{{ item.story.author }}</p>
+            </div>
+          </button>
+        }
+      </div>
+    </section>
+  }
+
   <div class="section-header">
     <h2 class="section-heading">Stories</h2>
     <!-- takes the author to the writing page -->

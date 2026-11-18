@@ -1,0 +1,42 @@
+.exit-dialog {
+  --dialog-width: 420px;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.exit-content {
+  padding: 32px;
+}
+
+.exit-content h2 {
+  margin-bottom: 8px;
+  font-size: 1.5rem;
+}
+
+.exit-content p {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+/* keep reading and exit on the right at the bottom */
+.exit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cancel-button {
+  padding: 10px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cancel-button:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
