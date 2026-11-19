@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
+import { firstValueFrom, timeout } from 'rxjs';
 import { APIResponse } from '../../models/api';
 import {
   ApiErrorBody,
@@ -11,7 +11,10 @@ import {
   User,
 } from '../../models/auth';
 import { AUTH_MESSAGES } from '../../models/auth-messages';
-import { clearToken, getToken, saveToken } from './auth-token';
+import { TOKEN_KEY, clearToken, getToken, saveToken } from './auth-token';
+
+// how long the app waits for the backend when it starts, after that the page shows as a guest
+const STARTUP_TIMEOUT_MS = 5000;
 
 /**
  * AuthService
@@ -32,17 +35,35 @@ export class AuthService {
   readonly currentUser = computed(() => this.user() ?? GUEST_USER);
   readonly isSignedIn = computed(() => this.user() !== null); // false while you're the guest
 
+  constructor() {
+    // signing in or out in one tab changes the saved token, so every other open tab follows along
+    const onStorageChange = (event: StorageEvent) => {
+      if (event.key === TOKEN_KEY || event.key === null) {
+        void this.loadCurrentUser();
+      }
+    };
+    window.addEventListener('storage', onStorageChange);
+    inject(DestroyRef).onDestroy(() => window.removeEventListener('storage', onStorageChange));
+  }
+
   // runs once when the app starts, if there's a saved token it asks the backend who it belongs to
   // so a refresh keeps you signed in
   async loadCurrentUser() {
     if (!getToken()) {
-      return; // never signed in, stay the guest
+      this.user.set(null); // never signed in (or signed out in another tab), so the guest
+      return;
     }
     try {
-      const response = await firstValueFrom(this.http.get<APIResponse<User>>(`${this.authURL}/me`));
+      const response = await firstValueFrom(
+        this.http.get<APIResponse<User>>(`${this.authURL}/me`).pipe(timeout(STARTUP_TIMEOUT_MS)),
+      );
       this.user.set(response.data);
-    } catch {
-      this.logout(); // token ran out or isn't valid any more
+    } catch (error) {
+      // only forget the token when the backend says it's no good (it ran out, or the password was reset)
+      // if the server is down or slow, keep it so the next visit can sign back in
+      if (error instanceof HttpErrorResponse && error.status === 401) {
+        this.logout();
+      }
     }
   }
 
@@ -88,6 +109,16 @@ export function readApiError(error: unknown): {
   // request never reached the server
   if (error.status === 0) {
     return { message: AUTH_MESSAGES.serverUnreachable, fieldErrors: {} };
+  }
+
+  // the proxy couldn't reach the backend (it's down or restarting)
+  if ([502, 503, 504].includes(error.status)) {
+    return { message: AUTH_MESSAGES.serverUnreachable, fieldErrors: {} };
+  }
+
+  // the backend crashed, its message ("Internal server error") wouldn't help the user
+  if (error.status >= 500) {
+    return { message: AUTH_MESSAGES.unknownError, fieldErrors: {} };
   }
 
   // error for taken email or username

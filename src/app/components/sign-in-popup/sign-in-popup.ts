@@ -10,6 +10,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import {
   FormControl,
@@ -27,12 +28,32 @@ const PASSWORD_SYMBOLS = /[-#!$@£%^&*()_+|~=`{}[\]:";'<>?,./\\ ]/;
 
 // the same password rules the backend checks, shown as a checklist while you type
 const PASSWORD_RULES = [
-  { label: 'At least 8 characters', test: (password: string) => password.length >= 8 },
-  { label: 'An uppercase letter', test: (password: string) => /[A-Z]/.test(password) },
-  { label: 'A lowercase letter', test: (password: string) => /[a-z]/.test(password) },
-  { label: 'A number', test: (password: string) => /\d/.test(password) },
-  { label: 'A symbol, like ! or ?', test: (password: string) => PASSWORD_SYMBOLS.test(password) },
+  { label: AUTH_MESSAGES.passwordRuleLength, test: (password: string) => password.length >= 8 },
+  {
+    label: AUTH_MESSAGES.passwordRuleUppercase,
+    test: (password: string) => /[A-Z]/.test(password),
+  },
+  {
+    label: AUTH_MESSAGES.passwordRuleLowercase,
+    test: (password: string) => /[a-z]/.test(password),
+  },
+  { label: AUTH_MESSAGES.passwordRuleNumber, test: (password: string) => /\d/.test(password) },
+  {
+    label: AUTH_MESSAGES.passwordRuleSymbol,
+    test: (password: string) => PASSWORD_SYMBOLS.test(password),
+  },
 ];
+
+// the backend saves passwords with bcrypt, which only reads the first 72 bytes
+// most characters are 1 byte, but emojis and accented letters take more
+const MAX_PASSWORD_BYTES = 72;
+const passwordNotTooLong: ValidatorFn = (control) =>
+  new TextEncoder().encode(control.value).length <= MAX_PASSWORD_BYTES
+    ? null
+    : { passwordTooLong: true };
+
+// Angular's email check allows "ada@localhost", but the backend needs a dot after the @ (like .com)
+const emailHasDomain = Validators.pattern(/^[^@\s]+@[^@\s]+\.[^@\s]+$/);
 
 // fails until the password passes every rule above
 const strongPassword: ValidatorFn = (control) =>
@@ -87,7 +108,7 @@ export class SignInPopup {
   protected signInForm = new FormGroup({
     email: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.email],
+      validators: [Validators.required, Validators.email, emailHasDomain],
     }),
     password: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
   });
@@ -96,7 +117,7 @@ export class SignInPopup {
     {
       email: new FormControl('', {
         nonNullable: true,
-        validators: [Validators.required, Validators.email],
+        validators: [Validators.required, Validators.email, emailHasDomain],
       }),
       // 3 to 9 characters, only letters, numbers and underscores, and not a reserved name
       username: new FormControl('', {
@@ -109,7 +130,7 @@ export class SignInPopup {
       }),
       password: new FormControl('', {
         nonNullable: true,
-        validators: [strongPassword],
+        validators: [strongPassword, passwordNotTooLong],
       }),
       confirmPassword: new FormControl('', { nonNullable: true }),
     },
@@ -130,7 +151,11 @@ export class SignInPopup {
   protected fieldErrors = signal<Record<string, string>>({}); // backend messages under each field
 
   constructor() {
-    afterNextRender(() => this.dialog().nativeElement.showModal()); // show popup once it exists
+    afterNextRender(() => {
+      this.dialog().nativeElement.showModal(); // show popup once it exists
+      // start in the email box instead of on the x button, so you can type straight away
+      this.dialog().nativeElement.querySelector('input')?.focus();
+    });
 
     // once backend says a field is invalid and the user edits the field to fix it, don't show the error anymore
     for (const [field, control] of Object.entries(this.createAccountForm.controls)) {
@@ -161,6 +186,9 @@ export class SignInPopup {
   }
 
   protected async signIn() {
+    if (this.submitting()) {
+      return; // already waiting for the backend
+    }
     if (this.signInForm.invalid) {
       this.signInForm.markAllAsTouched(); // shows the "required" messages
       return;
@@ -174,8 +202,14 @@ export class SignInPopup {
       await this.auth.login(email, password);
       this.close(); // signed in, nothing else to do in the popup
     } catch (error) {
-      // the backend gives the same message whether the account exists or not
-      this.errorMessage.set(readApiError(error).message);
+      if (error instanceof HttpErrorResponse && error.status === 401) {
+        // wrong email or password, the backend gives the same answer whether the account exists or not
+        this.errorMessage.set(AUTH_MESSAGES.invalidLogin);
+      } else {
+        // this form has no messages under its fields, so a field problem goes in the box at the top
+        const { message, fieldErrors } = readApiError(error);
+        this.errorMessage.set(Object.values(fieldErrors)[0] ?? message);
+      }
       this.signInForm.controls.password.reset(); // so the wrong password isn't left in the box
     } finally {
       this.submitting.set(false);
@@ -184,6 +218,9 @@ export class SignInPopup {
 
   // makes the account, then signs straight in
   protected async createAccount() {
+    if (this.submitting()) {
+      return; // already waiting for the backend
+    }
     if (this.createAccountForm.invalid) {
       this.createAccountForm.markAllAsTouched(); // shows the messages under each field
       return;

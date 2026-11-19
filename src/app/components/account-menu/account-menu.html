@@ -1,14 +1,22 @@
 <!-- account bar on top right of the page-->
 <div class="profile-menu" #profileMenu>
-  <button type="button" class="profile-button" (click)="toggleMenu()" [attr.title]="buttonTitle()">
-    <span class="profile-icon"></span>
+  <!-- aria-expanded tells screen readers whether the menu is open -->
+  <button
+    type="button"
+    class="profile-button"
+    (click)="toggleMenu()"
+    aria-controls="profile-dropdown"
+    [attr.aria-expanded]="menuOpen()"
+    [attr.title]="buttonTitle()"
+  >
+    <span class="profile-icon" aria-hidden="true"></span>
     <span>{{ buttonLabel() }}</span>
-    <span class="profile-arrow" [class.open]="menuOpen()"></span>
+    <span class="profile-arrow" [class.open]="menuOpen()" aria-hidden="true"></span>
   </button>
 
   <!-- if thats pressed, show the users details, like email and name -->
   @if (menuOpen()) {
-    <div class="profile-dropdown">
+    <div id="profile-dropdown" class="profile-dropdown">
       @if (isSignedIn()) {
         <!-- shows which account is signed in -->
         <div class="profile-details">
