@@ -1,11 +1,13 @@
 // the rules for characters and their emotions, with no Angular in them, so they can be tested on their own.
-// the dialog shows the results and calls these to change the data
-import { Character, Emotion } from '../../../models/story';
-import { default_placement, Placement } from '../image-editor/placement';
+// the dialog shows the results, and it and WriterStateService call these to change the data
+import { AssetRef } from '../../models/asset';
+import { Character, Emotion } from '../../models/story';
+import { default_placement, Placement } from './placement';
 
-// a new id that doesn't depend on the name, so things can share a name (the popup won't close until they're renamed)
+// a new id that doesn't depend on the name, so things can share a name (the popup won't close until they're renamed).
+// made the same way as picture ids (see AssetService), random enough that two can't be the same
 export function new_id(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+  return crypto.randomUUID();
 }
 
 // names are compared ignoring capitals and spaces at the ends
@@ -74,6 +76,78 @@ export function new_emotion(emotions: Emotion[]): Emotion {
     image: null,
     ...placement_fields(default_placement),
   };
+}
+
+// ---- changing the list of characters.
+// each gives back a new list and leaves the one it was given alone, so signals notice the change.
+// an id that isn't in the list changes nothing
+
+// changes one character
+export function update_character(
+  characters: Character[],
+  id: string,
+  change: (character: Character) => Character,
+): Character[] {
+  return characters.map((c) => (c.id === id ? change(c) : c));
+}
+
+// changes one emotion of one character
+export function update_emotion(
+  characters: Character[],
+  character_id: string,
+  emotion_id: string,
+  change: (emotion: Emotion) => Emotion,
+): Character[] {
+  return update_character(characters, character_id, (character) => ({
+    ...character,
+    emotions: character.emotions.map((e) => (e.id === emotion_id ? change(e) : e)),
+  }));
+}
+
+// takes a character out of the list
+export function remove_character(characters: Character[], id: string): Character[] {
+  return characters.filter((c) => c.id !== id);
+}
+
+// takes an emotion out of a character
+export function remove_emotion(
+  characters: Character[],
+  character_id: string,
+  emotion_id: string,
+): Character[] {
+  return update_character(characters, character_id, (character) => ({
+    ...character,
+    emotions: character.emotions.filter((e) => e.id !== emotion_id),
+  }));
+}
+
+// gives the picture with this asset_id its Azure url, wherever it's used
+export function set_image_url(characters: Character[], asset_id: string, url: string): Character[] {
+  return characters.map((character) => ({
+    ...character,
+    emotions: character.emotions.map((e) =>
+      e.image?.asset_id === asset_id ? { ...e, image: { asset_id, url } } : e,
+    ),
+  }));
+}
+
+// ---- reading the list
+
+// one emotion of one character, or null if either isn't there
+export function find_emotion(
+  characters: Character[],
+  character_id: string,
+  emotion_id: string,
+): Emotion | null {
+  const character = characters.find((c) => c.id === character_id);
+  return character?.emotions.find((e) => e.id === emotion_id) ?? null;
+}
+
+// every picture the characters use
+export function images_of(characters: Character[]): AssetRef[] {
+  return characters.flatMap((character) =>
+    character.emotions.flatMap((emotion) => (emotion.image ? [emotion.image] : [])),
+  );
 }
 
 // the things still wrong that stop the popup closing, as messages for the writer

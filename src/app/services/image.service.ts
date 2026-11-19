@@ -1,7 +1,10 @@
 import { Injectable } from '@angular/core';
 
-// only these file types are allowed
-const allowed_types = ['image/jpeg', 'image/png'];
+// only these file types are allowed. also used by the image editor's file picker and hint
+export const allowed_types = ['image/jpeg', 'image/png'];
+
+// the allowed types the way the writer would say them, for messages
+export const allowed_type_names = 'jpg or png';
 
 // largest file we accept, in bytes (5 MB)
 const max_bytes = 5 * 1024 * 1024;
@@ -20,7 +23,7 @@ export class ImageService {
   // returns an error message if the file can't be used, or null if it is fine
   check_image(file: File): string | null {
     if (!allowed_types.includes(file.type)) {
-      return 'Please choose a jpg or png file.';
+      return `Please choose a ${allowed_type_names} file.`;
     }
     if (file.size > max_bytes) {
       return 'The file must be 5 MB or smaller.';

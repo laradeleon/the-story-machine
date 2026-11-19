@@ -5,7 +5,7 @@ import { AssetService } from '../../services/asset.service';
 import { ImageService } from '../../services/image.service';
 import { WriterStateService } from '../../services/writer-state.service';
 import { ImageEditor } from '../image-editor/image-editor';
-import { default_placement, Placement } from '../image-editor/placement';
+import { Placement } from '../../rules/placement';
 import { ImageThumbnail } from '../image-thumbnail/image-thumbnail';
 import { ConfirmDialog } from '../confirm-dialog/confirm-dialog';
 import {
@@ -16,12 +16,15 @@ import {
   new_emotion,
   placement_fields,
   placement_of,
-} from './characters-rules';
+  update_character,
+  update_emotion,
+} from '../../rules/characters-rules';
 
 // the popup opened by the Characters button. three columns: the character list, the selected
-// character's details and emotions, and the selected emotion's picture. the rules for names, duplicates
-// and placement are in characters-rules.ts. the writer's characters live in WriterStateService,
-// so anything changed here is kept while the writer is open
+// character's details and emotions, and the selected emotion's picture.
+// this only handles what's on screen (the selection, messages and confirm popups). the rules and the
+// changes to the list are in characters-rules.ts, and the characters live in WriterStateService, which
+// also handles changes that affect the pictures (storing, saving and throwing them away)
 @Component({
   imports: [ModalDialog, ImageEditor, ImageThumbnail, ConfirmDialog],
   selector: 'app-characters-dialog',
@@ -39,6 +42,8 @@ export class CharactersDialog {
 
   // the name rule, so the template can compare names the same way the rules do
   protected readonly name_key = name_key;
+  // the placement the image editor and thumbnails show for an emotion
+  protected readonly to_placement = placement_of;
 
   error = signal<string | null>(null); // a message for the writer, null when there isn't one
   selected_character_id = signal<string | null>(null); // the character shown in the middle column
@@ -81,21 +86,19 @@ export class CharactersDialog {
   // changes a character's name. duplicates are allowed here, the popup just won't close yet
   rename_character(id: string, name: string) {
     this.error.set(null);
-    this.update_character(id, (character) => ({ ...character, name }));
+    this.change_character(id, (character) => ({ ...character, name }));
   }
 
   // changes a character's description
   set_description(id: string, description: string) {
     this.error.set(null);
-    this.update_character(id, (character) => ({ ...character, description }));
+    this.change_character(id, (character) => ({ ...character, description }));
   }
 
   // removes a character and everything in it, pictures included
   remove_character(id: string) {
     this.error.set(null);
-    const removed = this.state.characters().find((character) => character.id === id);
-    this.state.characters.update((list) => list.filter((character) => character.id !== id));
-    this.forget_pictures(removed?.emotions ?? []);
+    this.state.remove_character(id);
     if (this.selected_character_id() === id) {
       this.select_character(null);
     }
@@ -117,11 +120,7 @@ export class CharactersDialog {
     if (!character || !emotion) {
       return;
     }
-    this.update_character(character.id, (c) => ({
-      ...c,
-      emotions: c.emotions.filter((e) => e.id !== emotion.id),
-    }));
-    this.forget_pictures([emotion]);
+    this.state.remove_emotion(character.id, emotion.id);
     this.selected_emotion_id.set(null);
   }
 
@@ -142,7 +141,7 @@ export class CharactersDialog {
     }
 
     const emotion = new_emotion(character.emotions);
-    this.update_character(character.id, (c) => ({ ...c, emotions: [...c.emotions, emotion] }));
+    this.change_character(character.id, (c) => ({ ...c, emotions: [...c.emotions, emotion] }));
     this.selected_emotion_id.set(emotion.id);
   }
 
@@ -153,7 +152,9 @@ export class CharactersDialog {
     if (!character) {
       return;
     }
-    this.update_emotion(character.id, id, (e) => ({ ...e, emotion: name }));
+    this.state.characters.update((characters) =>
+      update_emotion(characters, character.id, id, (e) => ({ ...e, emotion: name })),
+    );
   }
 
   // shows an emotion's picture on the right
@@ -162,17 +163,12 @@ export class CharactersDialog {
     this.selected_emotion_id.set(id);
   }
 
-  // the placement the image editor and thumbnails show for an emotion
-  to_placement(emotion?: Emotion): Placement {
-    return placement_of(emotion);
-  }
-
   // where to show an emotion's picture from (its Azure url, or the local copy until it's uploaded)
   image_url_of(emotion?: Emotion): string | null {
     return this.assets.url_of(emotion?.image);
   }
 
-  // puts a picture on the selected emotion. the file is checked and stored first, so this waits.
+  // puts a picture on the selected emotion. the file is checked and converted first, so this waits.
   // returns false (and sets the error) if it can't be used
   async set_image_from_file(file: File | null): Promise<boolean> {
     this.error.set(null);
@@ -186,35 +182,16 @@ export class CharactersDialog {
       return false;
     }
 
-    // keep the ids from before storing, the selection (or even the open story) may change
-    // while the file is converted and stored
+    // keep the ids from before converting, the selection (or even the open story) may change meanwhile
     const story_id = this.state.story_id();
-    const character_id = character.id;
-    const emotion_id = emotion.id;
-    let image: Emotion['image'];
+    let picture: Blob;
     try {
-      const picture = await this.images.prepare_image(file);
-      image = await this.assets.add(story_id, picture);
+      picture = await this.images.prepare_image(file);
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Could not read the image.');
       return false;
     }
-    // another story was opened in the meantime, the picture is left unused and cleared out later
-    if (this.state.story_id() !== story_id) {
-      return false;
-    }
-
-    // a new picture starts centred at 100%, so the old position doesn't carry over
-    let replaced: Emotion | null = null;
-    this.update_emotion(character_id, emotion_id, (e) => {
-      replaced = e;
-      return { ...e, image, ...placement_fields(default_placement) };
-    });
-    // save the draft now, so it points at the new picture before anything can interrupt,
-    // then throw away the picture it replaced (if any)
-    await this.state.save_now();
-    this.forget_pictures(replaced ? [replaced] : []);
-    return true;
+    return this.state.set_emotion_image(story_id, character.id, emotion.id, picture);
   }
 
   // the image editor moved, zoomed or was typed into: stores the new placement on the selected emotion
@@ -230,8 +207,7 @@ export class CharactersDialog {
     if (!character || !emotion) {
       return;
     }
-    this.update_emotion(character.id, emotion.id, (e) => ({ ...e, image: null }));
-    this.forget_pictures([emotion]);
+    this.state.remove_emotion_image(character.id, emotion.id);
   }
 
   // the message shown in red under the picture when something is wrong with it, or null if it's fine
@@ -269,35 +245,17 @@ export class CharactersDialog {
     if (!character || !emotion) {
       return;
     }
-    this.update_emotion(character.id, emotion.id, change);
+    this.state.characters.update((characters) =>
+      update_emotion(characters, character.id, emotion.id, change),
+    );
+  }
+
+  // changes one character
+  private change_character(id: string, change: (character: Character) => Character) {
+    this.state.characters.update((characters) => update_character(characters, id, change));
   }
 
   private show_problem() {
     this.error.set('Fix the problems above before closing.');
-  }
-
-  private update_character(id: string, change: (character: Character) => Character) {
-    this.state.characters.update((list) => list.map((c) => (c.id === id ? change(c) : c)));
-  }
-
-  private update_emotion(
-    character_id: string,
-    emotion_id: string,
-    change: (emotion: Emotion) => Emotion,
-  ) {
-    this.update_character(character_id, (character) => ({
-      ...character,
-      emotions: character.emotions.map((e) => (e.id === emotion_id ? change(e) : e)),
-    }));
-  }
-
-  // throws away the pictures of emotions that were deleted or had their picture replaced,
-  // straight away rather than leaving them for the cleanup when the story is next opened
-  private forget_pictures(emotions: Emotion[]) {
-    for (const emotion of emotions) {
-      if (emotion.image) {
-        void this.assets.forget(emotion.image.asset_id);
-      }
-    }
   }
 }

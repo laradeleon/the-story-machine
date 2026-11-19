@@ -178,6 +178,67 @@ describe('WriterStateService', () => {
 
       expect(await load_story_assets('story-1')).toHaveLength(2);
     });
+
+    // the stored pictures of story-1. throwing pictures away isn't waited for, so this waits a moment
+    async function stored_pictures() {
+      await saves_finished();
+      return (await load_story_assets('story-1')).map((a) => a.asset_id);
+    }
+
+    it('should put a new picture on an emotion, save, and throw the old one away', async () => {
+      const { state, image: old } = await story_with_picture();
+
+      expect(await state.set_emotion_image('story-1', 'c1', 'e1', new Blob(['y']))).toBe(true);
+
+      const image = state.characters()[0].emotions[0].image!;
+      expect(image.asset_id).not.toBe(old.asset_id);
+      expect((await load_draft('story-1'))!.characters[0].emotions[0].image).toEqual(image);
+      expect(await stored_pictures()).toEqual([image.asset_id]);
+    });
+
+    it('should not store the picture when another story was opened since it was picked', async () => {
+      const { state } = await story_with_picture();
+      await state.open_story('story-2');
+
+      expect(await state.set_emotion_image('story-1', 'c1', 'e1', new Blob(['y']))).toBe(false);
+      expect(await load_story_assets('story-2')).toEqual([]);
+    });
+
+    it('should throw the new picture away when its emotion is gone', async () => {
+      const { state, image: old } = await story_with_picture();
+
+      expect(await state.set_emotion_image('story-1', 'c1', 'missing', new Blob(['y']))).toBe(
+        false,
+      );
+      expect(await stored_pictures()).toEqual([old.asset_id]);
+    });
+
+    it('should throw a picture away when it is taken off its emotion', async () => {
+      const { state } = await story_with_picture();
+
+      state.remove_emotion_image('c1', 'e1');
+
+      expect(state.characters()[0].emotions[0].image).toBeNull();
+      expect(await stored_pictures()).toEqual([]);
+    });
+
+    it("should throw an emotion's picture away when the emotion is removed", async () => {
+      const { state } = await story_with_picture();
+
+      state.remove_emotion('c1', 'e1');
+
+      expect(state.characters()[0].emotions).toEqual([]);
+      expect(await stored_pictures()).toEqual([]);
+    });
+
+    it("should throw a character's pictures away when the character is removed", async () => {
+      const { state } = await story_with_picture();
+
+      state.remove_character('c1');
+
+      expect(state.characters()).toEqual([]);
+      expect(await stored_pictures()).toEqual([]);
+    });
   });
 
   it('should save the open story before switching to another', async () => {

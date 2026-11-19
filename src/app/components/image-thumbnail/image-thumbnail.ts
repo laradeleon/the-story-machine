@@ -1,5 +1,5 @@
 import { Component, input } from '@angular/core';
-import { default_placement, Placement, placement_style } from '../image-editor/placement';
+import { default_placement, Placement, placement_style } from '../../rules/placement';
 
 // a small square picture, placed the same way as in the image editor so it matches what was set there.
 // the empty square uses --thumbnail-bg, which a popup can set to a darker shade

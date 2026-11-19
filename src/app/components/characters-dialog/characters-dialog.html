@@ -28,7 +28,6 @@
         <ul class="column-scroll character-list">
           @for (character of state.characters(); track character.id) {
             @let first = character.emotions[0];
-            @let first_url = image_url_of(first);
             <li>
               <button
                 type="button"
@@ -37,8 +36,8 @@
                 (click)="select_character(character.id)"
               >
                 <app-image-thumbnail
-                  [image_url]="first_url"
-                  [placement]="first_url ? to_placement(first) : null"
+                  [image_url]="image_url_of(first)"
+                  [placement]="to_placement(first)"
                 />
                 <span class="item-name">{{ character.name.trim() || 'Unnamed' }}</span>
                 @if (duplicate_character_names().has(name_key(character.name))) {
@@ -83,7 +82,6 @@
 
           <ul class="column-scroll emotion-list">
             @for (emotion of character.emotions; track emotion.id) {
-              @let emotion_url = image_url_of(emotion);
               <li>
                 <button
                   type="button"
@@ -92,8 +90,8 @@
                   (click)="select_emotion(emotion.id)"
                 >
                   <app-image-thumbnail
-                    [image_url]="emotion_url"
-                    [placement]="emotion_url ? to_placement(emotion) : null"
+                    [image_url]="image_url_of(emotion)"
+                    [placement]="to_placement(emotion)"
                   />
                   <span class="item-name">{{ emotion.emotion.trim() || 'Unnamed' }}</span>
                   @if (duplicate_emotion_keys().has(name_key(emotion.emotion))) {
@@ -147,7 +145,6 @@
             [alt_text]="emotion.emotion"
             [guide]="true"
             [guide_visible]="outline_visible()"
-            (guide_visible_changed)="outline_visible.set($event)"
             (image_chosen)="set_image_from_file($event)"
             (placement_changed)="set_placement($event)"
             (image_deleted)="delete_image()"

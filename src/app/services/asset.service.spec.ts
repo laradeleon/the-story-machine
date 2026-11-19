@@ -114,13 +114,6 @@ describe('AssetService', () => {
     expect(assets.url_of(image)).toBeNull();
     expect(await load_story_assets('story-1')).toEqual([]);
   });
-
-  it('should drop the local copy once the picture is uploaded', async () => {
-    const image = await assets.add('story-1', picture());
-
-    await assets.uploaded(image.asset_id);
-
-    expect(assets.url_of(image)).toBeNull();
-    expect(await load_story_assets('story-1')).toEqual([]);
-  });
+  // uploaded() just calls forget(); WriterStateService's 'should put the Azure url in the story
+  // once the picture is uploaded' checks the local copy is dropped after an upload
 });
