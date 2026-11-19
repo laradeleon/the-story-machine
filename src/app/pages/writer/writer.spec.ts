@@ -1,8 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { By } from '@angular/platform-browser';
-import { clear_all, load } from '../../services/saved-values';
+import { clear_all, load_draft } from '../../services/saved-values';
 import { PreviewService } from '../../services/preview.service';
+import { PLACEHOLDER_STORY_ID } from '../../services/writer-state.service';
 import { Writer } from './writer';
 import { ErrorKind, ErrorMessageManager } from '../../../scripting_language/error_message_manager';
 
@@ -139,7 +140,7 @@ describe('Writer', () => {
     fixture.destroy();
     await new Promise((resolve) => setTimeout(resolve, 10)); // the IndexedDB save is async
 
-    expect(await load('story-machine:writer-script', null)).toBe('Keep me');
+    expect((await load_draft(PLACEHOLDER_STORY_ID))?.script).toBe('Keep me');
   });
 
   it('should show the parser output when AST is pressed with a valid script', () => {
