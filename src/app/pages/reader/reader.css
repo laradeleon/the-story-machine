@@ -134,3 +134,29 @@
   width: 48px;
   color: var(--color-accent);
 }
+
+/* exit button on top left*/
+.exit-button {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.exit-button:hover,
+.exit-button:focus-visible {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}

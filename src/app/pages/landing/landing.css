@@ -243,3 +243,19 @@
   font-size: 0.875rem;
   color: var(--color-text-muted);
 }
+
+/* the continue reading list above full story list */
+.continue-section {
+  margin-bottom: 48px;
+}
+
+.continue-heading {
+  margin-bottom: 24px;
+}
+
+/* which chapter they're on, which shows under the title on a story on landing page if theyve started reading ti*/
+.story-progress {
+  margin: 8px 0 0;
+  font-size: 0.875rem;
+  color: var(--color-accent);
+}
