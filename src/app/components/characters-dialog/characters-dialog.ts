@@ -1,10 +1,11 @@
 import { Component, computed, inject, output, signal, viewChild } from '@angular/core';
 import { ModalDialog } from '../../directives/modal-dialog';
 import { Character, Emotion } from '../../../models/story';
+import { AssetService } from '../../services/asset.service';
 import { ImageService } from '../../services/image.service';
 import { WriterStateService } from '../../services/writer-state.service';
 import { ImageEditor } from '../image-editor/image-editor';
-import { default_placement, Placement } from '../image-editor/placement';
+import { Placement } from '../../rules/placement';
 import { ImageThumbnail } from '../image-thumbnail/image-thumbnail';
 import { ConfirmDialog } from '../confirm-dialog/confirm-dialog';
 import {
@@ -15,12 +16,11 @@ import {
   new_emotion,
   placement_fields,
   placement_of,
-} from './characters-rules';
+  update_character,
+  update_emotion,
+} from '../../rules/characters-rules';
 
-// the popup opened by the Characters button. three columns: the character list, the selected
-// character's details and emotions, and the selected emotion's picture. the rules for names, duplicates
-// and placement are in characters-rules.ts. the writer's characters live in WriterStateService,
-// so anything changed here is kept while the writer is open
+// the Characters popup: the character list, the selected character, and the selected emotion's picture
 @Component({
   imports: [ModalDialog, ImageEditor, ImageThumbnail, ConfirmDialog],
   selector: 'app-characters-dialog',
@@ -28,22 +28,22 @@ import {
   templateUrl: './characters-dialog.html',
 })
 export class CharactersDialog {
-  closed = output<void>(); // tells the writer the popup was closed (Close, Esc, or after a valid close)
+  closed = output<void>();
 
-  protected state = inject(WriterStateService); // holds the characters the writer has made so far
-  private images = inject(ImageService); // checks and reads the uploaded picture files
+  protected state = inject(WriterStateService);
+  private images = inject(ImageService);
+  private assets = inject(AssetService);
 
-  private modal = viewChild.required(ModalDialog); // the popup, opened by the appModal directive
+  private modal = viewChild.required(ModalDialog);
 
-  // the name rule, so the template can compare names the same way the rules do
   protected readonly name_key = name_key;
 
-  error = signal<string | null>(null); // a message for the writer, null when there isn't one
-  selected_character_id = signal<string | null>(null); // the character shown in the middle column
-  selected_emotion_id = signal<string | null>(null); // the emotion shown on the right
-  outline_visible = signal(true); // whether the see-through person guide is drawn over the picture
-  confirm_character_open = signal(false); // whether the "delete this character?" popup is showing
-  confirm_emotion_open = signal(false); // whether the "delete this emotion?" popup is showing
+  error = signal<string | null>(null);
+  selected_character_id = signal<string | null>(null);
+  selected_emotion_id = signal<string | null>(null);
+  outline_visible = signal(true); // the see-through person guide over the picture
+  confirm_character_open = signal(false);
+  confirm_emotion_open = signal(false);
 
   selected_character = computed(
     () => this.state.characters().find((c) => c.id === this.selected_character_id()) ?? null,
@@ -52,23 +52,30 @@ export class CharactersDialog {
     () =>
       this.selected_character()?.emotions.find((e) => e.id === this.selected_emotion_id()) ?? null,
   );
+  // null unless both a character and an emotion are selected
+  private selected_ids = computed(() => {
+    const character = this.selected_character();
+    const emotion = this.selected_emotion();
+    return character && emotion ? { character_id: character.id, emotion_id: emotion.id } : null;
+  });
+  selected_placement = computed(() => placement_of(this.selected_emotion() ?? undefined));
 
-  // names used by more than one character
   duplicate_character_names = computed(() =>
     duplicated_keys(this.state.characters().map((character) => character.name)),
   );
 
-  // emotion names used by more than one emotion in the selected character
+  // duplicate emotion names in the selected character
   duplicate_emotion_keys = computed(() =>
     duplicated_keys(this.selected_character()?.emotions.map((e) => e.emotion) ?? []),
   );
 
-  // the things still wrong that stop the popup closing, shown as messages above the columns
-  problems = computed(() => character_problems(this.state.characters()));
+  problems = computed(() =>
+    character_problems(this.state.characters(), this.duplicate_character_names()),
+  );
 
   has_problems = computed(() => this.problems().length > 0);
 
-  // adds a character called "Character 1", "Character 2", ... and selects it
+  // adds "Character N" and selects it
   add_character() {
     this.error.set(null);
     const character = new_character(this.state.characters());
@@ -76,58 +83,43 @@ export class CharactersDialog {
     this.select_character(character.id);
   }
 
-  // changes a character's name. duplicates are allowed here, the popup just won't close yet
   rename_character(id: string, name: string) {
     this.error.set(null);
-    this.update_character(id, (character) => ({ ...character, name }));
+    this.change_character(id, (character) => ({ ...character, name }));
   }
 
-  // changes a character's description
   set_description(id: string, description: string) {
     this.error.set(null);
-    this.update_character(id, (character) => ({ ...character, description }));
+    this.change_character(id, (character) => ({ ...character, description }));
   }
 
-  // removes a character and everything in it
-  remove_character(id: string) {
-    this.error.set(null);
-    this.state.characters.update((list) => list.filter((character) => character.id !== id));
-    if (this.selected_character_id() === id) {
-      this.select_character(null);
-    }
-  }
-
-  // removes the selected character, once the user has confirmed it
+  // removes the selected character and its pictures, once confirmed
   remove_selected_character() {
     const id = this.selected_character_id();
     if (id) {
-      this.remove_character(id);
+      this.state.remove_character(id);
+      this.select_character(null); // also clears the error
     }
   }
 
-  // removes the selected emotion, and its picture, once the user has confirmed it
+  // removes the selected emotion and its picture, once confirmed
   remove_selected_emotion() {
     this.error.set(null);
-    const character = this.selected_character();
-    const emotion = this.selected_emotion();
-    if (!character || !emotion) {
-      return;
+    const ids = this.selected_ids();
+    if (ids) {
+      this.state.remove_emotion(ids.character_id, ids.emotion_id);
+      this.selected_emotion_id.set(null);
     }
-    this.update_character(character.id, (c) => ({
-      ...c,
-      emotions: c.emotions.filter((e) => e.id !== emotion.id),
-    }));
-    this.selected_emotion_id.set(null);
   }
 
-  // shows a character in the middle and right columns (null clears the selection)
+  // selects a character (null clears the selection) and clears the emotion
   select_character(id: string | null) {
     this.error.set(null);
     this.selected_character_id.set(id);
     this.selected_emotion_id.set(null);
   }
 
-  // adds an emotion called "Emotion 1", "Emotion 2", ... to the selected character and selects it
+  // adds "Emotion N" to the selected character and selects it
   add_emotion() {
     this.error.set(null);
     const character = this.selected_character();
@@ -137,38 +129,36 @@ export class CharactersDialog {
     }
 
     const emotion = new_emotion(character.emotions);
-    this.update_character(character.id, (c) => ({ ...c, emotions: [...c.emotions, emotion] }));
+    this.change_character(character.id, (c) => ({ ...c, emotions: [...c.emotions, emotion] }));
     this.selected_emotion_id.set(emotion.id);
   }
 
-  // changes an emotion's name. duplicates are allowed here, the popup just won't close yet
+  // renames an emotion of the selected character
   rename_emotion(id: string, name: string) {
     this.error.set(null);
     const character = this.selected_character();
     if (!character) {
       return;
     }
-    this.update_emotion(character.id, id, (e) => ({ ...e, emotion: name }));
+    this.state.characters.update((characters) =>
+      update_emotion(characters, character.id, id, (e) => ({ ...e, emotion: name })),
+    );
   }
 
-  // shows an emotion's picture on the right
   select_emotion(id: string) {
     this.error.set(null);
     this.selected_emotion_id.set(id);
   }
 
-  // the placement the image editor and thumbnails show for an emotion
-  to_placement(emotion?: Emotion): Placement {
-    return placement_of(emotion);
+  image_url_of(emotion?: Emotion): string | null {
+    return this.assets.url_of(emotion?.image);
   }
 
-  // puts a picture on the selected emotion. the file is checked and read first, so this waits.
-  // returns false (and sets the error) if it can't be used
+  // converts the file and puts it on the selected emotion, giving back false if it can't
   async set_image_from_file(file: File | null): Promise<boolean> {
     this.error.set(null);
-    const character = this.selected_character();
-    const emotion = this.selected_emotion();
-    if (!character || !emotion) {
+    const ids = this.selected_ids();
+    if (!ids) {
       this.error.set('Select an emotion first.');
       return false;
     }
@@ -176,43 +166,43 @@ export class CharactersDialog {
       return false;
     }
 
-    // keep the ids from before reading, the selection may change while the file is read
-    const character_id = character.id;
-    const emotion_id = emotion.id;
-    let image_url: string;
+    // read before converting, the open story may change meanwhile
+    const story_id = this.state.story_id();
+    let picture: Blob;
     try {
-      image_url = await this.images.read_image(file);
+      picture = await this.images.prepare_image(file);
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Could not read the image.');
       return false;
     }
-
-    // a new picture starts centred at 100%, so the old position doesn't carry over
-    this.update_emotion(character_id, emotion_id, (e) => ({
-      ...e,
-      image_url,
-      ...placement_fields(default_placement),
-    }));
-    return true;
+    return this.state.set_emotion_image(story_id, ids.character_id, ids.emotion_id, picture);
   }
 
-  // the image editor moved, zoomed or was typed into: stores the new placement on the selected emotion
   set_placement(placement: Placement) {
     this.update_selected_emotion((e) => ({ ...e, ...placement_fields(placement) }));
   }
 
-  // removes the selected emotion's picture. the emotion stays in the list
+  // removes the selected emotion's picture, keeping the emotion
   delete_image() {
     this.error.set(null);
-    const character = this.selected_character();
-    const emotion = this.selected_emotion();
-    if (!character || !emotion) {
-      return;
+    const ids = this.selected_ids();
+    if (ids) {
+      this.state.remove_emotion_image(ids.character_id, ids.emotion_id);
     }
-    this.update_emotion(character.id, emotion.id, (e) => ({ ...e, image_url: null }));
   }
 
-  // Esc closes the popup, so stop it while the characters have problems
+  // the message shown under a picture that wasn't saved or can't be found, otherwise null
+  image_problem(emotion: Emotion): string | null {
+    if (this.assets.is_unsaved(emotion.image)) {
+      return "This picture couldn't be saved on this device (it may be full), so it will be gone after a reload.";
+    }
+    if (emotion.image && !this.assets.url_of(emotion.image)) {
+      return 'This picture could not be found. Please add it again.';
+    }
+    return null;
+  }
+
+  // stops Esc closing the popup while there are problems
   on_cancel(event: Event) {
     if (this.has_problems()) {
       event.preventDefault();
@@ -220,7 +210,7 @@ export class CharactersDialog {
     }
   }
 
-  // the Close button. only closes when there are no problems
+  // closes the popup unless there are problems
   close() {
     if (this.has_problems()) {
       this.show_problem();
@@ -231,30 +221,19 @@ export class CharactersDialog {
 
   // changes the selected emotion, if there is one
   private update_selected_emotion(change: (emotion: Emotion) => Emotion) {
-    const character = this.selected_character();
-    const emotion = this.selected_emotion();
-    if (!character || !emotion) {
-      return;
+    const ids = this.selected_ids();
+    if (ids) {
+      this.state.characters.update((characters) =>
+        update_emotion(characters, ids.character_id, ids.emotion_id, change),
+      );
     }
-    this.update_emotion(character.id, emotion.id, change);
+  }
+
+  private change_character(id: string, change: (character: Character) => Character) {
+    this.state.characters.update((characters) => update_character(characters, id, change));
   }
 
   private show_problem() {
     this.error.set('Fix the problems above before closing.');
-  }
-
-  private update_character(id: string, change: (character: Character) => Character) {
-    this.state.characters.update((list) => list.map((c) => (c.id === id ? change(c) : c)));
-  }
-
-  private update_emotion(
-    character_id: string,
-    emotion_id: string,
-    change: (emotion: Emotion) => Emotion,
-  ) {
-    this.update_character(character_id, (character) => ({
-      ...character,
-      emotions: character.emotions.map((e) => (e.id === emotion_id ? change(e) : e)),
-    }));
   }
 }

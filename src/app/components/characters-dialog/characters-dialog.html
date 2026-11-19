@@ -35,10 +35,7 @@
                 [class.selected]="character.id === selected_character_id()"
                 (click)="select_character(character.id)"
               >
-                <app-image-thumbnail
-                  [image_url]="first?.image_url ?? null"
-                  [placement]="first?.image_url ? to_placement(first) : null"
-                />
+                <app-image-thumbnail [image_url]="image_url_of(first)" [emotion]="first" />
                 <span class="item-name">{{ character.name.trim() || 'Unnamed' }}</span>
                 @if (duplicate_character_names().has(name_key(character.name))) {
                   <span class="tag tag-warning">duplicate</span>
@@ -89,10 +86,7 @@
                   [class.selected]="emotion.id === selected_emotion_id()"
                   (click)="select_emotion(emotion.id)"
                 >
-                  <app-image-thumbnail
-                    [image_url]="emotion.image_url"
-                    [placement]="emotion.image_url ? to_placement(emotion) : null"
-                  />
+                  <app-image-thumbnail [image_url]="image_url_of(emotion)" [emotion]="emotion" />
                   <span class="item-name">{{ emotion.emotion.trim() || 'Unnamed' }}</span>
                   @if (duplicate_emotion_keys().has(name_key(emotion.emotion))) {
                     <span class="tag tag-warning">duplicate</span>
@@ -140,12 +134,11 @@
           </div>
 
           <app-image-editor
-            [image_url]="emotion.image_url"
-            [placement]="to_placement(emotion)"
+            [image_url]="image_url_of(emotion)"
+            [placement]="selected_placement()"
             [alt_text]="emotion.emotion"
             [guide]="true"
             [guide_visible]="outline_visible()"
-            (guide_visible_changed)="outline_visible.set($event)"
             (image_chosen)="set_image_from_file($event)"
             (placement_changed)="set_placement($event)"
             (image_deleted)="delete_image()"
@@ -155,6 +148,9 @@
               Delete emotion
             </button>
           </app-image-editor>
+          @if (image_problem(emotion); as problem) {
+            <p class="modal-error image-problem" role="alert">{{ problem }}</p>
+          }
         } @else {
           <p class="column-empty">Select an emotion to see its portrait.</p>
         }

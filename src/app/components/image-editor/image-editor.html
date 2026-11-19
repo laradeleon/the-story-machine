@@ -25,7 +25,7 @@
       [style]="picture_style()"
     />
   } @else {
-    <p class="hint">Drop a jpg or png here, or press Upload.</p>
+    <p class="hint">Drop a {{ accepted_type_names }} here, or press Upload.</p>
   }
 
   <!-- a see-through person from the waist up, to line the portrait up with. only for portraits -->
@@ -39,19 +39,19 @@
   }
 </div>
 
-<!-- the zoom and offset values, under the picture. they can be typed in too -->
-<div class="settings">
+<!-- the zoom and offset values, under the picture. they can be typed in too.
+     a fieldset so disabling it turns off every box inside it while there's no picture -->
+<fieldset class="settings" [disabled]="!image_url()">
   <label class="modal-field">
     Zoom (%)
     <div class="setting-row">
       <input
         #zoomBox
         type="range"
-        min="50"
-        max="300"
+        [min]="min_zoom"
+        [max]="max_zoom"
         step="1"
         [value]="placement().zoom"
-        [disabled]="!image_url()"
         (input)="set_zoom(zoomBox.value)"
       />
       <input
@@ -59,10 +59,9 @@
         class="number-box"
         type="number"
         aria-label="Zoom"
-        min="50"
-        max="300"
+        [min]="min_zoom"
+        [max]="max_zoom"
         [value]="placement().zoom"
-        [disabled]="!image_url()"
         (change)="set_zoom(zoomNumber.value)"
       />
     </div>
@@ -78,7 +77,6 @@
         step="0.5"
         aria-label="Offset X"
         [value]="placement().x"
-        [disabled]="!image_url()"
         (change)="set_offset_x(offsetXBox.value)"
       />
     </label>
@@ -91,15 +89,14 @@
         step="0.5"
         aria-label="Offset Y"
         [value]="placement().y"
-        [disabled]="!image_url()"
         (change)="set_offset_y(offsetYBox.value)"
       />
     </label>
   </div>
-</div>
+</fieldset>
 
 <div class="modal-actions">
-  <input #picker type="file" accept="image/jpeg,image/png" hidden (change)="on_upload(picker)" />
+  <input #picker type="file" [accept]="accepted_types" hidden (change)="on_upload(picker)" />
   <button type="button" class="primary-button" (click)="picker.click()">Upload</button>
   <button
     type="button"

@@ -1,6 +1,8 @@
 // The Story Script JSON format (see docs/story-json.md).
 // This is the contract between the scripting language (which produces it) and the reader (which plays it).
 
+import { AssetRef } from './asset';
+
 //info that isn't in the script itself, passed in by whoever calls toJSON
 export interface StoryInfo {
   title: string;
@@ -12,7 +14,7 @@ export interface StoryInfo {
 export interface Emotion {
   id: string; // unique key, so the emotion can be renamed without losing its place in the list
   emotion: string; // the word the author types to pick this portrait, e.g. "happy"
-  image_url: string | null; // where the portrait image is (a data URL for now), null until one is uploaded
+  image: AssetRef | null; // the portrait picture, null until one is added
   portrait_x: number; // how far the portrait is moved sideways, as a % of the upload area (0 = centred)
   portrait_y: number; // how far the portrait is moved down, as a % of the upload area (0 = centred)
   zoom: number; // how big the portrait is, as a % (100 = fits the upload area)

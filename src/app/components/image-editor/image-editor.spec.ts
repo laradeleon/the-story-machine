@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ImageEditor } from './image-editor';
-import { default_placement, Placement } from './placement';
+import { default_placement, Placement } from '../../rules/placement';
 
 describe('ImageEditor', () => {
   let fixture: ComponentFixture<ImageEditor>;
@@ -92,15 +92,6 @@ describe('ImageEditor', () => {
     expect(compiled.querySelector('.silhouette')).toBeNull();
   });
 
-  it('should ask the parent to flip the guide when toggled', () => {
-    const onToggle = vi.fn();
-    editor.guide_visible_changed.subscribe(onToggle);
-
-    editor.toggle_outline();
-
-    expect(onToggle).toHaveBeenCalledWith(false);
-  });
-
   it('should keep the zoom between 50% and 300%', () => {
     const changes: Placement[] = [];
     editor.placement_changed.subscribe((p) => changes.push(p));
@@ -182,41 +173,6 @@ describe('ImageEditor', () => {
     expect(editor.dragging()).toBe(false);
   });
 
-  it('should pass a dropped image up to the parent', () => {
-    const onChosen = vi.fn();
-    editor.image_chosen.subscribe(onChosen);
-    const file = new File(['x'], 'hero.png', { type: 'image/png' });
-
-    editor.on_drop({
-      preventDefault: () => undefined,
-      dataTransfer: { files: [file] },
-    } as unknown as DragEvent);
-
-    expect(onChosen).toHaveBeenCalledWith(file);
-  });
-
-  it('should pass a picked image up to the parent and clear the picker', () => {
-    const onChosen = vi.fn();
-    editor.image_chosen.subscribe(onChosen);
-    const file = new File(['x'], 'hero.png', { type: 'image/png' });
-    const picker = document.createElement('input');
-    Object.defineProperty(picker, 'files', { value: [file] });
-
-    editor.on_upload(picker);
-
-    expect(onChosen).toHaveBeenCalledWith(file);
-    expect(picker.value).toBe('');
-  });
-
-  it('should highlight the area and allow the drop while a file is dragged over it', () => {
-    const preventDefault = vi.fn();
-
-    editor.on_drag_over({ preventDefault } as unknown as DragEvent);
-
-    expect(preventDefault).toHaveBeenCalled();
-    expect(editor.dragging()).toBe(true);
-  });
-
   it('should not pass anything up when a drop has no file', () => {
     const onChosen = vi.fn();
     editor.image_chosen.subscribe(onChosen);
@@ -231,12 +187,14 @@ describe('ImageEditor', () => {
     expect(editor.dragging()).toBe(false);
   });
 
-  it('should highlight the area when a file is dragged over it in the DOM', () => {
+  it('should highlight the area and allow the drop while a file is dragged over it', () => {
     const area = compiled.querySelector('.portrait-area') as HTMLElement;
+    const drag = new Event('dragover', { cancelable: true });
 
-    area.dispatchEvent(new Event('dragover', { cancelable: true }));
+    area.dispatchEvent(drag);
     fixture.detectChanges();
 
+    expect(drag.defaultPrevented).toBe(true); // the browser only allows a drop when this is prevented
     expect(area.classList).toContain('dragging');
   });
 
@@ -339,7 +297,9 @@ describe('ImageEditor', () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ y: -15 }));
   });
 
-  it('should stop dragging the picture when the pointer is released or cancelled in the DOM', () => {
+  // pointerup is covered by 'should stop moving the picture once the pointer is let go'.
+  // the browser sends pointercancel instead when it takes the pointer away (e.g. a touch turns into a scroll)
+  it('should stop dragging the picture when the browser cancels the pointer', () => {
     show_picture();
     const area = compiled.querySelector('.portrait-area') as HTMLElement;
     Object.defineProperty(area, 'clientWidth', { value: 200 });
@@ -351,12 +311,11 @@ describe('ImageEditor', () => {
     const press = new Event('pointerdown');
     Object.assign(press, { clientX: 0, clientY: 0, pointerId: 1 });
     area.dispatchEvent(press);
-    area.dispatchEvent(new Event('pointerup'));
+    area.dispatchEvent(new Event('pointercancel'));
     const move = new Event('pointermove');
     Object.assign(move, { clientX: 50, clientY: 50 });
     area.dispatchEvent(move);
 
-    area.dispatchEvent(new Event('pointercancel'));
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -371,16 +330,32 @@ describe('ImageEditor', () => {
     expect(picker).toHaveBeenCalled();
   });
 
-  it('should pass a picked file up when the Upload input changes in the DOM', () => {
+  it('should pass a picked file up and clear the picker when the Upload input changes', () => {
     const onChosen = vi.fn();
     editor.image_chosen.subscribe(onChosen);
     const file = new File(['x'], 'hero.png', { type: 'image/png' });
     const picker = compiled.querySelector('input[type="file"]') as HTMLInputElement;
     Object.defineProperty(picker, 'files', { value: [file] });
+    const cleared = vi.spyOn(picker, 'value', 'set'); // jsdom won't let a test read back a file input's value
 
     picker.dispatchEvent(new Event('change'));
 
     expect(onChosen).toHaveBeenCalledWith(file);
+    expect(cleared).toHaveBeenCalledWith(''); // so the same file can be picked again
+  });
+
+  it('should turn off the zoom and offset boxes only while there is no picture', () => {
+    // the fieldset around them does the disabling, so check :disabled rather than each box's own property
+    const boxes = () =>
+      Array.from(compiled.querySelectorAll<HTMLInputElement>('.settings input')).map((box) =>
+        box.matches(':disabled'),
+      );
+    expect(boxes()).toEqual([true, true, true, true]);
+
+    fixture.componentRef.setInput('image_url', 'data:image/png;base64,AAAA');
+    fixture.detectChanges();
+
+    expect(boxes()).toEqual([false, false, false, false]);
   });
 
   it('should disable Delete image while there is no picture', () => {

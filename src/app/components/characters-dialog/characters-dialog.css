@@ -8,7 +8,7 @@
   --blue-medium: #2c3666; /* the emotion column, and the selected emotion */
   --blue-deepest: #0d1020; /* the line between characters, darker than the character list */
   --blue-line: #7b87c9; /* the dashed border of the portrait upload area */
-  --blue-bright: #4b5bb0; /* TEMPORARY: brighter picture area for a screenshot, change back to --blue-medium-dark */
+  --blue-bright: #4b5bb0; /* brighter picture area for a screenshot, change back to --blue-medium-dark */
 }
 
 .characters-content {
@@ -71,6 +71,13 @@
 .column-emotion > app-image-editor {
   flex: 1;
   min-height: 0;
+}
+
+/* the red message under the picture when it couldn't be saved or found (colour from .modal-error) */
+.image-problem {
+  flex: none;
+  margin-top: 8px;
+  font-size: 0.875rem;
 }
 
 /* the part of a column that stays at the top while the list under it scrolls */

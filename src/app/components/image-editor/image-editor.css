@@ -79,11 +79,15 @@
   fill: currentColor;
 }
 
-/* the zoom and offset values */
+/* the zoom and offset values. a fieldset, so the browser's own border and spacing are taken off */
 .settings {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0; /* fieldsets won't shrink below their content otherwise */
 }
 
 /* a slider or a number box, side by side */

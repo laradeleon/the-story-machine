@@ -1,6 +1,15 @@
 import { Component, input, output, signal } from '@angular/core';
+import { allowed_type_names, allowed_types } from '../../services/image.service';
 import { ConfirmDialog } from '../confirm-dialog/confirm-dialog';
-import { clamp_offset, clamp_zoom, number_from_box, Placement, placement_style } from './placement';
+import {
+  clamp_offset,
+  clamp_zoom,
+  max_zoom,
+  min_zoom,
+  number_from_box,
+  Placement,
+  placement_style,
+} from '../../rules/placement';
 
 // a picture area you can drop an image into, pick one with Upload, move the picture around and zoom it.
 // it reports what the user did and keeps no data of its own, so the parent decides what to store.
@@ -21,7 +30,12 @@ export class ImageEditor {
   image_chosen = output<File>(); // a file was dropped or picked, the parent checks and reads it
   placement_changed = output<Placement>(); // the picture was moved, zoomed or typed in
   image_deleted = output<void>(); // the delete was confirmed, the parent removes the picture
-  guide_visible_changed = output<boolean>(); // the parent's outline button asked for the guide to be shown or hidden
+
+  // for the template, so the slider, file picker and hint match the rules they come from
+  protected readonly min_zoom = min_zoom;
+  protected readonly max_zoom = max_zoom;
+  protected readonly accepted_types = allowed_types.join(',');
+  protected readonly accepted_type_names = allowed_type_names;
 
   dragging = signal(false); // true while a file is dragged over the area
   confirm_delete_open = signal(false); // whether the "delete this image?" popup is showing
@@ -133,11 +147,6 @@ export class ImageEditor {
     if (y !== null) {
       this.placement_changed.emit({ ...this.placement(), y: clamp_offset(y) });
     }
-  }
-
-  // asks the parent to show or hide the see-through person guide
-  toggle_outline() {
-    this.guide_visible_changed.emit(!this.guide_visible());
   }
 
   // the picture is removed once the user confirms
