@@ -10,7 +10,7 @@
     "lint": "ng lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:ci": "ng test --watch=false",
+    "test:ci": "ng test --watch=false --coverage",
     "prepare": "husky"
   },
   "lint-staged": {
