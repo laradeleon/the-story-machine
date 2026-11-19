@@ -1,4 +1,4 @@
-import { computed, effect, inject, Injectable, signal } from '@angular/core';
+import { computed, DestroyRef, effect, inject, Injectable, signal } from '@angular/core';
 import { AssetRef } from '../../models/asset';
 import { Draft } from '../../models/draft';
 import { Character } from '../../models/story';
@@ -16,32 +16,30 @@ import { default_placement } from '../rules/placement';
 import { AssetService } from './asset.service';
 import { load_draft, save_draft } from './saved-values';
 
-// the story_id used until the backend gives each new story a real one.
-// once it does, open_story() is called with the real id instead and nothing else needs to change
+// the story_id used until the backend gives each new story a real one
 export const PLACEHOLDER_STORY_ID = 'new-story';
 
-// the metadata of a story that has none yet. a function, so each story gets its own object
+// ms to wait after the last change before saving, so a burst of changes is one save
+export const SAVE_DELAY = 500;
+
 function empty_metadata(): StoryMetadata {
   return { title: '', genres: [], description: '' };
 }
 
-// the writer's current work on the open story: the editor text, the metadata popup's details and the characters.
-// saved in IndexedDB as one draft per story, so it survives a page reload or closing the browser
-// (acts as an automatic draft until the real Save button exists)
-@Injectable({ providedIn: 'root' }) // global singleton
+// the writer's work on the open story, autosaved to IndexedDB as one draft per story
+@Injectable({ providedIn: 'root' })
 export class WriterStateService {
-  private assets = inject(AssetService); // the pictures used by the characters
+  private assets = inject(AssetService);
 
-  story_id = signal(PLACEHOLDER_STORY_ID); // which story is open
-  script = signal<string | null>(null); // the editor text, so the writer gets it back
-  metadata = signal<StoryMetadata>(empty_metadata()); // from the metadata popup
-  characters = signal<Character[]>([]); // from the characters popup
+  story_id = signal(PLACEHOLDER_STORY_ID);
+  script = signal<string | null>(null); // the editor text
+  metadata = signal<StoryMetadata>(empty_metadata());
+  characters = signal<Character[]>([]);
 
-  // true once open_story() has put the saved draft back. nothing is saved before then,
-  // otherwise the empty starting values above would overwrite the saved draft
-  private opened = signal(false);
+  // false until open_story() has loaded the draft, so the empty starting values aren't saved over it
+  private opened = false;
 
-  // the open story's work, in the shape it's saved in (updated_at is filled in when saving)
+  // the draft as it's saved (updated_at is added when saving)
   private draft = computed<Omit<Draft, 'updated_at'>>(() => ({
     story_id: this.story_id(),
     script: this.script(),
@@ -49,25 +47,27 @@ export class WriterStateService {
     characters: this.characters(),
   }));
 
+  private save_timer: ReturnType<typeof setTimeout> | null = null;
+
+  // the draft last saved or loaded, so the effect doesn't save it again
+  private last_saved: Omit<Draft, 'updated_at'> | null = null;
+
   constructor() {
-    // whenever any part of the draft changes (after opening), save it
+    // save once the draft stops changing
     effect(() => {
       const draft = this.draft();
-      if (this.opened()) this.save(draft);
+      if (this.opened && draft !== this.last_saved) this.save_later();
     });
+    inject(DestroyRef).onDestroy(() => this.cancel_save_later());
   }
 
-  // loads a story's saved draft (or starts it empty if it has none) and makes it the open story.
-  // called once before the app starts (see app.config.ts), so pages never see the empty values.
-  // when the backend gives out story ids this is called with the real one, e.g. from a route resolver
+  // saves the open story, then loads another one (empty if it has no draft)
   async open_story(story_id = PLACEHOLDER_STORY_ID) {
-    // save the story that's open now first, so switching doesn't lose any of it
-    if (this.opened()) {
-      this.opened.set(false);
-      await this.save(this.draft());
+    if (this.opened) {
+      this.opened = false;
+      await this.save_now();
     }
 
-    // if IndexedDB can't be read the story starts empty, and the pictures it might use can't be known
     let saved: Draft | null = null;
     let loaded = true;
     try {
@@ -79,42 +79,37 @@ export class WriterStateService {
     this.script.set(saved?.script ?? null);
     this.metadata.set(saved?.metadata ?? empty_metadata());
     this.characters.set(saved?.characters ?? []);
-    const used = new Set(images_of(this.characters()).map((image) => image.asset_id));
-    await this.assets.restore(story_id, loaded ? used : null);
-    this.opened.set(true);
+    // null if the draft couldn't be read, so no picture is thrown away as unused
+    const used = loaded
+      ? new Set(images_of(this.characters()).map((image) => image.asset_id))
+      : null;
+    await this.assets.restore(story_id, used);
+    this.last_saved = this.draft();
+    this.opened = true;
   }
 
-  // ---- changes to the characters that also affect their pictures.
-  // changes that don't (names, descriptions, placement) are made with the functions in
-  // characters-rules.ts straight on the characters signal
-
-  // removes a character, and throws away its pictures straight away
+  // removes a character and throws away its pictures
   remove_character(id: string) {
-    const removed = this.characters().filter((c) => c.id === id);
+    const removed = this.characters().find((c) => c.id === id);
     this.characters.update((characters) => remove_character(characters, id));
-    this.forget(images_of(removed));
+    this.forget(...images_of(removed ? [removed] : []));
   }
 
-  // removes an emotion, and throws away its picture straight away
+  // removes an emotion and throws away its picture
   remove_emotion(character_id: string, emotion_id: string) {
-    const removed = find_emotion(this.characters(), character_id, emotion_id);
-    this.characters.update((characters) => remove_emotion(characters, character_id, emotion_id));
-    this.forget(removed?.image ? [removed.image] : []);
+    this.change_emotion_and_forget_image(character_id, emotion_id, (characters) =>
+      remove_emotion(characters, character_id, emotion_id),
+    );
   }
 
-  // takes an emotion's picture away (the emotion stays), and throws the picture away straight away
+  // throws away an emotion's picture, keeping the emotion
   remove_emotion_image(character_id: string, emotion_id: string) {
-    const removed = find_emotion(this.characters(), character_id, emotion_id);
-    this.characters.update((characters) =>
+    this.change_emotion_and_forget_image(character_id, emotion_id, (characters) =>
       update_emotion(characters, character_id, emotion_id, (e) => ({ ...e, image: null })),
     );
-    this.forget(removed?.image ? [removed.image] : []);
   }
 
-  // stores a new picture and puts it on an emotion, centred at 100% (the old position doesn't carry over).
-  // story_id is the story that was open when the writer picked the picture: if another story has been
-  // opened since, or the emotion is gone, nothing changes and false is given back.
-  // the draft is saved straight away so it points at the new picture, then the replaced one is thrown away
+  // puts a new picture on an emotion, unless the story changed or the emotion is gone (gives back false)
   async set_emotion_image(
     story_id: string,
     character_id: string,
@@ -125,9 +120,10 @@ export class WriterStateService {
       return false;
     }
     const image = await this.assets.add(story_id, picture);
+    // checked again, the writer may have switched stories while it was stored
     const emotion = find_emotion(this.characters(), character_id, emotion_id);
     if (this.story_id() !== story_id || !emotion) {
-      await this.assets.forget(image.asset_id); // nothing uses it
+      await this.assets.forget(image.asset_id);
       return false;
     }
 
@@ -138,15 +134,12 @@ export class WriterStateService {
         ...placement_fields(default_placement),
       })),
     );
-    await this.save_now();
-    this.forget(emotion.image ? [emotion.image] : []);
+    await this.save_now(); // the draft must point at the new picture before the old one goes
+    this.forget(emotion.image);
     return true;
   }
 
-  // a picture finished uploading to Azure: puts its real url in the story in place of the local copy.
-  // the local copy is only dropped once the story with the url is saved, so the picture is never lost.
-  // if the open story doesn't use the picture (the writer switched stories during the upload, or
-  // removed the picture) nothing changes, and it's uploaded again the next time its story is opened
+  // swaps a local picture for its Azure url, dropping the local copy only once that's saved
   async asset_uploaded(asset_id: string, url: string) {
     if (!images_of(this.characters()).some((image) => image.asset_id === asset_id)) {
       return;
@@ -157,30 +150,48 @@ export class WriterStateService {
     }
   }
 
-  // sets the script and starts writing the draft to IndexedDB straight away.
-  // the effect above saves a moment after a change, which is too late when the page is being
-  // refreshed or closed, so the writer uses this to start the save before the page is gone.
-  // IndexedDB is async, so the save can still be cut off if the page closes first
   save_script_now(script: string) {
     this.script.set(script);
     return this.save_now();
   }
 
-  // writes the open story's draft to IndexedDB straight away, instead of a moment later from the effect.
-  // gives back whether it was saved
+  // saves the draft straight away, replacing any save that was waiting
   save_now(): Promise<boolean> {
-    return this.save(this.draft());
-  }
-
-  // writes the draft to IndexedDB with the time it was saved
-  private save(draft: Omit<Draft, 'updated_at'>) {
+    this.cancel_save_later();
+    const draft = this.draft();
+    this.last_saved = draft;
     return save_draft({ ...draft, updated_at: Date.now() });
   }
 
-  // throws away pictures that are no longer used. not waited for, the writer doesn't need to wait on it
-  private forget(images: AssetRef[]) {
+  private save_later() {
+    this.cancel_save_later();
+    this.save_timer = setTimeout(() => void this.save_now(), SAVE_DELAY);
+  }
+
+  private cancel_save_later() {
+    if (this.save_timer !== null) {
+      clearTimeout(this.save_timer);
+      this.save_timer = null;
+    }
+  }
+
+  // applies a change that takes away an emotion's picture, then throws that picture away
+  private change_emotion_and_forget_image(
+    character_id: string,
+    emotion_id: string,
+    change: (characters: Character[]) => Character[],
+  ) {
+    const removed = find_emotion(this.characters(), character_id, emotion_id);
+    this.characters.update(change);
+    this.forget(removed?.image);
+  }
+
+  // throws away pictures, skipping missing ones. not waited for
+  private forget(...images: (AssetRef | null | undefined)[]) {
     for (const image of images) {
-      void this.assets.forget(image.asset_id);
+      if (image) {
+        void this.assets.forget(image.asset_id);
+      }
     }
   }
 }

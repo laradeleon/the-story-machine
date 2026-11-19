@@ -8,7 +8,7 @@
   --blue-medium: #2c3666; /* the emotion column, and the selected emotion */
   --blue-deepest: #0d1020; /* the line between characters, darker than the character list */
   --blue-line: #7b87c9; /* the dashed border of the portrait upload area */
-  --blue-bright: #4b5bb0; /* TEMPORARY: brighter picture area for a screenshot, change back to --blue-medium-dark */
+  --blue-bright: #4b5bb0; /* brighter picture area for a screenshot, change back to --blue-medium-dark */
 }
 
 .characters-content {

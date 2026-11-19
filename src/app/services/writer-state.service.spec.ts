@@ -2,11 +2,15 @@ import { TestBed } from '@angular/core/testing';
 import { Draft } from '../../models/draft';
 import { AssetService } from './asset.service';
 import { clear_all, load_draft, load_story_assets, save_asset, save_draft } from './saved-values';
-import { PLACEHOLDER_STORY_ID, WriterStateService } from './writer-state.service';
+import { PLACEHOLDER_STORY_ID, SAVE_DELAY, WriterStateService } from './writer-state.service';
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // IndexedDB saves are async and the effect doesn't wait for them, so give them a moment to finish
 function saves_finished() {
-  return new Promise((resolve) => setTimeout(resolve, 10));
+  return wait(10);
 }
 
 // a saved draft for a story, with only the script filled in
@@ -50,12 +54,40 @@ describe('WriterStateService', () => {
     state.metadata.set({ title: 'The Lighthouse', genres: [], description: '' });
     state.characters.set([{ id: 'c1', name: 'Dave', description: '', emotions: [] }]);
     TestBed.tick(); // the save happens in an effect, so run the effects first
+    await wait(SAVE_DELAY);
     await saves_finished();
 
     const saved = (await load_draft('story-1'))!;
     expect(saved.metadata.title).toBe('The Lighthouse');
     expect(saved.characters[0].name).toBe('Dave');
     expect(saved.updated_at).toBeGreaterThan(0);
+  });
+
+  it('should wait for the changes to stop before saving them', async () => {
+    const state = TestBed.inject(WriterStateService);
+    await state.open_story('story-1');
+
+    state.characters.set([{ id: 'c1', name: 'Dave', description: '', emotions: [] }]);
+    TestBed.tick();
+    await saves_finished();
+
+    expect(await load_draft('story-1')).toBeNull(); // still waiting
+  });
+
+  it('should drop the waiting save once the draft is saved straight away', async () => {
+    const state = TestBed.inject(WriterStateService);
+    await state.open_story('story-1');
+
+    state.characters.set([{ id: 'c1', name: 'Dave', description: '', emotions: [] }]);
+    TestBed.tick();
+    await state.save_now();
+    const first_save = (await load_draft('story-1'))!.updated_at;
+    TestBed.tick();
+    await wait(SAVE_DELAY);
+    await saves_finished();
+
+    // a second save would have a later time
+    expect((await load_draft('story-1'))!.updated_at).toBe(first_save);
   });
 
   it('should not save anything before a story is opened', async () => {
