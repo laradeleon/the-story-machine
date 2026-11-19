@@ -73,6 +73,13 @@
   min-height: 0;
 }
 
+/* the red message under the picture when it couldn't be saved or found (colour from .modal-error) */
+.image-problem {
+  flex: none;
+  margin-top: 8px;
+  font-size: 0.875rem;
+}
+
 /* the part of a column that stays at the top while the list under it scrolls */
 .column-top {
   display: flex;

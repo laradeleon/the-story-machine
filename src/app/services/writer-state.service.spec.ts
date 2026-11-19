@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Draft } from '../../models/draft';
-import { clear_all, load_draft, save_draft } from './saved-values';
+import { AssetService } from './asset.service';
+import { clear_all, load_draft, load_story_assets, save_asset, save_draft } from './saved-values';
 import { PLACEHOLDER_STORY_ID, WriterStateService } from './writer-state.service';
 
 // IndexedDB saves are async and the effect doesn't wait for them, so give them a moment to finish
@@ -94,6 +95,89 @@ describe('WriterStateService', () => {
     await state.open_story('story-2');
 
     expect(state.script()).toBe('Second story');
+  });
+
+  describe('pictures', () => {
+    // opens story-1 and gives it one character with one emotion whose picture isn't uploaded yet
+    async function story_with_picture() {
+      const state = TestBed.inject(WriterStateService);
+      await state.open_story('story-1');
+      const image = await TestBed.inject(AssetService).add('story-1', new Blob(['x']));
+      state.characters.set([
+        {
+          id: 'c1',
+          name: 'Dave',
+          description: '',
+          emotions: [
+            { id: 'e1', emotion: 'happy', image, portrait_x: 0, portrait_y: 0, zoom: 100 },
+          ],
+        },
+      ]);
+      await state.save_script_now('');
+      return { state, image };
+    }
+
+    it('should show a picture that is not uploaded yet after the story is reopened', async () => {
+      const { image } = await story_with_picture();
+
+      // a reload: new services, the blob: URLs in memory are gone
+      TestBed.resetTestingModule();
+      await TestBed.inject(WriterStateService).open_story('story-1');
+
+      expect(TestBed.inject(AssetService).url_of(image)!.startsWith('blob:')).toBe(true);
+    });
+
+    it('should put the Azure url in the story once the picture is uploaded', async () => {
+      const { state, image } = await story_with_picture();
+      const url = 'https://example.blob.core.windows.net/e1.webp';
+
+      await state.asset_uploaded(image.asset_id, url);
+
+      expect(state.characters()[0].emotions[0].image).toEqual({ asset_id: image.asset_id, url });
+      expect((await load_draft('story-1'))!.characters[0].emotions[0].image!.url).toBe(url);
+      expect(await load_story_assets('story-1')).toEqual([]); // the local copy is dropped
+    });
+
+    it('should keep the local copy when the open story does not use the picture', async () => {
+      const { state, image } = await story_with_picture();
+      await state.open_story('story-2'); // the writer switched stories during the upload
+
+      await state.asset_uploaded(image.asset_id, 'https://example.blob.core.windows.net/e1.webp');
+
+      expect(await load_story_assets('story-1')).toHaveLength(1);
+      expect((await load_draft('story-1'))!.characters[0].emotions[0].image!.url).toBeNull();
+    });
+
+    it('should keep the local copy when the story with the url could not be saved', async () => {
+      const { state, image } = await story_with_picture();
+      vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementation(() => {
+        throw new Error('full');
+      });
+
+      await state.asset_uploaded(image.asset_id, 'https://example.blob.core.windows.net/e1.webp');
+      vi.restoreAllMocks();
+
+      expect(await load_story_assets('story-1')).toHaveLength(1);
+    });
+
+    it('should keep the pictures when the saved draft cannot be read', async () => {
+      await story_with_picture();
+      await save_asset({
+        asset_id: 'old',
+        story_id: 'story-1',
+        blob: new Blob(['x']),
+        created_at: 0,
+      });
+
+      TestBed.resetTestingModule();
+      vi.spyOn(IDBObjectStore.prototype, 'get').mockImplementation(() => {
+        throw new Error('blocked');
+      });
+      await TestBed.inject(WriterStateService).open_story('story-1');
+      vi.restoreAllMocks();
+
+      expect(await load_story_assets('story-1')).toHaveLength(2);
+    });
   });
 
   it('should save the open story before switching to another', async () => {

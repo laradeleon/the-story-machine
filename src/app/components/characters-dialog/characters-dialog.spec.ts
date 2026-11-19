@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ImageService } from '../../services/image.service';
-import { clear_all } from '../../services/saved-values';
+import { clear_all, load_draft, load_story_assets } from '../../services/saved-values';
 import { WriterStateService } from '../../services/writer-state.service';
 import { CharactersDialog } from './characters-dialog';
 
@@ -160,7 +160,7 @@ describe('CharactersDialog', () => {
 
     const emotions = state.characters()[0].emotions;
     expect(emotions.map((e) => e.emotion)).toEqual(['Emotion 1', 'Emotion 2']);
-    expect(emotions[1].image_url).toBeNull();
+    expect(emotions[1].image).toBeNull();
     expect(dialog.selected_emotion_id()).toBe(emotions[1].id);
   });
 
@@ -226,8 +226,34 @@ describe('CharactersDialog', () => {
 
     expect(await dialog.set_image_from_file(png())).toBe(true);
 
-    const image = state.characters()[0].emotions[0].image_url;
-    expect(image!.startsWith('data:image/png;base64,')).toBe(true);
+    // the story only holds a reference with no url yet, the picture is shown from a local blob: URL
+    const image = state.characters()[0].emotions[0].image;
+    expect(image).toEqual({ asset_id: expect.any(String), url: null });
+    expect(dialog.image_url_of(state.characters()[0].emotions[0])!.startsWith('blob:')).toBe(true);
+  });
+
+  it('should save the draft as soon as a picture is added', async () => {
+    dialog.add_character();
+    dialog.add_emotion();
+
+    await dialog.set_image_from_file(png());
+
+    const saved = await load_draft(state.story_id());
+    expect(saved!.characters[0].emotions[0].image).toEqual(state.characters()[0].emotions[0].image);
+  });
+
+  it('should leave the picture out when another story is opened while it is stored', async () => {
+    dialog.add_character();
+    dialog.add_emotion();
+    const images = TestBed.inject(ImageService);
+    vi.spyOn(images, 'prepare_image').mockImplementation(async (file) => {
+      await state.open_story('story-2'); // the writer switches stories during the conversion
+      return file;
+    });
+
+    expect(await dialog.set_image_from_file(png())).toBe(false);
+    expect(state.story_id()).toBe('story-2');
+    expect(state.characters()).toEqual([]);
   });
 
   it('should reject an image that is not a jpg or png', async () => {
@@ -237,7 +263,7 @@ describe('CharactersDialog', () => {
 
     expect(await dialog.set_image_from_file(text)).toBe(false);
     expect(dialog.error()).toBe('Please choose a jpg or png file.');
-    expect(state.characters()[0].emotions[0].image_url).toBeNull();
+    expect(state.characters()[0].emotions[0].image).toBeNull();
   });
 
   it('should ask for an emotion to be selected before adding an image', async () => {
@@ -284,7 +310,97 @@ describe('CharactersDialog', () => {
 
     expect(state.characters()[0].emotions[0]).toMatchObject({
       emotion: 'Emotion 1',
-      image_url: null,
+      image: null,
+    });
+  });
+
+  describe('throwing pictures away straight away', () => {
+    // the stored pictures of the open story
+    async function stored_pictures() {
+      await new Promise((resolve) => setTimeout(resolve, 10)); // the delete isn't waited for
+      return (await load_story_assets(state.story_id())).map((a) => a.asset_id);
+    }
+
+    // adds a character with one emotion that has a picture, and gives back the picture's asset_id
+    async function emotion_with_picture() {
+      dialog.add_character();
+      dialog.add_emotion();
+      await dialog.set_image_from_file(png());
+      return state.characters()[0].emotions[0].image!.asset_id;
+    }
+
+    it('should throw away a deleted picture', async () => {
+      await emotion_with_picture();
+
+      dialog.delete_image();
+
+      expect(await stored_pictures()).toEqual([]);
+    });
+
+    it('should throw away a picture that was replaced, and keep the new one', async () => {
+      await emotion_with_picture();
+
+      await dialog.set_image_from_file(png('another.png'));
+
+      expect(await stored_pictures()).toEqual([state.characters()[0].emotions[0].image!.asset_id]);
+    });
+
+    it("should throw away a deleted emotion's picture", async () => {
+      await emotion_with_picture();
+
+      dialog.remove_selected_emotion();
+
+      expect(await stored_pictures()).toEqual([]);
+    });
+
+    it("should throw away a deleted character's pictures", async () => {
+      await emotion_with_picture();
+
+      dialog.remove_selected_character();
+
+      expect(await stored_pictures()).toEqual([]);
+    });
+  });
+
+  describe('picture problems', () => {
+    // the red message under the picture, or null if there isn't one
+    function problem_text() {
+      fixture.detectChanges();
+      return compiled.querySelector('.image-problem')?.textContent ?? null;
+    }
+
+    it('should show no message under a picture that was saved', async () => {
+      dialog.add_character();
+      dialog.add_emotion();
+      await dialog.set_image_from_file(png());
+
+      expect(problem_text()).toBeNull();
+    });
+
+    it('should say so in red under the picture when it could not be saved', async () => {
+      dialog.add_character();
+      dialog.add_emotion();
+      vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementation(() => {
+        throw new Error('full');
+      });
+
+      await dialog.set_image_from_file(png());
+      vi.restoreAllMocks();
+
+      expect(problem_text()).toContain("couldn't be saved");
+    });
+
+    it('should say so when the picture could not be found', () => {
+      dialog.add_character();
+      dialog.add_emotion();
+      // e.g. it was never saved, and the page has been reloaded since
+      const emotion_id = state.characters()[0].emotions[0].id;
+      state.characters.update(([c]) => [
+        { ...c, emotions: [{ ...c.emotions[0], image: { asset_id: 'lost', url: null } }] },
+      ]);
+      dialog.select_emotion(emotion_id);
+
+      expect(problem_text()).toContain('could not be found');
     });
   });
 
@@ -297,7 +413,7 @@ describe('CharactersDialog', () => {
     const thumbnail = compiled.querySelector(
       '.column-scroll.character-list img',
     ) as HTMLImageElement;
-    expect(thumbnail.src.startsWith('data:image/png;base64,')).toBe(true);
+    expect(thumbnail.src.startsWith('blob:')).toBe(true);
   });
 
   it('should draw the emotion thumbnail with the same offset and zoom', async () => {
@@ -522,7 +638,7 @@ describe('CharactersDialog', () => {
 
     it('should show the picture error when the file cannot be read', async () => {
       const images = TestBed.inject(ImageService);
-      vi.spyOn(images, 'read_image').mockRejectedValue(new Error('The file is damaged.'));
+      vi.spyOn(images, 'prepare_image').mockRejectedValue(new Error('The file is damaged.'));
       click('Add character');
       click('Add emotion');
 
@@ -534,7 +650,7 @@ describe('CharactersDialog', () => {
 
     it('should use a general message when the read fails with something that is not an error', async () => {
       const images = TestBed.inject(ImageService);
-      vi.spyOn(images, 'read_image').mockRejectedValue('oops');
+      vi.spyOn(images, 'prepare_image').mockRejectedValue('oops');
       click('Add character');
       click('Add emotion');
 

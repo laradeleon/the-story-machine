@@ -21,7 +21,7 @@ function character(name: string, emotions: string[] = []): Character {
     emotions: emotions.map((emotion, i) => ({
       id: `${name}-${i}`,
       emotion,
-      image_url: null,
+      image: null,
       portrait_x: 0,
       portrait_y: 0,
       zoom: 100,
@@ -30,7 +30,7 @@ function character(name: string, emotions: string[] = []): Character {
 }
 
 function emotion(name: string): Emotion {
-  return { id: name, emotion: name, image_url: null, portrait_x: 0, portrait_y: 0, zoom: 100 };
+  return { id: name, emotion: name, image: null, portrait_x: 0, portrait_y: 0, zoom: 100 };
 }
 
 describe('characters rules', () => {
@@ -94,7 +94,7 @@ describe('characters rules', () => {
 
       expect(first).toMatchObject({
         emotion: 'Emotion 1',
-        image_url: null,
+        image: null,
         portrait_x: 0,
         portrait_y: 0,
         zoom: 100,

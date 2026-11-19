@@ -71,7 +71,7 @@ export function new_emotion(emotions: Emotion[]): Emotion {
       'Emotion',
       emotions.map((e) => e.emotion),
     ),
-    image_url: null,
+    image: null,
     ...placement_fields(default_placement),
   };
 }
