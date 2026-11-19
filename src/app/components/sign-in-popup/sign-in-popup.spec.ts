@@ -169,7 +169,7 @@ describe('SignInPopup', () => {
       expect(closed).toHaveBeenCalled();
     });
 
-    it("should show the backend's message and empty the password when the details are wrong", async () => {
+    it('should say the details are wrong and empty the password', async () => {
       auth.login.mockRejectedValue(
         backendError(401, { success: false, message: 'Invalid credentials' }),
       );
@@ -177,7 +177,9 @@ describe('SignInPopup', () => {
       await type('password', 'wrong');
       await submit();
 
-      expect(compiled.querySelector('.form-error')?.textContent).toContain('Invalid credentials');
+      expect(compiled.querySelector('.form-error')?.textContent).toContain(
+        AUTH_MESSAGES.invalidLogin,
+      );
       const password = compiled.querySelector<HTMLInputElement>('input[type="password"]')!;
       expect(password.value).toBe('');
       expect(closed).not.toHaveBeenCalled();

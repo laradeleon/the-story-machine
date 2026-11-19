@@ -10,6 +10,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import {
   FormControl,
@@ -27,11 +28,20 @@ const PASSWORD_SYMBOLS = /[-#!$@£%^&*()_+|~=`{}[\]:";'<>?,./\\ ]/;
 
 // the same password rules the backend checks, shown as a checklist while you type
 const PASSWORD_RULES = [
-  { label: 'At least 8 characters', test: (password: string) => password.length >= 8 },
-  { label: 'An uppercase letter', test: (password: string) => /[A-Z]/.test(password) },
-  { label: 'A lowercase letter', test: (password: string) => /[a-z]/.test(password) },
-  { label: 'A number', test: (password: string) => /\d/.test(password) },
-  { label: 'A symbol, like ! or ?', test: (password: string) => PASSWORD_SYMBOLS.test(password) },
+  { label: AUTH_MESSAGES.passwordRuleLength, test: (password: string) => password.length >= 8 },
+  {
+    label: AUTH_MESSAGES.passwordRuleUppercase,
+    test: (password: string) => /[A-Z]/.test(password),
+  },
+  {
+    label: AUTH_MESSAGES.passwordRuleLowercase,
+    test: (password: string) => /[a-z]/.test(password),
+  },
+  { label: AUTH_MESSAGES.passwordRuleNumber, test: (password: string) => /\d/.test(password) },
+  {
+    label: AUTH_MESSAGES.passwordRuleSymbol,
+    test: (password: string) => PASSWORD_SYMBOLS.test(password),
+  },
 ];
 
 // the backend saves passwords with bcrypt, which only reads the first 72 bytes
@@ -192,10 +202,14 @@ export class SignInPopup {
       await this.auth.login(email, password);
       this.close(); // signed in, nothing else to do in the popup
     } catch (error) {
-      // the backend gives the same message whether the account exists or not
-      // this form has no messages under its fields, so a field problem goes in the box at the top
-      const { message, fieldErrors } = readApiError(error);
-      this.errorMessage.set(Object.values(fieldErrors)[0] ?? message);
+      if (error instanceof HttpErrorResponse && error.status === 401) {
+        // wrong email or password, the backend gives the same answer whether the account exists or not
+        this.errorMessage.set(AUTH_MESSAGES.invalidLogin);
+      } else {
+        // this form has no messages under its fields, so a field problem goes in the box at the top
+        const { message, fieldErrors } = readApiError(error);
+        this.errorMessage.set(Object.values(fieldErrors)[0] ?? message);
+      }
       this.signInForm.controls.password.reset(); // so the wrong password isn't left in the box
     } finally {
       this.submitting.set(false);
