@@ -10,6 +10,9 @@ import {
 import { StoryDetails } from '../../models/story-details';
 import { Chapter } from '../../models/chapter';
 import { ChapterNotFoundError } from '../../models/errors';
+import { StoryNode } from '../../scripting_language/ast';
+import { toJSON } from '../../scripting_language/to_json';
+import { StoryInfo } from '../../models/story';
 
 @Injectable({ providedIn: 'root' }) // global singleton
 export class StoryService {
@@ -47,13 +50,32 @@ export class StoryService {
   }
 
   //create a new story with passed title and description, and return storyID
-  postStory(storyTitle: () => string, storyDescription: () => string) {
-    return this.http.post(this.storiesURL, { title: storyTitle, description: storyDescription });
+  //postStory(storyTitle: string, storyDescription: string) {
+  //  return this.http.post<APIResponse<StoryResponse>>(this.storiesURL, { title: storyTitle, description: storyDescription });
+  //}
+
+  async postStory(storyTitle: string, storyDescription: string) {
+    //defaultValue: [] as StoryDetails[],
+
+    const storiesResponse = await firstValueFrom(
+      this.http.post<APIResponse<StoryResponse>>(this.storiesURL, {
+        title: storyTitle,
+        description: storyDescription,
+      }),
+    );
+
+    return storiesResponse.data;
   }
 
   //change the story's status to draft or published
-  patchStory(storyID: () => string, storyStatus: 'draft' | 'published') {
-    return this.http.post(this.storiesURL + '/' + storyID, { status: storyStatus });
+  async patchStory(storyID: string, storyStatus: 'draft' | 'published') {
+    const storiesResponse = await firstValueFrom(
+      this.http.patch<APIResponse<StoryResponse>>(this.storiesURL + '/' + storyID, {
+        status: storyStatus,
+      }),
+    );
+
+    return storiesResponse.data;
   }
 
   //TODO check how storytext is supposed to work
@@ -63,11 +85,29 @@ export class StoryService {
   }
 
   //upload the chapter to the given storyID
-  postChapter(storyID: () => string, chapterTitle: () => string, storyJSON: () => string) {
-    return this.http.put(this.storiesURL + '/' + storyID + '/file', {
-      chapter_name: chapterTitle,
-      story: storyJSON,
-    });
+  async postChapter(
+    storyID: string,
+    chapterTitle: string,
+    storyJSON: StoryNode,
+    storyInfo: StoryInfo,
+  ) {
+    const storyBody = toJSON(storyJSON, storyInfo).story;
+
+    console.log({ chapter_name: chapterTitle, story: storyBody });
+
+    const storiesResponse = await firstValueFrom(
+      this.http.post<APIResponse<StoryResponse>>(this.storiesURL + '/' + storyID + '/chapter', {
+        chapter_name: chapterTitle,
+        story: storyBody,
+      }),
+    );
+
+    return storiesResponse.data;
+
+    //return this.http.put(this.storiesURL + '/' + storyID + '/file', {
+    //chapter_name: chapterTitle,
+    //story: storyJSON,
+    //});
   }
 
   // gets one chapter of a story, which includes the chapter title and the lines of content
