@@ -28,6 +28,7 @@ describe('StoryPreview closing', () => {
       story_id: '1',
       title: 'Test story',
       author: 'Test author',
+      author_id: 'a1',
       description: 'A test description',
       updatedAt: '2026-10-19T11:03:46.435Z',
     });
@@ -139,6 +140,40 @@ describe('StoryPreview closing', () => {
   });
 });
 
+describe('StoryPreview author link', () => {
+  const realShowModal = HTMLDialogElement.prototype.showModal;
+
+  beforeEach(() => {
+    HTMLDialogElement.prototype.showModal = vi.fn();
+  });
+
+  afterEach(() => {
+    HTMLDialogElement.prototype.showModal = realShowModal;
+  });
+
+  // clicking the author's name should take you to their profile
+  it("should link the author's name to their profile", async () => {
+    await TestBed.configureTestingModule({
+      imports: [StoryPreview],
+      providers: [provideRouter([])],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(StoryPreview);
+    fixture.componentRef.setInput('story', {
+      story_id: '1',
+      title: 'Test story',
+      author: 'Test author',
+      author_id: 'a1',
+      description: 'A test description',
+      updatedAt: '2026-10-19T11:03:46.435Z',
+    });
+    await fixture.whenStable();
+
+    const link = (fixture.nativeElement as HTMLElement).querySelector('.author-link');
+    expect(link?.textContent).toContain('Test author');
+    expect(link?.getAttribute('href')).toBe('/profile/a1');
+  });
+});
+
 describe('StoryPreview reading buttons', () => {
   let fixture: ComponentFixture<StoryPreview>;
   let compiled: HTMLElement;
@@ -169,6 +204,7 @@ describe('StoryPreview reading buttons', () => {
       story_id: '1',
       title: 'Test story',
       author: 'Test author',
+      author_id: 'a1',
       description: 'A test description',
       updatedAt: '2026-10-19T11:03:46.435Z',
     });

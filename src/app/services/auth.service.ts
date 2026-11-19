@@ -2,7 +2,14 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { APIResponse } from '../../models/api';
-import { ApiErrorBody, GUEST_USER, LoginResult, RegisterDetails, User } from '../../models/auth';
+import {
+  ApiErrorBody,
+  GUEST_USER,
+  LoginResult,
+  ProfileChanges,
+  RegisterDetails,
+  User,
+} from '../../models/auth';
 import { AUTH_MESSAGES } from '../../models/auth-messages';
 import { clearToken, getToken, saveToken } from './auth-token';
 
@@ -52,6 +59,14 @@ export class AuthService {
     );
     saveToken(response.data.accessToken);
     this.user.set(response.data.user);
+  }
+
+  // saves changes to the signed in user's own profile (like their bio) then shows the saved version right away
+  async updateProfile(changes: ProfileChanges) {
+    const response = await firstValueFrom(
+      this.http.patch<APIResponse<User>>(this.usersURL, changes),
+    );
+    this.user.set(response.data);
   }
 
   // the backend has no logout, forgetting the token is enough

@@ -1,0 +1,33 @@
+<!-- account bar on top right of the page-->
+<div class="profile-menu" #profileMenu>
+  <button type="button" class="profile-button" (click)="toggleMenu()" [attr.title]="buttonTitle()">
+    <span class="profile-icon"></span>
+    <span>{{ buttonLabel() }}</span>
+    <span class="profile-arrow" [class.open]="menuOpen()"></span>
+  </button>
+
+  <!-- if thats pressed, show the users details, like email and name -->
+  @if (menuOpen()) {
+    <div class="profile-dropdown">
+      @if (isSignedIn()) {
+        <!-- shows which account is signed in -->
+        <div class="profile-details">
+          <span class="profile-details-name">{{ username() }}</span>
+          <span class="profile-details-email">{{ email() }}</span>
+        </div>
+        <a [routerLink]="['/profile', userId()]" (click)="menuOpen.set(false)">My Profile</a>
+        <button type="button" (click)="signOut()">Sign out</button>
+      }
+      <!-- if no ones signed in, display options to sign in or register to create an account-->
+      @else {
+        <button type="button" (click)="openSignIn('signIn')">Sign in</button>
+        <button type="button" (click)="openSignIn('createAccount')">Create account</button>
+      }
+    </div>
+  }
+</div>
+
+<!-- sign in popup opened from the menu -->
+@if (showSignIn()) {
+  <app-sign-in-popup [startMode]="signInMode()" (closed)="showSignIn.set(false)" />
+}
