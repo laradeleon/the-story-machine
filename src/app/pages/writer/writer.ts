@@ -19,6 +19,7 @@ import { line_from_error, set_error_line } from './error-line';
 import { create_editor } from './editor-setup';
 import { choice_snippet, insert_on_own_line, SNIPPETS } from './editor-commands';
 import { EditorView } from '@codemirror/view';
+//import { StoryService } from '../../services/story.service';
 
 const exampleStory = `Welcome to The Story Machine.
 
@@ -96,7 +97,10 @@ export class Writer {
   //the parser's AST as formatted text, shown in the AST popup. null when the popup is closed
   protected astOutput = signal<string | null>(null);
 
+  storyID: string;
+
   constructor() {
+    this.storyID = '';
     //the editor div only exists once the page has rendered
     afterNextRender(() => {
       this.editorView = create_editor(
@@ -212,5 +216,39 @@ export class Writer {
   private clear_parse_error() {
     this.previewError.set(null);
     this.editorView?.dispatch({ effects: set_error_line.of(null) });
+  }
+
+  //checks if the current draft has all three metadata variables not empty
+  private has_all_metadata(): boolean {
+    if (
+      this.draft.metadata().title != '' &&
+      this.draft.metadata().genres.length > 0 &&
+      this.draft.metadata().description != ''
+    ) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  private publishChapter() {
+    if (this.has_all_metadata()) {
+      if (this.storyID.length != 24) {
+        //call POST/api/v1/story
+        //StoryService.postStory();
+        //set storyID to the returned value
+      }
+      //call POST/api/v1/story/{storyID}/chapter
+      //get lines[] JSON from parser
+      //call PATCH/api/v1/story/{storyID}
+      //set status to "published"
+      //run saveDraft() as well
+    } else {
+      //throw warning to fill in metadata
+    }
+  }
+
+  private saveDraft() {
+    //check if story exists like above like publishChapter()
   }
 }

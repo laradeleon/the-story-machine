@@ -18,6 +18,7 @@ export class StoryService {
   // api endpoint urls
   private storiesURL = '/api/v1/story';
 
+  //TODO also show unpublished stories if you are the author
   // gets every published story to show as a card on the landing page
   getStories() {
     return resource({
@@ -42,6 +43,30 @@ export class StoryService {
           updatedAt: story.updatedAt,
         }));
       },
+    });
+  }
+
+  //create a new story with passed title and description, and return storyID
+  postStory(storyTitle: () => string, storyDescription: () => string) {
+    return this.http.post(this.storiesURL, { title: storyTitle, description: storyDescription });
+  }
+
+  //change the story's status to draft or published
+  patchStory(storyID: () => string, storyStatus: 'draft' | 'published') {
+    return this.http.post(this.storiesURL + '/' + storyID, { status: storyStatus });
+  }
+
+  //TODO check how storytext is supposed to work
+  //upload the draft .txt file to the given storyID
+  putStory(storyID: () => string, storyText: () => string) {
+    return this.http.put(this.storiesURL + '/' + storyID + '/file', storyText);
+  }
+
+  //upload the chapter to the given storyID
+  postChapter(storyID: () => string, chapterTitle: () => string, storyJSON: () => string) {
+    return this.http.put(this.storiesURL + '/' + storyID + '/file', {
+      chapter_name: chapterTitle,
+      story: storyJSON,
     });
   }
 

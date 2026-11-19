@@ -106,13 +106,17 @@
 
       <!-- TODO: swap the coming soon popup for (click)="open_publish()" and write open_publish()
            in writer.ts to open a <dialog> modal (see components/metadata-dialog for an example) -->
+
+      <!--<button type="button" class="primary-button" (click)="comingSoon.set('Publish')">-->
       <button type="button" class="primary-button" (click)="comingSoon.set('Publish')">
         Publish
       </button>
 
       <!-- TODO: swap the coming soon popup for (click)="save()" and write save() in writer.ts
            to store the unfinished script as a draft (not published) -->
-      <button type="button" class="primary-button" (click)="comingSoon.set('Save')">Save</button>
+      <button type="button" class="primary-button" (click)="comingSoon.set('Save')">
+        Save Draft
+      </button>
     </div>
   </div>
 </div>
