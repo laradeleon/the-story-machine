@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { By } from '@angular/platform-browser';
+import { clear_all, load } from '../../services/saved-values';
 import { PreviewService } from '../../services/preview.service';
 import { Writer } from './writer';
 import { ErrorKind, ErrorMessageManager } from '../../../scripting_language/error_message_manager';
@@ -30,8 +31,8 @@ describe('Writer', () => {
   }
 
   beforeEach(async () => {
-    // clear local storage so every test starts the same
-    localStorage.clear();
+    // clear saved values so every test starts the same
+    await clear_all();
 
     await TestBed.configureTestingModule({
       imports: [Writer],
@@ -132,12 +133,13 @@ describe('Writer', () => {
     expect(fixture.nativeElement.querySelector('.preview-error')).toBeNull();
   });
 
-  it('should keep the script when the writer page is closed', () => {
+  it('should keep the script when the writer page is closed', async () => {
     set_editor_text('Keep me');
 
     fixture.destroy();
+    await new Promise((resolve) => setTimeout(resolve, 10)); // the IndexedDB save is async
 
-    expect(localStorage.getItem('story-machine:writer-script')).toBe('"Keep me"');
+    expect(await load('story-machine:writer-script', null)).toBe('Keep me');
   });
 
   it('should show the parser output when AST is pressed with a valid script', () => {

@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ImageService } from '../../services/image.service';
+import { clear_all } from '../../services/saved-values';
 import { WriterStateService } from '../../services/writer-state.service';
 import { CharactersDialog } from './characters-dialog';
 
@@ -14,7 +15,7 @@ describe('CharactersDialog', () => {
   const realClose = HTMLDialogElement.prototype.close;
 
   beforeEach(async () => {
-    localStorage.clear();
+    await clear_all();
     // the test browser can't open or close popups, so we give it fake versions we can check
     HTMLDialogElement.prototype.showModal = vi.fn();
     HTMLDialogElement.prototype.close = vi.fn();

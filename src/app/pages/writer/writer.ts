@@ -127,7 +127,7 @@ export class Writer {
     return this.editorView?.state.doc.toString() ?? '';
   }
 
-  //saves the editor's text to the writer state service and localStorage.
+  //saves the editor's text to the writer state service and IndexedDB.
   //only done when leaving the page, refreshing/closing it or pressing Preview, not on every
   //keystroke, so typing doesn't slow down as the story gets longer
   protected save_script() {
