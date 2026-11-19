@@ -2,6 +2,8 @@ export const AUTH_MESSAGES = {
   emailRequired: 'Enter your email address.',
   emailInvalid: 'Enter an email address in the format name@example.com.',
   passwordRequired: 'Enter your password.',
+  passwordWeak: "Your password doesn't meet all the rules below yet.",
+  passwordTooLong: 'Use a shorter password, at most 72 characters (emojis count as more than one).',
   usernameRequired: 'Choose a username.',
   // hint under the username field and also shows as an error if the rules arent met
   usernameRules: 'Use 3 to 9 letters, numbers or underscores (_).',

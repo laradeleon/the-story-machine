@@ -34,6 +34,17 @@ const PASSWORD_RULES = [
   { label: 'A symbol, like ! or ?', test: (password: string) => PASSWORD_SYMBOLS.test(password) },
 ];
 
+// the backend saves passwords with bcrypt, which only reads the first 72 bytes
+// most characters are 1 byte, but emojis and accented letters take more
+const MAX_PASSWORD_BYTES = 72;
+const passwordNotTooLong: ValidatorFn = (control) =>
+  new TextEncoder().encode(control.value).length <= MAX_PASSWORD_BYTES
+    ? null
+    : { passwordTooLong: true };
+
+// Angular's email check allows "ada@localhost", but the backend needs a dot after the @ (like .com)
+const emailHasDomain = Validators.pattern(/^[^@\s]+@[^@\s]+\.[^@\s]+$/);
+
 // fails until the password passes every rule above
 const strongPassword: ValidatorFn = (control) =>
   PASSWORD_RULES.every((rule) => rule.test(control.value)) ? null : { weakPassword: true };
@@ -87,7 +98,7 @@ export class SignInPopup {
   protected signInForm = new FormGroup({
     email: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.email],
+      validators: [Validators.required, Validators.email, emailHasDomain],
     }),
     password: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
   });
@@ -96,7 +107,7 @@ export class SignInPopup {
     {
       email: new FormControl('', {
         nonNullable: true,
-        validators: [Validators.required, Validators.email],
+        validators: [Validators.required, Validators.email, emailHasDomain],
       }),
       // 3 to 9 characters, only letters, numbers and underscores, and not a reserved name
       username: new FormControl('', {
@@ -109,7 +120,7 @@ export class SignInPopup {
       }),
       password: new FormControl('', {
         nonNullable: true,
-        validators: [strongPassword],
+        validators: [strongPassword, passwordNotTooLong],
       }),
       confirmPassword: new FormControl('', { nonNullable: true }),
     },
@@ -130,7 +141,11 @@ export class SignInPopup {
   protected fieldErrors = signal<Record<string, string>>({}); // backend messages under each field
 
   constructor() {
-    afterNextRender(() => this.dialog().nativeElement.showModal()); // show popup once it exists
+    afterNextRender(() => {
+      this.dialog().nativeElement.showModal(); // show popup once it exists
+      // start in the email box instead of on the x button, so you can type straight away
+      this.dialog().nativeElement.querySelector('input')?.focus();
+    });
 
     // once backend says a field is invalid and the user edits the field to fix it, don't show the error anymore
     for (const [field, control] of Object.entries(this.createAccountForm.controls)) {
@@ -161,6 +176,9 @@ export class SignInPopup {
   }
 
   protected async signIn() {
+    if (this.submitting()) {
+      return; // already waiting for the backend
+    }
     if (this.signInForm.invalid) {
       this.signInForm.markAllAsTouched(); // shows the "required" messages
       return;
@@ -175,7 +193,9 @@ export class SignInPopup {
       this.close(); // signed in, nothing else to do in the popup
     } catch (error) {
       // the backend gives the same message whether the account exists or not
-      this.errorMessage.set(readApiError(error).message);
+      // this form has no messages under its fields, so a field problem goes in the box at the top
+      const { message, fieldErrors } = readApiError(error);
+      this.errorMessage.set(Object.values(fieldErrors)[0] ?? message);
       this.signInForm.controls.password.reset(); // so the wrong password isn't left in the box
     } finally {
       this.submitting.set(false);
@@ -184,6 +204,9 @@ export class SignInPopup {
 
   // makes the account, then signs straight in
   protected async createAccount() {
+    if (this.submitting()) {
+      return; // already waiting for the backend
+    }
     if (this.createAccountForm.invalid) {
       this.createAccountForm.markAllAsTouched(); // shows the messages under each field
       return;
