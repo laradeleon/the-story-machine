@@ -4,6 +4,10 @@ The Story Machine is a platform where anyone can write, publish, read and discus
 
 This repository contains the client application built with Angular. The server application, built with NestJS and MongoDB, lives in a [separate repository](https://github.com/nifemi-cd/the-story-machine).
 
+## Live Deployment
+
+[Deployment URL](https://comp4350-frontend.proudmoss-9dbb54ec.westus.azurecontainerapps.io/)
+
 ## Documentation
 
 - [Vision Statement](./docs/sprint-0/vision.md)
@@ -12,6 +16,7 @@ This repository contains the client application built with Angular. The server a
 
 - [Sprint 0](./docs/sprint-0/sprint0.md)
 - [Sprint 1](./docs/sprint-1/sprint1.md)
+- [Sprint 2](./docs/sprint-2/sprint2.md)
 
 ## Running Locally
 

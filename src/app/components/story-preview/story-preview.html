@@ -12,7 +12,11 @@
     <button type="button" class="close-button" (click)="dialog.close()">x</button>
 
     <h2 id="preview-title">{{ story().title }}</h2>
-    <p class="preview-author">by {{ story().author }}</p>
+    <!-- the author's name goes to their profile -->
+    <p class="preview-author">
+      by
+      <a class="author-link" [routerLink]="['/profile', story().author_id]">{{ story().author }}</a>
+    </p>
     <p class="preview-description">{{ story().description }}</p>
 
     <!-- mm/dd/yyyy-->
