@@ -15,6 +15,18 @@ export interface User {
   updatedAt: string;
 }
 
+// what anyone can see about a user (public GET so no email or roles)
+export interface PublicProfile {
+  _id: string;
+  username: string;
+  displayName: string;
+  bio: string;
+  profileUrl: string;
+  followerCount: number;
+  followingCount: number;
+  createdAt: string;
+}
+
 // changes that the signed in user can make to their own profile
 export interface ProfileChanges {
   bio?: string;

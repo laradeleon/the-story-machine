@@ -14,55 +14,52 @@
   </header>
 
   <main class="profile-body">
-    <!-- the about card, only on your own profile since we don't have these details for other people -->
-    @if (isOwnProfile()) {
-      <section class="about-card">
-        <h2>About</h2>
-
-        <!-- their bio or a box to edit it in -->
-        @if (editingBio()) {
-          <textarea
-            #bioBox
-            class="bio-box"
-            rows="5"
-            [maxLength]="bioMaxLength"
-            [value]="bioDraft()"
-            (input)="bioDraft.set(bioBox.value)"
-            placeholder="Tell readers a bit about yourself and what you write"
-          ></textarea>
-          <!-- how much of the 500 max characters theyve used -->
-          <p class="bio-count">{{ bioDraft().length }}/{{ bioMaxLength }}</p>
-          @if (bioError(); as message) {
-            <p class="bio-error">{{ message }}</p>
-          }
-          <div class="bio-actions">
-            <button
-              type="button"
-              class="cancel-button"
-              [disabled]="savingBio()"
-              (click)="cancelEditingBio()"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              class="primary-button"
-              [disabled]="savingBio()"
-              (click)="saveBio()"
-            >
-              @if (savingBio()) {
-                Saving...
-              } @else {
-                Save
-              }
-            </button>
-          </div>
+    <!-- the about card -->
+    <!-- everyone has an about but only you can edit your own bio  -->
+    <section class="about-card">
+      <h2>About</h2>
+      <!-- their bio or a box to edit it in -->
+      @if (editingBio()) {
+        <textarea
+          #bioBox
+          class="bio-box"
+          rows="5"
+          [maxLength]="bioMaxLength"
+          [value]="bioDraft()"
+          (input)="bioDraft.set(bioBox.value)"
+          placeholder="Tell readers a bit about yourself and what you write"
+        ></textarea>
+        <!-- how much of the 500 max characters theyve used -->
+        <p class="bio-count">{{ bioDraft().length }}/{{ bioMaxLength }}</p>
+        @if (bioError(); as message) {
+          <p class="bio-error">{{ message }}</p>
+        }
+        <div class="bio-actions">
+          <button
+            type="button"
+            class="cancel-button"
+            [disabled]="savingBio()"
+            (click)="cancelEditingBio()"
+          >
+            Cancel
+          </button>
+          <button type="button" class="primary-button" [disabled]="savingBio()" (click)="saveBio()">
+            @if (savingBio()) {
+              Saving...
+            } @else {
+              Save
+            }
+          </button>
+        </div>
+      } @else {
+        @if (person.bio) {
+          <p class="bio-text">{{ person.bio }}</p>
+        } @else if (isOwnProfile()) {
+          <p class="about-placeholder">Help readers get to know you by adding a bio.</p>
         } @else {
-          @if (person.bio) {
-            <p class="bio-text">{{ person.bio }}</p>
-          } @else {
-            <p class="about-placeholder">Help readers get to know you by adding a bio.</p>
-          }
+          <p class="about-placeholder">{{ person.displayName }} hasn't added a bio yet.</p>
+        }
+        @if (isOwnProfile()) {
           <button type="button" class="edit-bio-button" (click)="startEditingBio()">
             @if (person.bio) {
               Edit bio
@@ -71,13 +68,13 @@
             }
           </button>
         }
+      }
 
-        <!-- display what date they created their account -->
-        @if (person.joinedAt) {
-          <p class="about-joined">Joined {{ person.joinedAt | date: 'MMMM y' }}</p>
-        }
-      </section>
-    }
+      <!-- display what date they created their account -->
+      @if (person.joinedAt) {
+        <p class="about-joined">Joined {{ person.joinedAt | date: 'MMMM y' }}</p>
+      }
+    </section>
 
     <!-- the stories they've published, as the same cards as the landing page -->
     <section class="profile-stories">
@@ -89,38 +86,41 @@
         }
       </h2>
 
-      @if (isLoading()) {
+      @if (isStoriesLoading()) {
         <p class="profile-section-message">Loading stories...</p>
-      } @else if (hasError()) {
+      } @else if (hasStoriesError()) {
         <p class="profile-section-message">Sorry, these stories couldn't be loaded right now.</p>
       } @else {
         <div class="story-grid">
           @for (story of publishedStories(); track story.story_id) {
             <app-story-card [story]="story" (click)="selectedStory.set(story)" />
           } @empty {
-            <!-- only happens on your own profile, someone with no stories shows as not found -->
-            <p class="profile-section-message">You haven't published any stories yet.</p>
+            @if (isOwnProfile()) {
+              <p class="profile-section-message">You haven't published any stories yet.</p>
+            } @else {
+              <p class="profile-section-message">
+                {{ person.displayName }} hasn't published any stories yet.
+              </p>
+            }
           }
         </div>
       }
     </section>
   </main>
 } @else if (profile() === null) {
-  <!-- no user with this id or they haven't published anything -->
+  <!-- no user with this id -->
   <main class="profile-message">
     <h1>Profile not found</h1>
-    <p>
-      We couldn't find this profile. It may not exist or the author hasn't published a story yet.
-    </p>
+    <p>We couldn't find this profile.</p>
     <a class="primary-button" routerLink="/">Back to stories</a>
   </main>
-} @else if (hasError()) {
+} @else if (hasProfileError()) {
   <main class="profile-message">
     <h1>Something went wrong</h1>
     <p>Sorry, this profile couldn't be loaded right now. Please try again in a moment.</p>
     <a class="primary-button" routerLink="/">Back to stories</a>
   </main>
-} @else if (isLoading()) {
+} @else if (isProfileLoading()) {
   <main class="profile-message">
     <p>Loading profile...</p>
   </main>

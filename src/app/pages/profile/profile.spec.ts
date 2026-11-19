@@ -5,7 +5,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { Profile } from './profile';
 import { AuthService } from '../../services/auth.service';
 import { ProfileService } from '../../services/profile.service';
-import { GUEST_USER, User } from '../../../models/auth';
+import { GUEST_USER, PublicProfile, User } from '../../../models/auth';
 import { StoryDetails } from '../../../models/story-details';
 
 // the signed in user
@@ -19,6 +19,27 @@ const ada: User = {
 
 // another author
 const BOLA_ID = '6ad98c2a10ebb64e958ee717';
+
+// what users can see about each of them from their public profile (shouldnt see private details like email)
+const bola: PublicProfile = {
+  _id: BOLA_ID,
+  username: 'bola_writes',
+  displayName: 'Bola Writes',
+  bio: 'I write about lighthouses.',
+  profileUrl: '',
+  followerCount: 0,
+  followingCount: 0,
+  createdAt: '2026-10-05T10:00:00.000Z',
+};
+
+const adaPublic: PublicProfile = {
+  ...bola,
+  _id: ada._id,
+  username: ada.username,
+  displayName: ada.displayName,
+  bio: '',
+  createdAt: ada.createdAt,
+};
 
 // a published story by this author
 function storyBy(authorId: string, author: string, title: string): StoryDetails {
@@ -41,12 +62,25 @@ describe('Profile', () => {
   let harness: RouterTestingHarness;
   const currentUser = signal<User>(GUEST_USER); // who's signed in
   let getPublishedStories: ReturnType<typeof vi.fn>;
+  let getPublicProfile: ReturnType<typeof vi.fn>;
   let adaStories: StoryDetails[]; // ada's published stories, tests change this
+  let bolaProfile: PublicProfile;
   let updateProfile: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     currentUser.set(GUEST_USER);
     adaStories = [storyBy(ada._id, 'Ada Lovelace', 'Gerald Has Your Keys')];
+    bolaProfile = bola;
+    // anyone we don't know about isn't found
+    getPublicProfile = vi.fn(async (userId: string) => {
+      if (userId === BOLA_ID) {
+        return bolaProfile;
+      }
+      if (userId === ada._id) {
+        return adaPublic;
+      }
+      return null;
+    });
     getPublishedStories = vi.fn(async (userId: string) => {
       if (userId === BOLA_ID) {
         return bolaStories;
@@ -74,7 +108,7 @@ describe('Profile', () => {
             updateProfile,
           },
         },
-        { provide: ProfileService, useValue: { getPublishedStories } },
+        { provide: ProfileService, useValue: { getPublishedStories, getPublicProfile } },
       ],
     });
     harness = await RouterTestingHarness.create();
@@ -111,16 +145,25 @@ describe('Profile', () => {
   });
 
   describe("someone else's profile", () => {
-    // the backend only tells us other authors' display names, so that's all that shows
-    it('shows their display name only', async () => {
+    it('shows their display name, username, bio and when they joined', async () => {
       await openProfile(BOLA_ID);
 
       expect(page().querySelector('.profile-name')?.textContent).toContain('Bola Writes');
-      expect(page().querySelector('.profile-username')).toBeNull();
-      expect(page().querySelector('.about-card')).toBeNull();
+      expect(page().querySelector('.profile-username')?.textContent).toContain('@bola_writes');
+      expect(page().querySelector('.bio-text')?.textContent).toContain(
+        'I write about lighthouses.',
+      );
+      expect(page().querySelector('.about-joined')?.textContent).toContain('October 2026');
     });
 
-    // a made up id, or an author we can't find, gets a proper message instead of a blank page
+    // your own profile already comes from signing in so it shouldnt be asked for again
+    it("doesn't load your own public profile", async () => {
+      currentUser.set(ada);
+      await openProfile(ada._id);
+      expect(getPublicProfile).not.toHaveBeenCalled();
+    });
+
+    // a made up id gets a proper message instead of a blank page
     it("says the profile wasn't found", async () => {
       await openProfile('6ad98c2a10ebb64e958ee000');
 
@@ -129,7 +172,7 @@ describe('Profile', () => {
     });
 
     it("says something went wrong if it couldn't be loaded", async () => {
-      getPublishedStories.mockRejectedValue(new Error('server down'));
+      getPublicProfile.mockRejectedValue(new Error('server down'));
       await openProfile(BOLA_ID);
 
       expect(page().textContent).toContain("this profile couldn't be loaded right now");
@@ -145,14 +188,19 @@ describe('Profile', () => {
     currentUser.set(GUEST_USER);
     await harness.fixture.whenStable();
 
-    // still ada's page, but only what anyone else would see: her name and stories
+    // still ada's page, but what anyone else would see, so no editing allowed
     expect(page().querySelector('.profile-name')?.textContent).toContain('Ada Lovelace');
-    expect(page().querySelector('.profile-username')).toBeNull();
-    expect(page().querySelector('.about-card')).toBeNull();
+    expect(page().querySelector('.profile-username')?.textContent).toContain('@ada_writes');
+    expect(page().querySelector('.edit-bio-button')).toBeNull();
   });
 
   describe('bio', () => {
-    beforeEach(() => currentUser.set({ ...ada, bio: 'I write mysteries.' }));
+    beforeEach(() =>
+      currentUser.set({
+        ...ada,
+        bio: 'I write mysteries.',
+      }),
+    );
 
     function button(text: string) {
       return Array.from(page().querySelectorAll('button')).find((b) =>
@@ -197,7 +245,9 @@ describe('Profile', () => {
       await typeBio('  I write mysteries and sci-fi.  ');
       button('Save').click();
       await harness.fixture.whenStable();
-      expect(updateProfile).toHaveBeenCalledWith({ bio: 'I write mysteries and sci-fi.' });
+      expect(updateProfile).toHaveBeenCalledWith({
+        bio: 'I write mysteries and sci-fi.',
+      });
       expect(page().querySelector('.bio-box')).toBeNull();
       expect(page().querySelector('.bio-text')?.textContent).toContain(
         'I write mysteries and sci-fi.',
@@ -238,6 +288,15 @@ describe('Profile', () => {
       expect(button('Edit bio')).toBeUndefined();
       expect(button('Add bio')).toBeUndefined();
     });
+
+    // someone else without a bio gets a message about them, not the "add a bio" note
+    it("says when someone else hasn't added one", async () => {
+      bolaProfile = { ...bola, bio: '' };
+      await openProfile(BOLA_ID);
+
+      expect(page().textContent).toContain("Bola Writes hasn't added a bio yet.");
+      expect(page().textContent).not.toContain('Help readers get to know you');
+    });
   });
 
   describe('stories', () => {
@@ -268,6 +327,16 @@ describe('Profile', () => {
 
       expect(page().textContent).toContain("You haven't published any stories yet.");
       expect(page().querySelector('app-story-card')).toBeNull();
+    });
+
+    // their profile still shows, just with a message where the stories would be
+    it("says so when someone else hasn't published anything yet", async () => {
+      bolaProfile = { ...bola, _id: '6ad98c2a10ebb64e958ee718' };
+      getPublicProfile.mockResolvedValue(bolaProfile);
+      await openProfile('6ad98c2a10ebb64e958ee718');
+
+      expect(page().querySelector('.profile-name')?.textContent).toContain('Bola Writes');
+      expect(page().textContent).toContain("Bola Writes hasn't published any stories yet.");
     });
 
     it("shows someone else's stories under their name", async () => {
