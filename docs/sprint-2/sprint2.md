@@ -65,7 +65,12 @@ Both repositories now have a **CD** workflow that deploys to **Azure Container A
 
 ## Cross-Team Testing
 
-<!-- Krupal -->
+I posted my cross-team review of Palette as a comment on ArionKennedy/PaletteProject#100. It covers the workflows I tried (sign-up, sign-in, and searching movies, books and TV), what worked well, and the issues I ran into, like the breached-password message and the “API request failed: 401” error. I also left a few suggestions for the team to consider before the final release.
+
+https://github.com/ArionKennedy/PaletteProject/issues/100
+
+<!--Havent received a feedback from the group that is testing this our project yet-->
+<!--All of that will go here-->
 
 ## API & Architecture
 
@@ -115,6 +120,10 @@ To run the frontend against it, start the backend on port `4563`, then run `npm 
 _What technical decision or implementation improved most since Sprint 1, and why?_
 
 For me, the biggest improvement since Sprint 1 is that the backend now has authentication. In Sprint 1, the API had no idea who was sending a request, and this was fine while we were only testing with our own data. The main reason I think this improved the most is that the server now decides who is allowed to do what, instead of believing whatever the request says. It's also the base that everything else this sprint needed. Saving reading progress per account, showing your own stories on your profile and tying a story to its writer all depend on the app knowing who you are, and auth was what made all this possible.
+
+**Krupal Patel**
+_What feedback from Sprint 1 did the team act on, and what changed as a result?_
+Our Sprint 1 feedback was mostly positive and didn’t point out much to fix, so most of our changes came from our own look back at the sprint. We saw that the frontend and backend were often working separately and only connecting at the end, which slowed us down. In Sprint 2 we met more often and talked more between those meetings, so problems got raised early instead of during merges. This also helped us build better backend features. Agreeing on things like validation rules and error formats up front made the frontend much easier to connect. For example, the user accounts feature worked more smoothly because both sides knew what to expect. Overall, better communication made our work more consistent, and our PRs and reviews went faster this sprint.
 
 ### Work the Team Is Proud Of
 
