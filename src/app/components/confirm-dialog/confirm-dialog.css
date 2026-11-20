@@ -1,0 +1,23 @@
+/* the border, shadow and blurred background come from dialog[appModal] in styles.css */
+.confirm-dialog {
+  --dialog-width: 400px;
+}
+
+.confirm-content {
+  padding: 32px;
+}
+
+.confirm-content h2 {
+  margin-bottom: 8px;
+  font-size: 1.5rem;
+}
+
+.confirm-content p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* cancel and confirm on the right, a gap below the text. the buttons are shared, see styles.css */
+.confirm-actions {
+  margin-top: 24px;
+}
