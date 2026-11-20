@@ -259,7 +259,12 @@ export class Writer {
           story_id: this.storyID,
         };
         if (ast) {
-          const response = this.storyService.postChapter(this.storyID, 'Chapter 1', ast, storyInfo);
+          const response = await this.storyService.postChapter(
+            this.storyID,
+            'Chapter 1',
+            ast,
+            storyInfo,
+          );
           //set storyID to the returned value
           console.log(response);
         }

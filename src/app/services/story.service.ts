@@ -84,6 +84,14 @@ export class StoryService {
     return this.http.put(this.storiesURL + '/' + storyID + '/file', storyText);
   }
 
+  async deleteStory(storyID: string) {
+    const storiesResponse = await firstValueFrom(
+      this.http.delete<APIResponse<StoryResponse>>(this.storiesURL + '/' + storyID),
+    );
+
+    return storiesResponse.data;
+  }
+
   //upload the chapter to the given storyID
   async postChapter(
     storyID: string,
