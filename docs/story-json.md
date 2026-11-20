@@ -29,9 +29,9 @@ See [section 4](#4-full-example) for a complete story.
       "name": "Dave",
       "description": null,
       "emotions": [
-        { "emotion": "default", "portrait_x": null, "portrait_y": null },
-        { "emotion": "thinking", "portrait_x": null, "portrait_y": null },
-        { "emotion": "angry", "portrait_x": null, "portrait_y": null }
+        { "emotion": "default", "portrait_x": 0, "portrait_y": 0, "zoom": 100 },
+        { "emotion": "thinking", "portrait_x": 0, "portrait_y": 0, "zoom": 100 },
+        { "emotion": "angry", "portrait_x": 0, "portrait_y": 0, "zoom": 100 }
       ]
     }
   },
@@ -78,6 +78,14 @@ Every entry also has a `line_id`: its position in `lines`, starting from 0. `got
 ```
 
 `name` would be a key into `characters`. `portrait` is the name of one of that character's emotions. It's `"default"` when an emotion hasnt been set yet.
+
+Each emotion has:
+
+- `emotion`: the name the script uses, such as `"angry"`.
+- `portrait_x` and `portrait_y`: how far the picture is moved, as a % of the picture area. `0` is centred, and the value can go from `-100` to `100`.
+- `zoom`: how big the picture is, as a %. `100` fits the picture area, and the value can go from `50` to `300`.
+
+The picture itself isn't in this shape yet.
 
 ### `prose`
 
@@ -153,23 +161,27 @@ This is a complete story and written out as the JSON the reader would receive.
       "emotions": [
         {
           "emotion": "default",
-          "portrait_x": null,
-          "portrait_y": null
+          "portrait_x": 0,
+          "portrait_y": 0,
+          "zoom": 100
         },
         {
           "emotion": "thinking",
-          "portrait_x": null,
-          "portrait_y": null
+          "portrait_x": 0,
+          "portrait_y": 0,
+          "zoom": 100
         },
         {
           "emotion": "angry",
-          "portrait_x": null,
-          "portrait_y": null
+          "portrait_x": 0,
+          "portrait_y": 0,
+          "zoom": 100
         },
         {
           "emotion": "happy",
-          "portrait_x": null,
-          "portrait_y": null
+          "portrait_x": 0,
+          "portrait_y": 0,
+          "zoom": 100
         }
       ]
     },
@@ -179,18 +191,21 @@ This is a complete story and written out as the JSON the reader would receive.
       "emotions": [
         {
           "emotion": "default",
-          "portrait_x": null,
-          "portrait_y": null
+          "portrait_x": 0,
+          "portrait_y": 0,
+          "zoom": 100
         },
         {
           "emotion": "thinking",
-          "portrait_x": null,
-          "portrait_y": null
+          "portrait_x": 0,
+          "portrait_y": 0,
+          "zoom": 100
         },
         {
           "emotion": "worried",
-          "portrait_x": null,
-          "portrait_y": null
+          "portrait_x": 0,
+          "portrait_y": 0,
+          "zoom": 100
         }
       ]
     }

@@ -53,6 +53,21 @@
   font-size: 0.875rem;
 }
 
+/* author's name on the story card preview popup, can be clicked to see their profile*/
+.author-link {
+  color: var(--color-text);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: var(--color-border);
+  text-underline-offset: 3px;
+}
+
+.author-link:hover,
+.author-link:focus-visible {
+  color: var(--color-accent);
+  text-decoration-color: currentColor;
+}
+
 .preview-description {
   line-height: 1.6;
 }
@@ -77,4 +92,21 @@
 
 .preview-button:hover {
   background: rgba(255, 255, 255, 0.06);
+}
+
+.preview-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* only shown to the story's author, pushed to the right end of the row */
+.delete-button {
+  margin-left: auto;
+  color: #ff8a80; /* same red as the error messages */
+  border-color: currentColor;
+}
+
+.delete-error {
+  color: #ff8a80;
+  font-size: 0.875rem;
 }

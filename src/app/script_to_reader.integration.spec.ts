@@ -4,15 +4,17 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { Reader } from './pages/reader/reader';
 import Parser from '../scripting_language/parser.ts';
-import { toJSON } from '../scripting_language/to_json.ts';
+import { speakers_of, toJSON } from '../scripting_language/to_json.ts';
 import { simpleStory, tresspassing } from '../scripting_language/examples/stories.ts';
 import { APIResponse, ChapterResponse, ChapterSummaryResponse } from '../models/api';
 import { StoryInfo, StoryJSON } from '../models/story';
 
 //runs a script through the whole pipeline (lexer -> parser -> toJSON)
-//new Parser each time since it remembers the last speaker
+//new Parser each time since it remembers the last speaker.
+//everyone who speaks counts as a character, these tests are about reading not the characters
 function script_to_json(source: string, info: StoryInfo): StoryJSON {
-  return toJSON(new Parser().produceAST(source), info);
+  const ast = new Parser().produceAST(source);
+  return toJSON(ast, info, speakers_of(ast));
 }
 
 const simple_story_info: StoryInfo = {

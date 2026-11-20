@@ -59,10 +59,11 @@ export default class Parser {
         return this.parse_prose();
 
       case TokenType.DialogueSpeaker:
-        return this.parse_Dialogue(0);
+        this.switch_Speaker();
+        return this.parse_node();
 
       case TokenType.DialogueText:
-        return this.parse_Dialogue(1);
+        return this.parse_Dialogue();
 
       case TokenType.ChoiceStart:
         return this.parse_choice();
@@ -91,18 +92,17 @@ export default class Parser {
     return { lineNumber: token.lineNumber, kind: 'GotoNode', destination: token.value };
   }
 
-  //construct a dialogue node by popping off the speaker token and dialogue text token
-  private parse_Dialogue(type: number): DialogueNode {
-    let speaker_token: Token;
+  private switch_Speaker() {
+    const speaker_token = this.pop();
+    this.current_speaker = speaker_token;
+  }
 
-    if (type == 0) {
-      speaker_token = this.pop();
-      this.current_speaker = speaker_token;
-    } else {
-      if (this.current_speaker == null) {
-        throw errors.format_error(ErrorKind.DialogueMissingSpeaker, this.at().lineNumber);
-      }
-      speaker_token = this.current_speaker;
+  //construct a dialogue node by popping off the speaker token and dialogue text token
+  private parse_Dialogue(): DialogueNode {
+    const speaker_token = this.current_speaker;
+
+    if (speaker_token == null) {
+      throw errors.format_error(ErrorKind.DialogueMissingSpeaker, this.at().lineNumber);
     }
 
     const dialogue_token = this.pop(); //now the actual dialogue

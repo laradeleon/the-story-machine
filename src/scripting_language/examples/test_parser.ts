@@ -1,5 +1,5 @@
 import Parser from '../parser';
-import { toJSON } from '../to_json.ts';
+import { speakers_of, toJSON } from '../to_json.ts';
 import { simpleStory, tresspassing } from './stories.ts';
 
 function main() {
@@ -14,17 +14,17 @@ function main() {
 
   console.dir(story2, { depth: null });
 
-  //convert both ASTs to the reader's JSON format
-  const json1 = toJSON(story1, {
-    title: 'Team Beluga',
-    author: 'mock-author',
-    story_id: 'mock-id-1',
-  });
-  const json2 = toJSON(story2, {
-    title: 'Tresspassing',
-    author: 'mock-author',
-    story_id: 'mock-id-2',
-  });
+  //convert both ASTs to the reader's JSON format, with everyone who speaks counted as a character
+  const json1 = toJSON(
+    story1,
+    { title: 'Team Beluga', author: 'mock-author', story_id: 'mock-id-1' },
+    speakers_of(story1),
+  );
+  const json2 = toJSON(
+    story2,
+    { title: 'Tresspassing', author: 'mock-author', story_id: 'mock-id-2' },
+    speakers_of(story2),
+  );
 
   console.log('\nPRINTING THE FIRST STORY AS JSON NOW:\n\n');
   console.log(JSON.stringify(json1, null, 2));

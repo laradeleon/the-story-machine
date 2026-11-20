@@ -1,0 +1,211 @@
+/* the border, shadow and blurred background come from dialog[appModal] in styles.css */
+.characters-dialog {
+  --dialog-width: 1200px;
+
+  /* the blues, darkest first. each is used for more than one thing, so change them here */
+  --blue-darkest: #151a33; /* the character list column */
+  --blue-medium-dark: #1f2748; /* the character column, and the selected character */
+  --blue-medium: #2c3666; /* the emotion column, and the selected emotion */
+  --blue-deepest: #0d1020; /* the line between characters, darker than the character list */
+  --blue-line: #7b87c9; /* the dashed border of the portrait upload area */
+  --blue-bright: #4b5bb0; /* brighter picture area for a screenshot, change back to --blue-medium-dark */
+}
+
+.characters-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 32px;
+}
+
+.characters-content h2 {
+  font-size: 1.75rem;
+}
+
+/* the note about portraits under the title, quieter than the warnings */
+.characters-note {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* the three columns always sit side by side. each one fills the height and scrolls only where marked */
+.characters-columns {
+  display: grid;
+  /* the character list is 240px, narrower on a small screen so the other two keep room */
+  grid-template-columns: clamp(140px, 24%, 240px) minmax(0, 1fr) minmax(0, 1.2fr);
+  /* as tall as the screen allows once the title and Close button fit, but never huge */
+  height: min(720px, calc(100dvh - 200px));
+  min-height: 320px;
+  overflow: hidden;
+  border-radius: 0.75rem;
+}
+
+/* each column is a shade of blue. the columns sit side by side with no line between them.
+   --field-bg and --thumbnail-bg are picked up by the boxes and empty squares inside each column */
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding: 16px 0 16px 16px; /* no padding on the right of the first two columns, so their lists reach the divider */
+}
+
+.column-characters {
+  background: var(--blue-darkest);
+}
+
+.column-character {
+  background: var(--blue-medium-dark);
+  --field-bg: var(--blue-darkest); /* the name and description boxes */
+  --thumbnail-bg: var(--blue-darkest); /* empty thumbnails in the character list */
+}
+
+.column-emotion {
+  background: var(--blue-medium);
+  padding-right: 16px;
+  overflow-y: auto; /* on a short screen the zoom, offsets and buttons scroll into view instead of being cut off */
+  --field-bg: var(--blue-medium-dark); /* the emotion name box */
+  --image-area-bg: var(--blue-bright); /* the picture area; TEMPORARY, see --blue-bright above */
+}
+
+/* the sections at the top of the first two columns keep their right padding, the lists below them don't */
+.column-characters .column-top,
+.column-character .column-top,
+.column-character > .column-empty,
+.column-character .column-bottom {
+  padding-right: 16px;
+}
+
+/* the editor fills the emotion column below the name */
+.column-emotion > app-image-editor {
+  flex: 1;
+  min-height: 0;
+}
+
+/* the red message under the picture when it couldn't be saved or found (colour from .modal-error) */
+.image-problem {
+  flex: none;
+  margin-top: 8px;
+  font-size: 0.875rem;
+}
+
+/* the part of a column that stays at the top while the list under it scrolls */
+.column-top {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* the emotion name with the outline button beside it, lined up along the bottom of the box */
+.name-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+/* min-width 0 lets the name box shrink, so a narrow column doesn't push the outline button out of sight */
+.name-row > .modal-field {
+  flex: 1;
+  min-width: 0;
+}
+
+/* boxes fill their column instead of keeping the browser's default width */
+.characters-columns .modal-field input,
+.characters-columns .modal-field textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* the remove button under the emotion list, full width like Add emotion */
+.column-bottom {
+  display: flex;
+  flex: none;
+}
+
+/* the list that scrolls on its own */
+.column-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.add-button {
+  width: 100%;
+}
+
+.column-empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  list-style: none;
+}
+
+/* the lists of characters and emotions */
+.character-list,
+.emotion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-bottom: 2px solid transparent; /* the line between rows, coloured per list below */
+  border-radius: 0.5rem 0 0 0.5rem;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* a line between characters is darker than the character list, a line between emotions is darker than the emotion list */
+.character-list .item {
+  border-bottom-color: var(--blue-deepest);
+}
+
+.emotion-list .item {
+  border-bottom-color: var(--blue-darkest);
+}
+
+/* a selected character is the medium dark blue, a selected emotion the medium blue */
+.character-list .item.selected {
+  background: var(--blue-medium-dark);
+}
+
+.emotion-list .item.selected {
+  background: var(--blue-medium);
+}
+
+.item-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.tag-warning {
+  background: rgba(229, 160, 13, 0.2);
+  color: #e5a00d;
+}

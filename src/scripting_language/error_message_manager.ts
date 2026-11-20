@@ -5,9 +5,11 @@ export enum ErrorKind {
   // lexer.ts
   MissingChoiceText = 'missing_choice_text',
   MissingChoiceDestination = 'missing_choice_destination',
+  NoChoicesProvided = 'no_choices_provided',
   MissingFlagName = 'missing_flag_name',
   MissingGotoDestination = 'missing_goto_destination',
   MissingOpenQuotation = 'missing_open_quotation',
+  UnterminatedDialogue = 'unterminated_dialogue',
 
   // parser.ts
   UnexpectedToken = 'unexpected_token',
@@ -18,6 +20,7 @@ export enum ErrorKind {
   // to_json.ts
   FlagAlreadyExists = 'flag_already_exists',
   FlagDoesNotExist = 'flag_does_not_exist',
+  CharacterDoesNotExist = 'character_does_not_exist',
 }
 
 const message_templates: Record<ErrorKind, (line: number, ...details: string[]) => string> = {
@@ -32,6 +35,10 @@ const message_templates: Record<ErrorKind, (line: number, ...details: string[]) 
     `Line ${line} has a goto without a destination. Goto syntax: -> destination name`,
   [ErrorKind.MissingOpenQuotation]: (line) =>
     `Line ${line} is missing quotation marks. Dialogue syntax: Character name: "dialogue"`,
+  [ErrorKind.UnterminatedDialogue]: (line, ...reservedStatements: string[]) =>
+    `Line ${line} has dialogue that is missing a closing quotation mark. Also make sure no dialogue line begins with reserved statements: '${reservedStatements.join(', ')}'`,
+  [ErrorKind.NoChoicesProvided]: (line) =>
+    `Line ${line} starts a choice block but has zero choices, please add choices. Choice syntax: choice text -> destination flag'`,
 
   // parser.ts
   [ErrorKind.UnexpectedToken]: (line, token) => `Line ${line} has an unexpected token: '${token}'`,
@@ -45,6 +52,8 @@ const message_templates: Record<ErrorKind, (line: number, ...details: string[]) 
   // to_json.ts
   [ErrorKind.FlagAlreadyExists]: (line) => `Line ${line} has a Flag that already exists`,
   [ErrorKind.FlagDoesNotExist]: (line) => `Line ${line} has a goto with a flag that does not exist`,
+  [ErrorKind.CharacterDoesNotExist]: (line, name) =>
+    `Line ${line} has dialogue by '${name}', who isn't one of the story's characters. Add them in Characters, or check the spelling and capital letters`,
 };
 
 // the error the lexer, parser and to_json throw instead of a plain Error.

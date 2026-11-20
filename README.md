@@ -16,6 +16,7 @@ This repository contains the client application built with Angular. The server a
 
 - [Sprint 0](./docs/sprint-0/sprint0.md)
 - [Sprint 1](./docs/sprint-1/sprint1.md)
+- [Sprint 2](./docs/sprint-2/sprint2.md)
 
 ## Running Locally
 

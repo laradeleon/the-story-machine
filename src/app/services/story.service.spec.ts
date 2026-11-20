@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ApplicationRef, Injector, runInInjectionContext } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { StoryService } from './story.service';
+import { FIRST_CHAPTER_NAME, StoryService } from './story.service';
 import { ChapterNotFoundError } from '../../models/errors';
 
 describe('StoryService', () => {
@@ -188,6 +188,7 @@ describe('StoryService', () => {
         story_id: 's1',
         title: 'Story 1',
         author: 'Lara',
+        author_id: 'a1', // so the popup can link to the author's profile
         description: 'd1',
         updatedAt: '2026-10-01',
       },
@@ -195,6 +196,7 @@ describe('StoryService', () => {
         story_id: 's2',
         title: 'Story 2',
         author: 'Lara',
+        author_id: 'a1',
         description: 'd2',
         updatedAt: '2026-10-02',
       },
@@ -231,5 +233,126 @@ describe('StoryService', () => {
 
     // verify() in afterEach fails the test if any /api/v1/user request was sent
     expect(stories.value()).toEqual([]);
+  });
+
+  // answers GET /story/s1 with a story that has one character
+  function answerStory() {
+    httpTesting.expectOne('/api/v1/story/s1').flush({
+      success: true,
+      message: 'Story fetched',
+      data: {
+        _id: 's1',
+        title: 'The Lighthouse',
+        authorId: 'a1',
+        description: 'A storm',
+        updatedAt: '2026-10-01',
+        characters: [{ name: 'Dave', description: null, emotions: [] }],
+      },
+    });
+  }
+
+  it('should get the saved script, metadata and characters for editing', async () => {
+    const saved = service.get_saved_story('s1');
+
+    answerStory();
+    const file = httpTesting.expectOne('/api/v1/story/s1/file');
+    expect(file.request.responseType).toBe('text');
+    file.flush('Hello, world.');
+
+    expect(await saved).toEqual({
+      script: 'Hello, world.',
+      metadata: { title: 'The Lighthouse', description: 'A storm' },
+      characters: [{ name: 'Dave', description: null, emotions: [] }],
+      updated_at: Date.parse('2026-10-01'),
+    });
+  });
+
+  it('should give back an empty script if the story has no file yet', async () => {
+    const saved = service.get_saved_story('s1');
+
+    answerStory();
+    httpTesting
+      .expectOne('/api/v1/story/s1/file')
+      .flush('No file', { status: 404, statusText: 'Not Found' });
+
+    expect((await saved).script).toBe('');
+  });
+
+  it('should send only the fields given when changing a story', async () => {
+    const patched = service.update_story('s1', { status: 'published', title: 'The Lighthouse' });
+
+    const request = httpTesting.expectOne({ method: 'PATCH', url: '/api/v1/story/s1' });
+    expect(request.request.body).toEqual({ status: 'published', title: 'The Lighthouse' });
+    request.flush({ success: true, message: 'Story updated', data: { _id: 's1' } });
+
+    expect(await patched).toEqual({ _id: 's1' });
+  });
+
+  it('should upload the script as a plain text file in the "file" field', async () => {
+    // the test browser's FormData gives files back as text, so check what's put into it instead
+    const append = vi.spyOn(FormData.prototype, 'append');
+    const uploaded = service.upload_script('s1', 'Hello, world.');
+
+    const request = httpTesting.expectOne({ method: 'PUT', url: '/api/v1/story/s1/file' });
+    expect(request.request.body).toBeInstanceOf(FormData);
+    const [field, file] = append.mock.calls[0] as [string, File];
+    expect(field).toBe('file');
+    expect(file.type).toBe('text/plain'); // the backend turns anything else away
+    expect(await file.text()).toBe('Hello, world.');
+    request.flush({ success: true, message: 'Story file uploaded', data: { _id: 's1' } });
+
+    await uploaded;
+    append.mockRestore();
+  });
+
+  describe('save_chapter', () => {
+    const script = {
+      flags: {},
+      variables: [] as [],
+      lines: [{ line_id: 0, end: true as const }],
+    };
+
+    // lets save_chapter() send its next request after the last one was answered
+    const next_request = () => new Promise((resolve) => setTimeout(resolve));
+
+    it('should make the first chapter with the script when the story has none', async () => {
+      const saved = service.save_chapter('s1', script);
+
+      httpTesting.expectOne('/api/v1/story/s1/chapter').flush({ success: true, data: [] });
+      await next_request();
+      const create = httpTesting.expectOne({ method: 'POST', url: '/api/v1/story/s1/chapter' });
+      expect(create.request.body).toEqual({ chapter_name: FIRST_CHAPTER_NAME, story: script });
+      create.flush({ success: true, data: {} });
+
+      await saved;
+    });
+
+    it("should replace the first chapter's script instead of adding another chapter", async () => {
+      const saved = service.save_chapter('s1', script);
+
+      httpTesting.expectOne('/api/v1/story/s1/chapter').flush({
+        success: true,
+        data: [{ chapter_id: 'c1', chapter_name: 'Chapter 1' }],
+      });
+      await next_request();
+      const replace = httpTesting.expectOne({
+        method: 'PUT',
+        url: '/api/v1/story/s1/chapter/c1/script',
+      });
+      expect(replace.request.body).toEqual(script);
+      replace.flush({ success: true, data: {} });
+
+      await saved;
+    });
+  });
+
+  it('should fail if the script request fails for another reason', async () => {
+    const script = service.get_script('s1');
+
+    httpTesting
+      .expectOne('/api/v1/story/s1/file')
+      .flush('Oops', { status: 500, statusText: 'Server Error' });
+
+    await expect(script).rejects.toBeTruthy();
   });
 });

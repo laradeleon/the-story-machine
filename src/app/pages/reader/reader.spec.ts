@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { resource } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { Component, resource } from '@angular/core';
+import { provideRouter, Router } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { ReadingProgressService } from '../../services/reading-progress.service';
 import { Reader } from './reader';
 import { StoryService } from '../../services/story.service';
 import { Chapter } from '../../../models/chapter';
@@ -289,5 +291,202 @@ describe('Reader', () => {
     await clickPage();
     expect(compiled.querySelectorAll('.choice-option').length).toBe(1);
     expect(compiled.querySelector('.dialogue-box')).toBeNull();
+  });
+});
+
+// stands in for the story list so there's somewhere for the exit button to go
+@Component({ template: '' })
+class StoryListStandIn {}
+
+describe('Reader progress and exit', () => {
+  let harness: RouterTestingHarness;
+  let progress: ReadingProgressService;
+
+  //the actual elements to put back after the test
+  const realShowModal = HTMLDialogElement.prototype.showModal;
+  const realClose = HTMLDialogElement.prototype.close;
+
+  beforeEach(async () => {
+    localStorage.clear();
+    // fake versions of the popup
+    HTMLDialogElement.prototype.showModal = vi.fn();
+    HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
+      this.dispatchEvent(new Event('close'));
+    });
+
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([
+          { path: 'read/:storyId', component: Reader },
+          { path: '', component: StoryListStandIn },
+        ]),
+        // fake story service
+        {
+          provide: StoryService,
+          useValue: { getChapter: () => resource({ loader: async () => mockChapter }) },
+        },
+      ],
+    });
+    progress = TestBed.inject(ReadingProgressService);
+    harness = await RouterTestingHarness.create();
+  });
+
+  afterEach(() => {
+    HTMLDialogElement.prototype.showModal = realShowModal;
+    HTMLDialogElement.prototype.close = realClose;
+    localStorage.clear();
+  });
+
+  // opens story s1
+  async function openStory() {
+    await harness.navigateByUrl('/read/s1', Reader);
+    await harness.fixture.whenStable();
+  }
+
+  // leaves the story and opens it again
+  async function reopenStory() {
+    await harness.navigateByUrl('/');
+    await openStory();
+  }
+
+  function page() {
+    return harness.routeNativeElement as HTMLElement;
+  }
+
+  async function clickPage() {
+    (page().querySelector('button.reader-page') as HTMLButtonElement).click();
+    await harness.fixture.whenStable();
+  }
+
+  async function pickChoice(optionText: string) {
+    const buttons = Array.from(page().querySelectorAll('.choice-option'));
+    (buttons.find((b) => b.textContent?.includes(optionText)) as HTMLButtonElement).click();
+    await harness.fixture.whenStable();
+  }
+
+  async function pressKey(key: string) {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key }));
+    await harness.fixture.whenStable();
+  }
+
+  // finds a button in the exit popup by its text, using this to find "Keep reading" button
+  function popupButton(text: string) {
+    return Array.from(page().querySelectorAll('dialog button')).find((b) =>
+      b.textContent?.includes(text),
+    ) as HTMLButtonElement;
+  }
+
+  describe('remembering progress', () => {
+    // progress is saved on every page turn, not only when they leave,
+    it('saves where the reader is as they read', async () => {
+      await openStory();
+      await clickPage(); // line 0
+      await clickPage(); // line 1
+
+      expect(progress.get('s1')).toEqual({ chapterIndex: 0, lineId: 1 });
+    });
+
+    // main functionality is to leave partway through, come back, and land on the same page
+    it('opens the story where the reader left off', async () => {
+      await openStory();
+      await clickPage(); // line 0
+      await clickPage(); // line 1
+
+      await reopenStory();
+
+      expect(page().querySelector('.dialogue-box')?.textContent).toContain('Who is there?');
+    });
+
+    // after a choice the story has branched, so coming back has to keep them on the branch they picked
+    // not put them back on the choice or down another path
+    it('opens on the same path after a choice', async () => {
+      await openStory();
+      await clickPage(); // line 0
+      await clickPage(); // line 1
+      await clickPage(); // the choice on line 2
+      await pickChoice('Hide under the table'); // line 6
+
+      await reopenStory();
+      expect(page().querySelector('.dialogue-box')?.textContent).toContain('You hide.');
+    });
+
+    // opening a story and leaving on its first page isn't really starting it so it shouldn't show up in the continue reading list
+    it("doesn't count a story as started until the reader goes past the first page", async () => {
+      await openStory();
+      expect(progress.get('s1')).toBeNull(); // on chapter 1's title page
+
+      await clickPage(); // line 0
+      expect(progress.get('s1')).toEqual({ chapterIndex: 0, lineId: 0 });
+    });
+
+    // once they've finished, there's nothing to resume, so opening it again starts from the beginning
+    it('opens from the beginning after finishing the story', async () => {
+      progress.save('s1', { chapterIndex: 0, lineId: 6 }); // one page before the end
+      await openStory();
+      await clickPage(); // line 7 is the end
+
+      expect(page().textContent).toContain('The End.');
+      expect(progress.get('s1')).toBeNull();
+    });
+
+    // the author can edit a story after someone has started it
+    // if the line they were on got deleted, the reader should start the chapter again rather than show a broken page
+    it('starts the chapter again if the saved line no longer exists', async () => {
+      progress.save('s1', { chapterIndex: 0, lineId: 50 }); // mock chapter only has 10 lines
+      await openStory();
+
+      // back on the chapter's title page
+      expect(page().querySelector('.chapter-title')?.textContent).toContain(
+        'Chapter 1: The Lion at the Door',
+      );
+    });
+  });
+
+  describe('exiting', () => {
+    it('asks before leaving when the Exit button is clicked', async () => {
+      await openStory();
+      page().querySelector<HTMLButtonElement>('.exit-button')?.click();
+      await harness.fixture.whenStable();
+
+      expect(page().textContent).toContain('Exit this story?');
+      expect(page().textContent).toContain('Your progress is saved');
+    });
+
+    it('asks before leaving when Esc is pressed', async () => {
+      await openStory();
+      await pressKey('Escape');
+
+      expect(page().textContent).toContain('Exit this story?');
+    });
+
+    it('goes back to the story list after choosing Exit', async () => {
+      await openStory();
+      const navigate = vi.spyOn(TestBed.inject(Router), 'navigate');
+      await pressKey('Escape');
+      popupButton('Exit').click();
+
+      expect(navigate).toHaveBeenCalledWith(['/']);
+    });
+
+    it('stays on the same page after choosing Keep reading', async () => {
+      await openStory();
+      await clickPage(); // line 0
+      await pressKey('Escape');
+      popupButton('Keep reading').click();
+      await harness.fixture.whenStable();
+
+      expect(page().textContent).not.toContain('Exit this story?');
+      expect(page().querySelector('.dialogue-box')?.textContent).toContain('The fire burned low.');
+    });
+
+    it("doesn't move the story on while the popup is open", async () => {
+      await openStory();
+      await pressKey('Escape');
+      await pressKey(' ');
+
+      expect(page().querySelector('.chapter-title')?.textContent).toContain(
+        'Chapter 1: The Lion at the Door',
+      );
+    });
   });
 });

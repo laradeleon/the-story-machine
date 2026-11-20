@@ -15,7 +15,7 @@ describe('create_editor', () => {
   });
 
   it('should make an editor showing the text, with the error line extension added', () => {
-    const view = create_editor(parent, 'Hello.\nWorld.', vi.fn());
+    const view = create_editor(parent, 'Hello.\nWorld.', vi.fn(), vi.fn());
 
     // the editor is on the page and shows the text it was given
     expect(parent.querySelector('.cm-editor')).not.toBeNull();
@@ -24,6 +24,19 @@ describe('create_editor', () => {
     // the error line extension is in place, so highlighting line 2 colours it
     view.dispatch({ effects: set_error_line.of(2) });
     expect(parent.querySelector('.cm-error-line')).not.toBeNull();
+
+    view.destroy();
+  });
+
+  it('should pass the new text on after an edit, but not when only the cursor moves', () => {
+    const on_change = vi.fn();
+    const view = create_editor(parent, 'Hello.', vi.fn(), on_change);
+
+    view.dispatch({ selection: { anchor: 2 } });
+    expect(on_change).not.toHaveBeenCalled();
+
+    view.dispatch({ changes: { from: 6, insert: ' World.' } });
+    expect(on_change).toHaveBeenCalledWith('Hello. World.');
 
     view.destroy();
   });

@@ -1,10 +1,21 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
+import { firstValueFrom, timeout } from 'rxjs';
 import { APIResponse } from '../../models/api';
-import { ApiErrorBody, GUEST_USER, LoginResult, RegisterDetails, User } from '../../models/auth';
+import {
+  ApiErrorBody,
+  GUEST_USER,
+  LoginResult,
+  ProfileChanges,
+  RegisterDetails,
+  User,
+} from '../../models/auth';
 import { AUTH_MESSAGES } from '../../models/auth-messages';
-import { clearToken, getToken, saveToken } from './auth-token';
+import { TOKEN_KEY, clearToken, getToken, saveToken } from './auth-token';
+import { server_problem } from './api-errors';
+
+// how long the app waits for the backend when it starts, after that the page shows as a guest
+const STARTUP_TIMEOUT_MS = 5000;
 
 /**
  * AuthService
@@ -25,17 +36,35 @@ export class AuthService {
   readonly currentUser = computed(() => this.user() ?? GUEST_USER);
   readonly isSignedIn = computed(() => this.user() !== null); // false while you're the guest
 
+  constructor() {
+    // signing in or out in one tab changes the saved token, so every other open tab follows along
+    const onStorageChange = (event: StorageEvent) => {
+      if (event.key === TOKEN_KEY || event.key === null) {
+        void this.loadCurrentUser();
+      }
+    };
+    window.addEventListener('storage', onStorageChange);
+    inject(DestroyRef).onDestroy(() => window.removeEventListener('storage', onStorageChange));
+  }
+
   // runs once when the app starts, if there's a saved token it asks the backend who it belongs to
   // so a refresh keeps you signed in
   async loadCurrentUser() {
     if (!getToken()) {
-      return; // never signed in, stay the guest
+      this.user.set(null); // never signed in (or signed out in another tab), so the guest
+      return;
     }
     try {
-      const response = await firstValueFrom(this.http.get<APIResponse<User>>(`${this.authURL}/me`));
+      const response = await firstValueFrom(
+        this.http.get<APIResponse<User>>(`${this.authURL}/me`).pipe(timeout(STARTUP_TIMEOUT_MS)),
+      );
       this.user.set(response.data);
-    } catch {
-      this.logout(); // token ran out or isn't valid any more
+    } catch (error) {
+      // only forget the token when the backend says it's no good (it ran out, or the password was reset)
+      // if the server is down or slow, keep it so the next visit can sign back in
+      if (error instanceof HttpErrorResponse && error.status === 401) {
+        this.logout();
+      }
     }
   }
 
@@ -54,6 +83,14 @@ export class AuthService {
     this.user.set(response.data.user);
   }
 
+  // saves changes to the signed in user's own profile (like their bio) then shows the saved version right away
+  async updateProfile(changes: ProfileChanges) {
+    const response = await firstValueFrom(
+      this.http.patch<APIResponse<User>>(this.usersURL, changes),
+    );
+    this.user.set(response.data);
+  }
+
   // the backend has no logout, forgetting the token is enough
   logout() {
     clearToken();
@@ -66,21 +103,18 @@ export function readApiError(error: unknown): {
   message: string;
   fieldErrors: Record<string, string>;
 } {
-  if (!(error instanceof HttpErrorResponse)) {
-    return { message: AUTH_MESSAGES.unknownError, fieldErrors: {} };
+  const problem = server_problem(error);
+  if (problem) {
+    return { message: problem, fieldErrors: {} };
   }
-
-  // request never reached the server
-  if (error.status === 0) {
-    return { message: AUTH_MESSAGES.serverUnreachable, fieldErrors: {} };
-  }
+  const response = error as HttpErrorResponse; // server_problem only gives back null for these
 
   // error for taken email or username
-  if (error.status === 409) {
+  if (response.status === 409) {
     return { message: AUTH_MESSAGES.accountTaken, fieldErrors: {} };
   }
 
-  const body = error.error as Partial<ApiErrorBody> | null;
+  const body = response.error as Partial<ApiErrorBody> | null;
   const fieldErrors: Record<string, string> = {};
   for (const fieldError of body?.errors ?? []) {
     fieldErrors[fieldError.field] ??= fieldError.message; // first message for each field

@@ -1,0 +1,16 @@
+<!-- appModal opens this as a popup, closed fires on esc, Cancel or after confirming so the parent can remove it -->
+<dialog appModal #modal="appModal" class="confirm-dialog" (closed)="closed.emit()">
+  <div class="confirm-content">
+    <h2>{{ title() }}</h2>
+    @if (message()) {
+      <p>{{ message() }}</p>
+    }
+
+    <div class="modal-actions confirm-actions">
+      <button type="button" class="cancel-button" (click)="modal.close()">Cancel</button>
+      <button type="button" class="primary-button" (click)="confirm()">
+        {{ confirm_label() }}
+      </button>
+    </div>
+  </div>
+</dialog>
