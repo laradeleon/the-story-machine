@@ -235,9 +235,9 @@ export class Writer {
   //checks if the current draft has all three metadata variables not empty
   private has_all_metadata(): boolean {
     if (
-      this.draft.metadata().title != '' &&
-      this.draft.metadata().genres.length > 0 &&
-      this.draft.metadata().description != ''
+      this.state.metadata().title != '' &&
+      this.state.metadata().genres.length > 0 &&
+      this.state.metadata().description != ''
     ) {
       return true;
     } else {
@@ -251,8 +251,8 @@ export class Writer {
         //call POST/api/v1/story
         try {
           const response = await this.storyService.postStory(
-            this.draft.metadata().title,
-            this.draft.metadata().description,
+            this.state.metadata().title,
+            this.state.metadata().description,
           );
           //set storyID to the returned value
           this.storyID = response._id;
@@ -266,7 +266,7 @@ export class Writer {
       try {
         const ast = this.parse_script();
         const storyInfo = {
-          title: this.draft.metadata().title,
+          title: this.state.metadata().title,
           author: 'Test',
           story_id: this.storyID,
         };
