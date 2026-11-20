@@ -1,5 +1,5 @@
 import Parser from './parser.ts';
-import { toJSON } from './to_json.ts';
+import { speakers_of, toJSON } from './to_json.ts';
 import { simpleStory, tresspassing } from './examples/stories.ts';
 import { StoryInfo, StoryJSON } from '../models/story.ts';
 import {
@@ -18,9 +18,11 @@ const info: StoryInfo = {
 };
 
 //runs a script through the whole pipeline (lexer -> parser -> toJSON)
-//new Parser each time since it remembers the last speaker
+//new Parser each time since it remembers the last speaker.
+//everyone who speaks counts as a character, these tests are about the parsing not the characters
 function script_to_json(source: string, info: StoryInfo): StoryJSON {
-  return toJSON(new Parser().produceAST(source), info);
+  const ast = new Parser().produceAST(source);
+  return toJSON(ast, info, speakers_of(ast));
 }
 
 // ---------- Example stories ----------

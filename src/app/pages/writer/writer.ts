@@ -251,8 +251,11 @@ export class Writer {
     }
     //toJSON also throws when the script has a mistake, e.g. a goto to a flag that doesn't exist
     try {
-      //only the story part is kept, so the title and author don't matter here
-      return toJSON(ast, { title: '', author: '', story_id: this.state.story_id() }).story;
+      //only the story part is kept, so the title and author don't matter here.
+      //names are trimmed like Save Draft sends them, so the check matches the backend's
+      const character_names = this.state.characters().map((c) => c.name.trim());
+      const info = { title: '', author: '', story_id: this.state.story_id() };
+      return toJSON(ast, info, character_names).story;
     } catch (error) {
       this.show_parse_error(error);
       return null;

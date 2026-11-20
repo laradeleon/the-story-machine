@@ -10,7 +10,9 @@ const CHAPTER_KEY = 'story-machine:preview-chapter';
 
 // turns a script into the story JSON build_preview() expects, the same way the writer does
 function parse(script: string) {
-  return toJSON(new Parser().produceAST(script), { title: '', author: '', story_id: 's1' }).story;
+  // these scripts have no dialogue, so no characters are needed
+  return toJSON(new Parser().produceAST(script), { title: '', author: '', story_id: 's1' }, [])
+    .story;
 }
 
 // IndexedDB saves are async and the effects don't wait for them, so give them a moment to finish

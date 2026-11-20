@@ -128,6 +128,32 @@ describe('Writer', () => {
     );
   });
 
+  it("should show an error on Preview when dialogue is by someone who isn't a character", () => {
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    set_editor_text('Hello.\nArthur: "Hi!"');
+
+    button_named('Preview').click();
+    fixture.detectChanges();
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('.preview-error').textContent).toContain(
+      errors.format_error(ErrorKind.CharacterDoesNotExist, 2, 'Arthur').message,
+    );
+  });
+
+  it('should preview dialogue by a character from the Characters popup', () => {
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    // a stray space in the popup's name still matches, it's trimmed like Save Draft sends it
+    TestBed.inject(WriterStateService).characters.set([
+      { id: 'c1', name: 'Arthur ', description: '', emotions: [] },
+    ]);
+    set_editor_text('Arthur: "Hi!"');
+
+    button_named('Preview').click();
+
+    expect(navigate).toHaveBeenCalledWith(['/preview', 'story-1']);
+  });
+
   it('should hide the error once the script parses again', () => {
     // stub the navigation, since the test browser has no /preview route to go to
     vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
@@ -319,6 +345,22 @@ describe('Writer', () => {
         errors.format_error(ErrorKind.FlagDoesNotExist, 2).message,
       );
       expect(error_popup()).toBeNull(); // the popup is only for backend problems
+      expect(patch).not.toHaveBeenCalled();
+      expect(chapter).not.toHaveBeenCalled();
+    });
+
+    it('Publish should show an unknown speaker under the editor and save nothing', async () => {
+      const { patch, chapter } = fake_backend();
+      set_title('The Lighthouse');
+      set_editor_text('Arthur: "Hi!"');
+
+      button_named('Publish').click();
+      await settle();
+
+      expect(script_problem()).toContain(
+        errors.format_error(ErrorKind.CharacterDoesNotExist, 1, 'Arthur').message,
+      );
+      expect(error_popup()).toBeNull(); // it's a script problem, not a backend one
       expect(patch).not.toHaveBeenCalled();
       expect(chapter).not.toHaveBeenCalled();
     });
