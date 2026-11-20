@@ -15,11 +15,13 @@ In Sprint 2:
 
 ## Regression Testing
 
-Backend regression testing documentation can be found here [here](https://github.com/laradeleon/the-story-machine/blob/develop/docs/regression-testing-backend.md)
+Backend regression testing documentation can be found here [here](https://github.com/laradeleon/the-story-machine/blob/develop/docs/sprint-2/regression-testing-backend.md)
 
 <!-- TODO: Front-end-regression-testing -->
 
 ## Testing Status & Gaps
+
+Backend's testing gaps were all mentioned and explained in the Regression testing. Link: [here](https://github.com/laradeleon/the-story-machine/blob/develop/docs/sprint-2/regression-testing-backend.md)
 
 <!-- TODO: someone pick up, this would be affected by tests that aren't merged into develop yet -->
 
