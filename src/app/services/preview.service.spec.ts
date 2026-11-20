@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import Parser from '../../scripting_language/parser';
+import { toJSON } from '../../scripting_language/to_json';
 import { clear_all, load } from './saved-values';
 import { PreviewService } from './preview.service';
 import { WriterStateService } from './writer-state.service';
@@ -7,9 +8,9 @@ import { WriterStateService } from './writer-state.service';
 // the key PreviewService saves the chapter under (not exported from preview.service.ts, so it's copied here)
 const CHAPTER_KEY = 'story-machine:preview-chapter';
 
-// turns a script into the AST build_preview() expects, the same way the writer does
+// turns a script into the story JSON build_preview() expects, the same way the writer does
 function parse(script: string) {
-  return new Parser().produceAST(script);
+  return toJSON(new Parser().produceAST(script), { title: '', author: '', story_id: 's1' }).story;
 }
 
 // IndexedDB saves are async and the effects don't wait for them, so give them a moment to finish
@@ -56,16 +57,6 @@ describe('PreviewService', () => {
     preview.build_preview(parse('Hello, world.'));
 
     expect(preview.chapter()!.title).toBe('Untitled Story');
-  });
-
-  it('should throw and keep the old chapter when a goto points at a missing flag', () => {
-    const preview = TestBed.inject(PreviewService);
-    preview.build_preview(parse('Hello, world.'));
-    const before = preview.chapter();
-
-    // the flag "nowhere" is never written, so toJSON rejects the goto
-    expect(() => preview.build_preview(parse('Hello.\n-> nowhere'))).toThrow();
-    expect(preview.chapter()).toBe(before);
   });
 
   it('should save the chapter once it changes', async () => {

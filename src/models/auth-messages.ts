@@ -1,3 +1,5 @@
+import { API_MESSAGES } from './api-messages';
+
 export const AUTH_MESSAGES = {
   emailRequired: 'Enter your email address.',
   emailInvalid: 'Enter an email address in the format name@example.com.',
@@ -24,8 +26,9 @@ export const AUTH_MESSAGES = {
   accountTaken:
     'An account with that email or username already exists. Sign in instead, or use a different email or username.',
   checkFields: 'Some details need fixing. Check the messages below each field.',
-  serverUnreachable: "Can't connect to the server. Check your internet connection and try again.",
-  unknownError: 'Something went wrong on our end. Please try again in a moment.',
+  // the same as everywhere else in the app
+  serverUnreachable: API_MESSAGES.serverUnreachable,
+  unknownError: API_MESSAGES.unknownError,
 
   // in sign in form when the account was made but signing in straight after didnt work for whatever reason
   accountCreatedSignIn:

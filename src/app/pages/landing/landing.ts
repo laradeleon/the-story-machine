@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { StoryService } from '../../services/story.service';
 import { ReadingProgressService } from '../../services/reading-progress.service';
 import { AuthService } from '../../services/auth.service';
+import { api_reason } from '../../services/api-errors';
 
 import { StoryDetails } from '../../../models/story-details';
 import { StoryPreview } from '../../components/story-preview/story-preview';
@@ -34,10 +35,10 @@ export class Landing {
     this.creating.set(true);
     this.createError.set(null);
     try {
-      const story = await this.storyService.postStory(NEW_STORY_TITLE, '');
+      const story = await this.storyService.create_story(NEW_STORY_TITLE, '');
       await this.router.navigate(['/write', story._id]);
-    } catch {
-      this.createError.set("Sorry, a new story couldn't be started. Please try again.");
+    } catch (error) {
+      this.createError.set(`A new story couldn't be started. ${api_reason(error)}`);
     } finally {
       this.creating.set(false);
     }

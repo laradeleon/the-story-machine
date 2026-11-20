@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ApplicationRef, Injector, runInInjectionContext } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { StoryService } from './story.service';
+import { FIRST_CHAPTER_NAME, StoryService } from './story.service';
 import { ChapterNotFoundError } from '../../models/errors';
 
 describe('StoryService', () => {
@@ -279,7 +279,7 @@ describe('StoryService', () => {
   });
 
   it('should send only the fields given when changing a story', async () => {
-    const patched = service.patchStory('s1', { status: 'published', title: 'The Lighthouse' });
+    const patched = service.update_story('s1', { status: 'published', title: 'The Lighthouse' });
 
     const request = httpTesting.expectOne({ method: 'PATCH', url: '/api/v1/story/s1' });
     expect(request.request.body).toEqual({ status: 'published', title: 'The Lighthouse' });
@@ -303,6 +303,47 @@ describe('StoryService', () => {
 
     await uploaded;
     append.mockRestore();
+  });
+
+  describe('save_chapter', () => {
+    const script = {
+      flags: {},
+      variables: [] as [],
+      lines: [{ line_id: 0, end: true as const }],
+    };
+
+    // lets save_chapter() send its next request after the last one was answered
+    const next_request = () => new Promise((resolve) => setTimeout(resolve));
+
+    it('should make the first chapter with the script when the story has none', async () => {
+      const saved = service.save_chapter('s1', script);
+
+      httpTesting.expectOne('/api/v1/story/s1/chapter').flush({ success: true, data: [] });
+      await next_request();
+      const create = httpTesting.expectOne({ method: 'POST', url: '/api/v1/story/s1/chapter' });
+      expect(create.request.body).toEqual({ chapter_name: FIRST_CHAPTER_NAME, story: script });
+      create.flush({ success: true, data: {} });
+
+      await saved;
+    });
+
+    it("should replace the first chapter's script instead of adding another chapter", async () => {
+      const saved = service.save_chapter('s1', script);
+
+      httpTesting.expectOne('/api/v1/story/s1/chapter').flush({
+        success: true,
+        data: [{ chapter_id: 'c1', chapter_name: 'Chapter 1' }],
+      });
+      await next_request();
+      const replace = httpTesting.expectOne({
+        method: 'PUT',
+        url: '/api/v1/story/s1/chapter/c1/script',
+      });
+      expect(replace.request.body).toEqual(script);
+      replace.flush({ success: true, data: {} });
+
+      await saved;
+    });
   });
 
   it('should fail if the script request fails for another reason', async () => {

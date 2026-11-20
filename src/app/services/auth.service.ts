@@ -12,6 +12,7 @@ import {
 } from '../../models/auth';
 import { AUTH_MESSAGES } from '../../models/auth-messages';
 import { TOKEN_KEY, clearToken, getToken, saveToken } from './auth-token';
+import { server_problem } from './api-errors';
 
 // how long the app waits for the backend when it starts, after that the page shows as a guest
 const STARTUP_TIMEOUT_MS = 5000;
@@ -102,31 +103,18 @@ export function readApiError(error: unknown): {
   message: string;
   fieldErrors: Record<string, string>;
 } {
-  if (!(error instanceof HttpErrorResponse)) {
-    return { message: AUTH_MESSAGES.unknownError, fieldErrors: {} };
+  const problem = server_problem(error);
+  if (problem) {
+    return { message: problem, fieldErrors: {} };
   }
-
-  // request never reached the server
-  if (error.status === 0) {
-    return { message: AUTH_MESSAGES.serverUnreachable, fieldErrors: {} };
-  }
-
-  // the proxy couldn't reach the backend (it's down or restarting)
-  if ([502, 503, 504].includes(error.status)) {
-    return { message: AUTH_MESSAGES.serverUnreachable, fieldErrors: {} };
-  }
-
-  // the backend crashed, its message ("Internal server error") wouldn't help the user
-  if (error.status >= 500) {
-    return { message: AUTH_MESSAGES.unknownError, fieldErrors: {} };
-  }
+  const response = error as HttpErrorResponse; // server_problem only gives back null for these
 
   // error for taken email or username
-  if (error.status === 409) {
+  if (response.status === 409) {
     return { message: AUTH_MESSAGES.accountTaken, fieldErrors: {} };
   }
 
-  const body = error.error as Partial<ApiErrorBody> | null;
+  const body = response.error as Partial<ApiErrorBody> | null;
   const fieldErrors: Record<string, string> = {};
   for (const fieldError of body?.errors ?? []) {
     fieldErrors[fieldError.field] ??= fieldError.message; // first message for each field

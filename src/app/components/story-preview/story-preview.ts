@@ -16,6 +16,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ReadingProgressService } from '../../services/reading-progress.service';
 import { AuthService } from '../../services/auth.service';
 import { StoryService } from '../../services/story.service';
+import { api_reason } from '../../services/api-errors';
 import { WriterStateService } from '../../services/writer-state.service';
 import { ConfirmDialog } from '../confirm-dialog/confirm-dialog';
 @Component({
@@ -65,8 +66,8 @@ export class StoryPreview {
       const saved = await this.stories.get_saved_story(story_id);
       await this.writer.open_saved_story(story_id, saved);
       await this.router.navigate(['/write', story_id]);
-    } catch {
-      this.editError.set("Sorry, this story couldn't be opened. Please try again.");
+    } catch (error) {
+      this.editError.set(`This story couldn't be opened. ${api_reason(error)}`);
     } finally {
       this.opening.set(false);
     }
@@ -81,8 +82,8 @@ export class StoryPreview {
       this.progress.clear(this.story().story_id); // nothing left to continue reading
       this.deleted.emit();
       this.dialog().nativeElement.close();
-    } catch {
-      this.deleteError.set("Sorry, this story couldn't be deleted. Please try again.");
+    } catch (error) {
+      this.deleteError.set(`This story couldn't be deleted. ${api_reason(error)}`);
     } finally {
       this.deleting.set(false);
     }

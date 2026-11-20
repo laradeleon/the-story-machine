@@ -195,14 +195,14 @@ describe('Landing Write Story', () => {
   let fixture: ComponentFixture<Landing>;
   let compiled: HTMLElement;
   const signedIn = signal(true);
-  const postStory = vi.fn();
+  const create_story = vi.fn();
 
   const realShowModal = HTMLDialogElement.prototype.showModal;
 
   beforeEach(async () => {
     HTMLDialogElement.prototype.showModal = vi.fn(); // the sign in popup opens with this
     signedIn.set(true);
-    postStory.mockReset();
+    create_story.mockReset();
 
     await TestBed.configureTestingModule({
       imports: [Landing],
@@ -219,7 +219,7 @@ describe('Landing Write Story', () => {
           provide: StoryService,
           useValue: {
             getStories: () => resource({ defaultValue: [], loader: async () => [] }),
-            postStory,
+            create_story,
           },
         },
       ],
@@ -248,7 +248,7 @@ describe('Landing Write Story', () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     // held until the test lets it finish, so the button can be checked while it's creating
     let finish!: (story: { _id: string }) => void;
-    postStory.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    create_story.mockReturnValue(new Promise((resolve) => (finish = resolve)));
 
     write_button().click();
     fixture.detectChanges();
@@ -258,13 +258,13 @@ describe('Landing Write Story', () => {
     finish({ _id: 'new-id' });
     await settle();
 
-    expect(postStory).toHaveBeenCalledWith(NEW_STORY_TITLE, '');
+    expect(create_story).toHaveBeenCalledWith(NEW_STORY_TITLE, '');
     expect(navigate).toHaveBeenCalledWith(['/write', 'new-id']);
   });
 
   it('should show an error and let them try again if the story cannot be made', async () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-    postStory.mockRejectedValue(new Error('Server Error'));
+    create_story.mockRejectedValue(new Error('Server Error'));
 
     write_button().click();
     await settle();
@@ -281,7 +281,7 @@ describe('Landing Write Story', () => {
     write_button().click();
     await fixture.whenStable();
 
-    expect(postStory).not.toHaveBeenCalled();
+    expect(create_story).not.toHaveBeenCalled();
     expect(compiled.querySelector('app-sign-in-popup #sign-in-title')).not.toBeNull();
   });
 });

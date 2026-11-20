@@ -166,11 +166,6 @@ export class WriterStateService {
     }
   }
 
-  // replaces the title, genres and description, e.g. with a saved story's when editing it
-  set_metadata(metadata: StoryMetadata) {
-    this.metadata.set({ ...metadata, genres: [...metadata.genres] });
-  }
-
   // replaces the characters with ones from the backend, keeping pictures of any with the same names
   set_characters(characters: CharacterResponse[]) {
     this.characters.set(from_character_responses(characters, this.characters()));
@@ -185,7 +180,7 @@ export class WriterStateService {
       return;
     }
     this.script.set(saved.script);
-    this.set_metadata({ ...this.metadata(), ...saved.metadata });
+    this.metadata.update((metadata) => ({ ...metadata, ...saved.metadata }));
     this.set_characters(saved.characters);
   }
 

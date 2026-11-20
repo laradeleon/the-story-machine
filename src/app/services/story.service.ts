@@ -13,9 +13,10 @@ import {
 import { StoryDetails } from '../../models/story-details';
 import { Chapter } from '../../models/chapter';
 import { ChapterNotFoundError } from '../../models/errors';
-import { StoryNode } from '../../scripting_language/ast';
-import { toJSON } from '../../scripting_language/to_json';
-import { StoryInfo } from '../../models/story';
+import { StoryJSON } from '../../models/story';
+
+// the name of a story's chapter, until the writer can have more than one
+export const FIRST_CHAPTER_NAME = 'Chapter 1';
 
 // turns a story from the backend into what the story cards and preview popup show
 // each story comes with its author's display name
@@ -102,30 +103,20 @@ export class StoryService {
       throw error;
     }
   }
-  //create a new story with passed title and description, and return storyID
-  //postStory(storyTitle: string, storyDescription: string) {
-  //  return this.http.post<APIResponse<StoryResponse>>(this.storiesURL, { title: storyTitle, description: storyDescription });
-  //}
 
-  async postStory(storyTitle: string, storyDescription: string) {
-    //defaultValue: [] as StoryDetails[],
-
+  // makes a new draft story by the signed in user and gives it back, with its _id
+  async create_story(title: string, description: string) {
     const storiesResponse = await firstValueFrom(
-      this.http.post<APIResponse<StoryResponse>>(this.storiesURL, {
-        title: storyTitle,
-        description: storyDescription,
-      }),
+      this.http.post<APIResponse<StoryResponse>>(this.storiesURL, { title, description }),
     );
-
     return storiesResponse.data;
   }
 
-  //change the story's status (draft or published), title or description. only the fields given are sent
-  async patchStory(storyID: string, changes: StoryChanges) {
+  // changes the story's status, title, description or characters. only the fields given are sent
+  async update_story(storyId: string, changes: StoryChanges) {
     const storiesResponse = await firstValueFrom(
-      this.http.patch<APIResponse<StoryResponse>>(this.storiesURL + '/' + storyID, changes),
+      this.http.patch<APIResponse<StoryResponse>>(`${this.storiesURL}/${storyId}`, changes),
     );
-
     return storiesResponse.data;
   }
 
@@ -137,30 +128,21 @@ export class StoryService {
     await firstValueFrom(this.http.put(`${this.storiesURL}/${storyId}/file`, form));
   }
 
-  //upload the chapter to the given storyID
-  async postChapter(
-    storyID: string,
-    chapterTitle: string,
-    storyJSON: StoryNode,
-    storyInfo: StoryInfo,
-  ) {
-    const storyBody = toJSON(storyJSON, storyInfo).story;
-
-    console.log({ chapter_name: chapterTitle, story: storyBody });
-
-    const storiesResponse = await firstValueFrom(
-      this.http.post<APIResponse<StoryResponse>>(this.storiesURL + '/' + storyID + '/chapter', {
-        chapter_name: chapterTitle,
-        story: storyBody,
-      }),
+  // saves the parsed script as the story's chapter. the writer only has one chapter for now,
+  // so it's made the first time and its script is replaced after that. author only
+  async save_chapter(storyId: string, script: StoryJSON['story']) {
+    const chaptersURL = `${this.storiesURL}/${storyId}/chapter`;
+    const listResponse = await firstValueFrom(
+      this.http.get<APIResponse<ChapterSummaryResponse[]>>(chaptersURL),
     );
-
-    return storiesResponse.data;
-
-    //return this.http.put(this.storiesURL + '/' + storyID + '/file', {
-    //chapter_name: chapterTitle,
-    //story: storyJSON,
-    //});
+    const first = listResponse.data[0];
+    if (first) {
+      await firstValueFrom(this.http.put(`${chaptersURL}/${first.chapter_id}/script`, script));
+    } else {
+      await firstValueFrom(
+        this.http.post(chaptersURL, { chapter_name: FIRST_CHAPTER_NAME, story: script }),
+      );
+    }
   }
 
   // gets one chapter of a story, which includes the chapter title and the lines of content

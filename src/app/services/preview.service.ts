@@ -1,7 +1,6 @@
 import { effect, inject, Injectable, signal } from '@angular/core';
 import { Chapter } from '../../models/chapter';
-import { StoryNode } from '../../scripting_language/ast';
-import { toJSON } from '../../scripting_language/to_json';
+import { StoryJSON } from '../../models/story';
 import { load, save } from './saved-values';
 import { WriterStateService } from './writer-state.service';
 
@@ -36,15 +35,12 @@ export class PreviewService {
     this.restored.set(true);
   }
 
-  // turns the parser's AST into the chapter the reader plays.
-  // throws an Error (from toJSON) when the script has a mistake in it, e.g. a goto to a missing flag
-  build_preview(ast: StoryNode) {
-    // the title from the metadata popup and the open story's id. the author is temporary until stories are saved
-    const json = toJSON(ast, {
+  // makes the chapter the reader plays from the script's story JSON (the writer has already
+  // checked it for mistakes), with the title from the metadata popup
+  build_preview(script: StoryJSON['story']) {
+    this.chapter.set({
       title: this.state.metadata().title || 'Untitled Story',
-      author: 'Unknown author',
-      story_id: this.state.story_id(),
+      lines: script.lines,
     });
-    this.chapter.set({ title: json.title, lines: json.story.lines });
   }
 }
