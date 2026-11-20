@@ -1,3 +1,8 @@
+<!-- leaves the story -->
+<button type="button" class="exit-button" (click)="exitConfirmOpen.set(true)">
+  <span aria-hidden="true">←</span> Exit
+</button>
+
 <!-- if chapter is still loading in, show message -->
 @if (isLoading()) {
   <p>Loading in chapter.....</p>
@@ -85,4 +90,13 @@
       }
     </div>
   }
+}
+
+<!-- "are you sure?" popup -->
+@if (exitConfirmOpen()) {
+  <app-exit-reader-dialog
+    [isPreview]="isPreview"
+    (closed)="exitConfirmOpen.set(false)"
+    (exit)="exit()"
+  />
 }

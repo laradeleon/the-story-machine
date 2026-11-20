@@ -1,7 +1,7 @@
 // keeps the login token the backend gives back when you sign in
 // it's saved in the browser so a refresh keeps you signed in (until the token runs out, 1 hour by default)
 
-const TOKEN_KEY = 'tsm_token';
+export const TOKEN_KEY = 'tsm_token'; // the auth service watches this key to keep tabs in sync
 
 export function getToken(): string | null {
   try {
