@@ -71,7 +71,7 @@ export class WriterStateService {
   }
 
   // saves the open story, then loads another one, waiting for any open already running
-  open_story(story_id = PLACEHOLDER_STORY_ID): Promise<void> {
+  open_story(story_id: string): Promise<void> {
     const open = () => this.switch_story(story_id);
     this.opening = this.opening.then(open, open);
     return this.opening;

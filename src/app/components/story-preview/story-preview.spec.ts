@@ -7,6 +7,8 @@ import { provideRouter, Router } from '@angular/router';
 import { ReadingProgressService } from '../../services/reading-progress.service';
 import { AuthService } from '../../services/auth.service';
 import { WriterStateService } from '../../services/writer-state.service';
+import { StoryService } from '../../services/story.service';
+import { SavedStory } from '../../../models/saved-story';
 import { GUEST_USER, User } from '../../../models/auth';
 
 describe('StoryPreview closing', () => {
@@ -429,34 +431,36 @@ describe('StoryPreview author buttons', () => {
     return compiled.querySelector('.edit-button') as HTMLButtonElement;
   }
 
+  // what get_saved_story gives back, story.service.spec checks how it's made from the backend's answer
+  const saved: SavedStory = {
+    script: 'Hello, world.',
+    metadata: { title: 'Test story', description: 'A test description' },
+    characters: [],
+    updated_at: 0,
+  };
+
   it('should get the saved story, put it in the writer and open the writer page', async () => {
     currentUser.set(author);
     await openPreview();
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-    const writer = TestBed.inject(WriterStateService);
-    const open_saved_story = vi.spyOn(writer, 'open_saved_story').mockResolvedValue();
+    const open_saved_story = vi
+      .spyOn(TestBed.inject(WriterStateService), 'open_saved_story')
+      .mockResolvedValue();
+    // held until the test lets it finish, so the button can be checked while it's opening
+    let finish_fetch!: (story: SavedStory) => void;
+    const get_saved_story = vi
+      .spyOn(TestBed.inject(StoryService), 'get_saved_story')
+      .mockReturnValue(new Promise((resolve) => (finish_fetch = resolve)));
 
     edit_button().click();
     fixture.detectChanges();
     expect(edit_button().disabled).toBe(true);
 
-    httpTesting.expectOne('/api/v1/story/1').flush({
-      data: {
-        title: 'Test story',
-        description: 'A test description',
-        characters: [],
-        updatedAt: '2026-10-19T11:03:46.435Z',
-      },
-    });
-    httpTesting.expectOne('/api/v1/story/1/file').flush('Hello, world.');
+    finish_fetch(saved);
     await settle();
 
-    expect(open_saved_story).toHaveBeenCalledWith('1', {
-      script: 'Hello, world.',
-      metadata: { title: 'Test story', description: 'A test description' },
-      characters: [],
-      updated_at: Date.parse('2026-10-19T11:03:46.435Z'),
-    });
+    expect(get_saved_story).toHaveBeenCalledWith('1');
+    expect(open_saved_story).toHaveBeenCalledWith('1', saved);
     expect(navigate).toHaveBeenCalledWith(['/write', '1']);
   });
 
@@ -464,12 +468,11 @@ describe('StoryPreview author buttons', () => {
     currentUser.set(author);
     await openPreview();
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    vi.spyOn(TestBed.inject(StoryService), 'get_saved_story').mockRejectedValue(
+      new Error('Server Error'),
+    );
 
     edit_button().click();
-    httpTesting
-      .expectOne('/api/v1/story/1')
-      .flush({ message: 'Oops' }, { status: 500, statusText: 'Server Error' });
-    httpTesting.expectOne('/api/v1/story/1/file').flush('Hello, world.');
     await settle();
 
     expect(compiled.querySelector('.edit-error')).not.toBeNull();

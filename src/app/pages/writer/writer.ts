@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { PreviewService } from '../../services/preview.service';
-import { WriterStateService } from '../../services/writer-state.service';
+import { PLACEHOLDER_STORY_ID, WriterStateService } from '../../services/writer-state.service';
 import { MetadataDialog } from '../../components/metadata-dialog/metadata-dialog';
 import { CharactersDialog } from '../../components/characters-dialog/characters-dialog';
 import { ComingSoonDialog } from '../../components/coming-soon-dialog/coming-soon-dialog';
@@ -80,6 +80,7 @@ export class Writer {
   protected state = inject(WriterStateService); //protected so the template can use the metadata in it
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
+  private storyService = inject(StoryService); //creates and publishes the story on the backend
 
   //the div in the .html the editor goes in
   private editorHost = viewChild.required<ElementRef<HTMLElement>>('editor');
@@ -103,18 +104,12 @@ export class Writer {
   //the parser's AST as formatted text, shown in the AST popup. null when the popup is closed
   protected astOutput = signal<string | null>(null);
 
-  storyID: string;
-  storyService: StoryService;
-
   constructor() {
-    this.storyID = '';
-    this.storyService = inject(StoryService);
     //the editor div only exists once the page has rendered
     afterNextRender(() => {
       this.editorView = create_editor(
         this.editorHost().nativeElement,
-        //coming back to the writer puts the script back how it was left, otherwise start with the example
-        //replace with chapter text when editing a chapter
+        //the open story's script (opened by the route before this page), or the example for a new story
         this.state.script() ?? exampleStory,
         () => this.previewError.set(null),
         //the autosave waits for typing to stop, so a missed pagehide loses half a second at most
@@ -247,20 +242,24 @@ export class Writer {
 
   private async publishChapter() {
     if (this.has_all_metadata()) {
-      if (this.storyID.length !== 24) {
+      // the open story's id, the same one that's in the url
+      let storyID = this.state.story_id();
+      // TODO: remove once Write Story creates the story on the backend, then every story has a real id
+      if (storyID === PLACEHOLDER_STORY_ID) {
         //call POST/api/v1/story
         try {
           const response = await this.storyService.postStory(
             this.state.metadata().title,
             this.state.metadata().description,
           );
-          //set storyID to the returned value
-          this.storyID = response._id;
+          //use the new story's id for the rest of this publish
+          storyID = response._id;
         } catch (error) {
           console.error('Caught story POST error\n' + error);
+          return; // there's no story to add the chapter to
         }
       }
-      console.log(this.storyID);
+      console.log(storyID);
       //call POST/api/v1/story/{storyID}/chapter
       //get lines[] JSON from parser
       try {
@@ -268,11 +267,11 @@ export class Writer {
         const storyInfo = {
           title: this.state.metadata().title,
           author: 'Test',
-          story_id: this.storyID,
+          story_id: storyID,
         };
         if (ast) {
           const response = await this.storyService.postChapter(
-            this.storyID,
+            storyID,
             'Chapter 1',
             ast,
             storyInfo,
@@ -286,7 +285,7 @@ export class Writer {
       //call PATCH/api/v1/story/{storyID}
       //set status to "published"
       try {
-        const response = await this.storyService.patchStory(this.storyID, 'published');
+        const response = await this.storyService.patchStory(storyID, 'published');
         //set storyID to the returned value
         console.log(response);
       } catch (error) {

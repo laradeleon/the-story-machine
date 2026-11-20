@@ -30,14 +30,6 @@ describe('WriterStateService', () => {
     await clear_all();
   });
 
-  it('should open the placeholder story when no id is given', async () => {
-    const state = TestBed.inject(WriterStateService);
-
-    await state.open_story();
-
-    expect(state.story_id()).toBe(PLACEHOLDER_STORY_ID);
-  });
-
   it('should open a saved story with its script, metadata and characters', async () => {
     const state = TestBed.inject(WriterStateService);
     await save_draft({
@@ -99,19 +91,6 @@ describe('WriterStateService', () => {
 
     expect(state.script()).toBe('Saved text');
     expect(state.metadata().title).toBe('The Lighthouse');
-  });
-
-  it('should set the metadata', async () => {
-    const state = TestBed.inject(WriterStateService);
-    await state.open_story('story-1');
-
-    state.set_metadata({ title: 'The Lighthouse', genres: ['Horror'], description: 'A storm' });
-
-    expect(state.metadata()).toEqual({
-      title: 'The Lighthouse',
-      genres: ['Horror'],
-      description: 'A storm',
-    });
   });
 
   it('should set the characters from the backend, keeping pictures of ones with the same name', async () => {

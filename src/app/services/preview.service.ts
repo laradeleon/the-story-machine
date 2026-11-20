@@ -39,11 +39,11 @@ export class PreviewService {
   // turns the parser's AST into the chapter the reader plays.
   // throws an Error (from toJSON) when the script has a mistake in it, e.g. a goto to a missing flag
   build_preview(ast: StoryNode) {
-    // the title from the metadata popup, author and id are temporary until stories are saved
+    // the title from the metadata popup and the open story's id. the author is temporary until stories are saved
     const json = toJSON(ast, {
       title: this.state.metadata().title || 'Untitled Story',
       author: 'Unknown author',
-      story_id: 'preview', // not saved yet, so it has no real id
+      story_id: this.state.story_id(),
     });
     this.chapter.set({ title: json.title, lines: json.story.lines });
   }
