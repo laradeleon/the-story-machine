@@ -22,6 +22,12 @@
   font-size: 1.75rem;
 }
 
+/* the note about portraits under the title, quieter than the warnings */
+.characters-note {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
 /* the three columns always sit side by side. each one fills the height and scrolls only where marked */
 .characters-columns {
   display: grid;

@@ -1,0 +1,7 @@
+{
+  "/api": {
+    "target": "https://comp4350-api.proudmoss-9dbb54ec.westus.azurecontainerapps.io",
+    "secure": true,
+    "changeOrigin": true
+  }
+}

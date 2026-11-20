@@ -82,8 +82,12 @@
   min-height: calc(30 * 1.4em + 8px);
 }
 
-/* the strip down the left (line numbers and fold arrows), coloured to match the banner */
+/* the strip down the left (line numbers and fold arrows), coloured to match the banner.
+   CodeMirror makes it exactly as tall as the visible editor, so its purple would stop there when
+   the editor scrolls. growing with the gutters inside keeps it purple all the way down */
 :host ::ng-deep #mainwriting .cm-gutters {
+  height: auto;
+  min-height: 100%;
   background: var(--writer-purple);
   color: white;
   border-right: none;
