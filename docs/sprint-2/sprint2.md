@@ -6,24 +6,41 @@ In Sprint 1, we completed the parser, the reader feature, and the setup of the b
 
 In Sprint 2:
 
-- Each story now properly retrieves its own chapter contents, instead of displaying the same chapter for every story
-- We deployed our application at <https://comp4350-frontend.proudmoss-9dbb54ec.westus.azurecontainerapps.io/>.
-- The writing feature is complete, so users can write and properly save stories to the backend
-- Introduced accounts feature, so users can now register, sign in, have their own profile page, while also being able to view others, as well as remember the reading progress per account.
+- **Story Organization**: Each story now properly retrieves its own chapter contents, instead of displaying the same chapter for every story
+- **Deployment:** We deployed our application at <https://comp4350-frontend.proudmoss-9dbb54ec.westus.azurecontainerapps.io/>.
+- **Accounts:** Introduced accounts feature, so users can now register, sign in, have their own profile page, while also being able to view others, as well as remember the reading progress per account.
   - So as not to limit our users, an account is not required to read stories and a Guest account is provided by default
-- The lexer and parser were also made more robust by adding more user facing errors for syntax mistakes, along with the addition of new dialogue syntax
+- **Parser adjustments:** The lexer and parser were also made more robust by adding more user facing errors for syntax mistakes, along with the addition of new dialogue syntax
+- **Editor page:** Users can now create a story and write it themselves. Users can get a preview of the story, and there is a short tutorial on using the editor that will get refactored.
+- **Create characters from the editor:** users can create characters and assign them images called emotions. There is a small editor which allows the user to control of panning and zoom of the images. These images still wont display in the stories themselves, but the functionality and image editing is there for sprint 3.
+- **Uploaded Images are changed to webP:** when a user uploads an image, its turned into a webP before saving. This saves 50% of the storage space.
+- **Users can now save and publish stories:** The editor now has buttons which allow the users to save a story, meaning the draft is uploaded to the backend. And to Publish a story meaning users can upload a story for others to read.
+- **Users can now edit and delete stories:** From the landing page or a public profile, if a user owns a story, they have the option to edit or delete stories. Editing stories allows users to retrieve all their saved information from a draft and continue to work on it.
+- **Parser Error Message Management:** Error messages for the parser now live in one place enabling faster iteration on error message to let them be more user facing, with this change we'e also reworked our old parser error messages.
 
 ## Regression Testing
 
-Backend regression testing documentation can be found here [here](https://github.com/laradeleon/the-story-machine/blob/develop/docs/sprint-2/regression-testing-backend.md)
+### Frontend
 
-<!-- TODO: Front-end-regression-testing -->
+**What runs:** the whole frontend suite, 38 test files and 510 tests (`npm run test:ci`). Unit tests cover each service, page and component, and three integration tests cover the main flows: reading a story through the real routes, opening the writer at `/write/:storyId`, and example scripts going through the parser into the reader. The backend is always faked, so runs are fast and repeatable. We run every test instead of choosing a subset because the suite only takes a few seconds, and we add a test for each feature and each bug we fix.
+
+**When and how long:** on every pull request and push to `develop`, `staging` and `main` (Husky only lints and formats on commit). The tests take about 7-9 seconds, and a full CI run takes about 2m 43s. Latest CI run: https://github.com/laradeleon/the-story-machine/actions/runs/44803738914
+
+**When it fails:** a failing test, coverage under 75%, or a lint, build or audit error fails the CI check on the pull request, and the Docker image isn't built. The author fixes it and pushes again. Code only reaches `main` through pull requests, so failing code never gets deployed.
+
+### Backend
+
+[Regression testing for backend](https://github.com/nifemi-cd/the-story-machine-backend/blob/develop/docs/regression-testing.md)
 
 ## Testing Status & Gaps
 
-Backend's testing gaps were all mentioned and explained in the Regression testing. Link: [here](https://github.com/laradeleon/the-story-machine/blob/develop/docs/sprint-2/regression-testing-backend.md)
+[Test coverage report for Sprint 2 (frontend and backend)](test-coverage-report). Frontend: 94.81% statements, 91.21% branches, 96.64% lines, with all 510 tests passing.
 
-<!-- TODO: someone pick up, this would be affected by tests that aren't merged into develop yet -->
+**Frontend gaps:**
+
+- **Reader controls** (`reader.ts`, 79% of lines): keyboard controls, the Next Chapter button and resuming after a deleted chapter aren't tested.
+- **Frontend and backend together:** Save Draft, Publish and Edit are only tested against a faked backend, so a mismatch between the two wouldn't be caught.
+- **Layout:** tests run in a simulated browser that doesn't draw the page, so layout bugs are found manually through use.
 
 ## CI / CD Status
 
@@ -69,12 +86,27 @@ Both repositories now have a **CD** workflow that deploys to **Azure Container A
 
 ## Cross-Team Testing
 
-I posted my cross-team review of Palette as a comment on ArionKennedy/PaletteProject#100. It covers the workflows I tried (sign-up, sign-in, and searching movies, books and TV), what worked well, and the issues I ran into, like the breached-password message and the “API request failed: 401” error. I also left a few suggestions for the team to consider before the final release.
+We posted our cross-team review of Palette as a comment on ArionKennedy/PaletteProject#100. It covers the workflows we tried (sign-up, sign-in, and searching movies, books and TV), what worked well, and the issues we ran into, like the breached-password message and the “API request failed: 401” error. we also left a few suggestions for the team to consider before the final release.
 
-https://github.com/ArionKennedy/PaletteProject/issues/100
+You can find our critique here. https://github.com/ArionKennedy/PaletteProject/issues/100
 
-<!--Havent received a feedback from the group that is testing this our project yet-->
-<!--All of that will go here-->
+#### Response
+
+##### Issue 1: Unclear Story Creation Process
+
+Recommendation: _Consider introducing a more detailed, step-by-step tutorial within the application to guide users through the story creation process._
+Status: Accepted.
+
+User friendliness and author onboarding would be a primary goal for us. So the suggestion to overhaul it to guide the user through the story creation process shows that we've failed on something that should be fundamental to our project. So, for sprint 3, we plan to overhaul our tutorial on a seperate page with a step by step guide. Will put a big button on the landing page so that it'll be one of the first elements users will see when they open up the page. Right now, the only tutorial element that exists generates in the code mirror on creating a new story. In hindsight, that is not enough to onboard users.
+
+##### Issue 5: Example button UI inconsistency
+
+Recommendation: Try to incorporate another page into the application to show the example or have it as a sorta popup menu as well as it follow the same button design language.
+Status: Deffered
+
+The different buttons occured from working on different parts of the system at different times, ideally will come back to work on the visual desgin of the website, but at the moment, functionality and usability remain our highest priority. If we have time in sprint 3, we would like to overhaul the design of the editor page to better match what exists in other areas of the app.
+
+Feedback were responding to: https://github.com/laradeleon/the-story-machine/issues/95
 
 ## API & Architecture
 
@@ -114,7 +146,7 @@ To run the frontend against it, start the backend on port `4563`, then run `npm 
 
 ## Architecture
 
-<!-- TODO: update the Sprint 1 diagram -->
+![Sprint 2 Architecture Diagram](./Sprint2-architecture-Diagram.jpg)
 
 ## Reflection & Risk
 
@@ -127,13 +159,23 @@ For me, the biggest improvement since Sprint 1 is that the backend now has authe
 
 **Krupal Patel**
 _What feedback from Sprint 1 did the team act on, and what changed as a result?_
+
 Our Sprint 1 feedback was mostly positive and didn’t point out much to fix, so most of our changes came from our own look back at the sprint. We saw that the frontend and backend were often working separately and only connecting at the end, which slowed us down. In Sprint 2 we met more often and talked more between those meetings, so problems got raised early instead of during merges. This also helped us build better backend features. Agreeing on things like validation rules and error formats up front made the frontend much easier to connect. For example, the user accounts feature worked more smoothly because both sides knew what to expect. Overall, better communication made our work more consistent, and our PRs and reviews went faster this sprint.
+
+**Arthur McMullen**
+_What is the most important technical risk or uncertainty going into the final iteration?_
+
+Right now, draft and published content share the same information on the backend, in hindsight, I'm not sure how no one managed to spot a pretty major technical risk in our design. Them sharing the same information means this, when I publish my story, it uploads all the metadata, characters and eventually images that will be used in the live story. The issue is that drafts use the same information as a published story. So, lets say I'm a user, I publish my story, then decide I want to rework some aspects of it, like maybe the characters, their portraits and even the title. Then if I try to save the draft, the live published version will get updated as well. That means if the characters are all wrong, It will desync the live version from the database and bypass our validation. Going into sprint 3, this is the primary concern we have to address.
 
 **Colin Leger**
 _What technical decision or implementation improved most since Sprint 1, and why?_
 
 For me, since I solely worked on the scripting language, I believe our most improved implementation would be the error handling and user facing error messages as well as the improved robustness of the language. In sprint 1, we had error messages built directly into the lexer and parser, all messages were scattered around the place and error types were all generic so things were pretty unorganized. Now, in sprint 2, errors are all in the same place, in a standardized format and custom typed appropriately. This makes our code much easier to read and enforces separation of concerns where errors are defined in one place and used in another. This also allowed for new errors to be implemented easily and follow the previously made errors standardized format. In terms of robustness, the scripting language now is much more forgiving when writing dialogue and supports new syntax for really long dialogue where you need to write it across multiple lines. It also fails gracefully, always providing some user facing information on how to fix what went wront if they run into issues.
 
+**Carsten Kolynchuk**
+_What feedback from Sprint 1 did the team act on, and what changed as a result?_
+
+During sprint 1 one thing we agreed on was that our communication was adequate, but could have been better. As a result, during sprint 2 we were much more active about sharing our progress, both in terms of how often we shared progress and how detailed said progress reports were. This allowed for better work regarding functions that used the parts our team members were actively working on.
 **Adejare Taiwo**
 _What part of the current testing, CI, or CD process creates the most friction, and what might improve it?_
 
@@ -160,3 +202,12 @@ This is also what moves the app toward what we set out to build. In Sprint 1, Th
 
 **Reading progress is only in the browser.**
 Progress is saved per account but in the browser's local storage (`reading-progress.service.ts`), not on the backend. So if a reader starts a story on their laptop and opens the app on their phone, their progress isn't there, and clearing browser data wipes it. We chose this to get progress working for both Guests and signed-in users this sprint without needing new backend routes. For signed-in users, the fix is to move progress to the backend so it follows the account, and keep local storage for Guests.
+
+**Save Draft on a published story changes contents for live story**
+Mentioned in Arthur's reflection. The save draft will update the meta data and character information which will change the server on live, that also means it can break stories as the character information will no longer be in sync. Will have to refactor next sprint so that we keep copies of meta data for drafts or find a different solution
+
+**Unpublished Drafts dont exist for users**
+The front end has no way of seeing unpublished drafts meaning we get a bunch of abandoned stories that pile up in our backend, that should be a feature for next sprint. For a user, that means unless they click publish, they can no longer see the draft ever, even if its published. [PR #103](https://github.com/users/laradeleon/projects/1/views/1?pane=issue&itemId=312074626&issue=laradeleon%7Cthe-story-machine%7C103)
+
+**Written tutorial on story creation doesnt preview**
+Because characters are now needed to validate a story, the previewer is unable to actually parse the tutorial script. For sprint 3, will make it so characters are no longer validated in the script, and instead no character defaults to an empty portrait. Will also overhaul the tutorial to make it more clear how individual elements work.
