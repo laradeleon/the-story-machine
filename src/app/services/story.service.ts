@@ -52,6 +52,11 @@ export class StoryService {
     });
   }
 
+  // deletes a story and all its chapters, the backend only lets its author do this
+  async delete_story(storyId: string) {
+    await firstValueFrom(this.http.delete(`${this.storiesURL}/${storyId}`));
+  }
+
   // gets one chapter of a story, which includes the chapter title and the lines of content
   // 0 is the first chapter
   getChapter(storyId: () => string, chapterIndex: () => number) {

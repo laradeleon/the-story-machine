@@ -1,12 +1,24 @@
-import { Component, computed, inject, input, output, viewChild, ElementRef } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+  ElementRef,
+} from '@angular/core';
 import { StoryDetails } from '../../../models/story-details';
 import { DatePipe } from '@angular/common';
 import { afterNextRender } from '@angular/core';
 
 import { Router, RouterLink } from '@angular/router';
 import { ReadingProgressService } from '../../services/reading-progress.service';
+import { AuthService } from '../../services/auth.service';
+import { StoryService } from '../../services/story.service';
+import { ComingSoonDialog } from '../coming-soon-dialog/coming-soon-dialog';
 @Component({
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, ComingSoonDialog],
   selector: 'app-story-preview',
   styleUrl: './story-preview.css',
   templateUrl: './story-preview.html',
@@ -14,15 +26,46 @@ import { ReadingProgressService } from '../../services/reading-progress.service'
 export class StoryPreview {
   story = input.required<StoryDetails>(); // passed in by landing page
   closed = output<void>(); // tells landing page it was closed
+  deleted = output<void>(); // tells the page to reload its stories after the author deletes this one
 
   private dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog'); // popup
   private pressStartedOutside = false; // whether the mouse was pressed down outside the popup
 
   private progress = inject(ReadingProgressService);
   private router = inject(Router);
+  private auth = inject(AuthService);
+  private stories = inject(StoryService);
 
   // true if this reader started the story before and hasnt finished it
   protected hasProgress = computed(() => this.progress.get(this.story().story_id) !== null);
+
+  // true when the signed in user wrote this story, so they get edit and delete
+  protected isAuthor = computed(
+    () => this.auth.isSignedIn() && this.auth.currentUser()._id === this.story().author_id,
+  );
+
+  protected deleting = signal(false); // while the delete is on its way to the backend
+  protected deleteError = signal<string | null>(null); // why the last delete didn't work
+  protected showEditComingSoon = signal(false); // editing a saved story isn't built yet
+
+  // asks first, then deletes the story and closes the popup
+  protected async delete_story() {
+    if (!confirm(`Delete "${this.story().title}"? This can't be undone.`)) {
+      return;
+    }
+    this.deleting.set(true);
+    this.deleteError.set(null);
+    try {
+      await this.stories.delete_story(this.story().story_id);
+      this.progress.clear(this.story().story_id); // nothing left to continue reading
+      this.deleted.emit();
+      this.dialog().nativeElement.close();
+    } catch {
+      this.deleteError.set("Sorry, this story couldn't be deleted. Please try again.");
+    } finally {
+      this.deleting.set(false);
+    }
+  }
 
   constructor() {
     afterNextRender(() => this.dialog().nativeElement.showModal()); // show popup only if dialog element exists

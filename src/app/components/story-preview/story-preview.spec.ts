@@ -1,7 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { computed, signal } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { StoryPreview } from './story-preview';
 import { provideRouter, Router } from '@angular/router';
 import { ReadingProgressService } from '../../services/reading-progress.service';
+import { AuthService } from '../../services/auth.service';
+import { GUEST_USER, User } from '../../../models/auth';
 
 describe('StoryPreview closing', () => {
   let component: StoryPreview;
@@ -20,7 +25,8 @@ describe('StoryPreview closing', () => {
 
     await TestBed.configureTestingModule({
       imports: [StoryPreview],
-      providers: [provideRouter([])], // the read story link needs a router to exist
+      // the read story link needs a router, and checking who's signed in needs http
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(StoryPreview);
@@ -155,7 +161,7 @@ describe('StoryPreview author link', () => {
   it("should link the author's name to their profile", async () => {
     await TestBed.configureTestingModule({
       imports: [StoryPreview],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
     const fixture = TestBed.createComponent(StoryPreview);
     fixture.componentRef.setInput('story', {
@@ -187,7 +193,7 @@ describe('StoryPreview reading buttons', () => {
 
     await TestBed.configureTestingModule({
       imports: [StoryPreview],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
     progress = TestBed.inject(ReadingProgressService);
   });
@@ -249,5 +255,147 @@ describe('StoryPreview reading buttons', () => {
 
     expect(progress.get('1')).toBeNull();
     expect(navigate).toHaveBeenCalledWith(['/read', '1']);
+  });
+});
+
+describe('StoryPreview author buttons', () => {
+  let fixture: ComponentFixture<StoryPreview>;
+  let component: StoryPreview;
+  let compiled: HTMLElement;
+  let httpTesting: HttpTestingController;
+
+  const author: User = { ...GUEST_USER, _id: 'a1', username: 'author' };
+  const someoneElse: User = { ...GUEST_USER, _id: 'b2', username: 'reader' };
+  const currentUser = signal<User>(GUEST_USER); // who's signed in
+
+  const realShowModal = HTMLDialogElement.prototype.showModal;
+  const realClose = HTMLDialogElement.prototype.close;
+
+  beforeEach(async () => {
+    localStorage.clear();
+    currentUser.set(GUEST_USER);
+    HTMLDialogElement.prototype.showModal = vi.fn();
+    HTMLDialogElement.prototype.close = vi.fn();
+
+    await TestBed.configureTestingModule({
+      imports: [StoryPreview],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        // a fake auth service so each test can pick who's signed in
+        {
+          provide: AuthService,
+          useValue: {
+            currentUser,
+            isSignedIn: computed(() => currentUser()._id !== GUEST_USER._id),
+          },
+        },
+      ],
+    }).compileComponents();
+    httpTesting = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    HTMLDialogElement.prototype.showModal = realShowModal;
+    HTMLDialogElement.prototype.close = realClose;
+    vi.restoreAllMocks();
+    httpTesting.verify();
+    localStorage.clear();
+  });
+
+  // shows the popup for story "1", written by user "a1"
+  async function openPreview() {
+    fixture = TestBed.createComponent(StoryPreview);
+    fixture.componentRef.setInput('story', {
+      story_id: '1',
+      title: 'Test story',
+      author: 'Test author',
+      author_id: 'a1',
+      description: 'A test description',
+      updatedAt: '2026-10-19T11:03:46.435Z',
+    });
+    component = fixture.componentInstance;
+    compiled = fixture.nativeElement as HTMLElement;
+    await fixture.whenStable();
+  }
+
+  // the text of every button and link in the bottom row, in order
+  function actions() {
+    return Array.from(compiled.querySelectorAll('.preview-actions > *')).map((el) =>
+      el.textContent?.trim(),
+    );
+  }
+
+  function delete_button() {
+    return compiled.querySelector('.delete-button') as HTMLButtonElement;
+  }
+
+  // edit goes right of read story, delete at the end of the same row
+  it('should show edit and delete to the story author after read story', async () => {
+    currentUser.set(author);
+    await openPreview();
+    expect(actions()).toEqual(['Read Story', 'Edit', 'Delete']);
+  });
+
+  it('should put edit and delete after continue reading and start over', async () => {
+    currentUser.set(author);
+    TestBed.inject(ReadingProgressService).save('1', { chapterIndex: 0, lineId: 3 });
+    await openPreview();
+    expect(actions()).toEqual(['Continue Reading', 'Start Over', 'Edit', 'Delete']);
+  });
+
+  it('should not show edit and delete to someone else', async () => {
+    currentUser.set(someoneElse);
+    await openPreview();
+    expect(actions()).toEqual(['Read Story']);
+  });
+
+  it('should not show edit and delete to a guest', async () => {
+    await openPreview();
+    expect(actions()).toEqual(['Read Story']);
+  });
+
+  it('should delete the story, tell the page and close when the author confirms', async () => {
+    currentUser.set(author);
+    await openPreview();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const onDeleted = vi.fn();
+    component.deleted.subscribe(onDeleted);
+
+    delete_button().click();
+    httpTesting.expectOne({ method: 'DELETE', url: '/api/v1/story/1' }).flush({});
+    await fixture.whenStable();
+
+    expect(onDeleted).toHaveBeenCalled();
+    expect(compiled.querySelector('dialog')!.close).toHaveBeenCalled();
+  });
+
+  it('should not delete anything if the author cancels', async () => {
+    currentUser.set(author);
+    await openPreview();
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    delete_button().click();
+
+    httpTesting.expectNone('/api/v1/story/1');
+  });
+
+  it('should show an error and stay open if the delete fails', async () => {
+    currentUser.set(author);
+    await openPreview();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const onDeleted = vi.fn();
+    component.deleted.subscribe(onDeleted);
+
+    delete_button().click();
+    httpTesting
+      .expectOne('/api/v1/story/1')
+      .flush({ message: 'Forbidden' }, { status: 403, statusText: 'Forbidden' });
+    await fixture.whenStable();
+
+    expect(onDeleted).not.toHaveBeenCalled();
+    expect(compiled.querySelector('.delete-error')).not.toBeNull();
+    expect(compiled.querySelector('dialog')!.close).not.toHaveBeenCalled();
   });
 });
