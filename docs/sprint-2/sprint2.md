@@ -125,6 +125,11 @@ For me, the biggest improvement since Sprint 1 is that the backend now has authe
 _What feedback from Sprint 1 did the team act on, and what changed as a result?_
 Our Sprint 1 feedback was mostly positive and didn’t point out much to fix, so most of our changes came from our own look back at the sprint. We saw that the frontend and backend were often working separately and only connecting at the end, which slowed us down. In Sprint 2 we met more often and talked more between those meetings, so problems got raised early instead of during merges. This also helped us build better backend features. Agreeing on things like validation rules and error formats up front made the frontend much easier to connect. For example, the user accounts feature worked more smoothly because both sides knew what to expect. Overall, better communication made our work more consistent, and our PRs and reviews went faster this sprint.
 
+**Colin Leger**
+_What technical decision or implementation improved most since Sprint 1, and why?_
+
+For me, since I solely worked on the scripting language, I believe our most improved implementation would be the error handling and user facing error messages as well as the improved robustness of the language. In sprint 1, we had error messages built directly into the lexer and parser, all messages were scattered around the place and error types were all generic so things were pretty unorganized. Now, in sprint 2, errors are all in the same place, in a standardized format and custom typed appropriately. This makes our code much easier to read and enforces separation of concerns where errors are defined in one place and used in another. This also allowed for new errors to be implemented easily and follow the previously made errors standardized format. In terms of robustness, the scripting language now is much more forgiving when writing dialogue and supports new syntax for really long dialogue where you need to write it across multiple lines. It also fails gracefully, always providing some user facing information on how to fix what went wront if they run into issues.
+
 ### Work the Team Is Proud Of
 
 **[Accounts](https://github.com/laradeleon/the-story-machine/issues/43)** ([PR #80](https://github.com/laradeleon/the-story-machine/pull/80), [PR #90](https://github.com/laradeleon/the-story-machine/pull/90))
