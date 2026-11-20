@@ -84,7 +84,7 @@
       }
       <!-- a preview goes back to the writer, a normal story goes back to the story list -->
       @if (isPreview) {
-        <a class="primary-button" routerLink="/write">Back to writing</a>
+        <a class="primary-button" [routerLink]="writerLink">Back to writing</a>
       } @else {
         <a class="primary-button" routerLink="/">Back to stories</a>
       }

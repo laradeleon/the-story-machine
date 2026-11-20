@@ -145,6 +145,16 @@ describe('WriterStateService', () => {
     ]);
   });
 
+  it('should not reload a story that is already open', async () => {
+    const state = TestBed.inject(WriterStateService);
+    await state.open_story('story-1');
+    state.script.set('Not saved yet');
+
+    await state.open_story('story-1');
+
+    expect(state.script()).toBe('Not saved yet');
+  });
+
   it('should save the script straight away', async () => {
     const state = TestBed.inject(WriterStateService);
     await state.open_story('story-1');

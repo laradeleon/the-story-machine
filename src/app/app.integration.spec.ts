@@ -5,6 +5,8 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { routes } from './app.routes';
+import { clear_all, save_draft } from './services/saved-values';
+import { PLACEHOLDER_STORY_ID, WriterStateService } from './services/writer-state.service';
 
 describe('Integration: finding and reading a story', () => {
   let harness: RouterTestingHarness;
@@ -166,6 +168,32 @@ describe('Integration: finding and reading a story', () => {
     await waitForPage();
 
     expect(page().textContent).toContain('Sorry, this chapter could not be retrieved.');
+  });
+
+  it('should send /write to the new story', async () => {
+    await harness.navigateByUrl('/write');
+    await waitForPage();
+
+    expect(TestBed.inject(Router).url).toBe(`/write/${PLACEHOLDER_STORY_ID}`);
+    expect(TestBed.inject(WriterStateService).story_id()).toBe(PLACEHOLDER_STORY_ID);
+  });
+
+  it('should open the editor with the script of the story in the url', async () => {
+    // like refreshing the writer page while editing story s1
+    await clear_all();
+    await save_draft({
+      story_id: 's1',
+      script: 'Someone knocks.',
+      metadata: { title: '', genres: [], description: '' },
+      characters: [],
+      updated_at: 0,
+    });
+
+    await harness.navigateByUrl('/write/s1');
+    await waitForPage();
+
+    expect(TestBed.inject(WriterStateService).story_id()).toBe('s1');
+    expect(page().querySelector('.cm-content')?.textContent).toContain('Someone knocks.');
   });
 
   it('should show a sorry message if the stories could not be loaded', async () => {

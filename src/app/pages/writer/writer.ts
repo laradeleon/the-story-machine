@@ -201,7 +201,7 @@ export class Writer {
     }
 
     this.save_script();
-    this.router.navigate(['/preview']);
+    this.router.navigate(['/preview', this.state.story_id()]);
   }
 
   //runs the parser on the script in the editor.

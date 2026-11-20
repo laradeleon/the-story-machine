@@ -103,7 +103,8 @@ describe('Writer', () => {
     button_named('Preview').click();
 
     expect(TestBed.inject(PreviewService).chapter()).not.toBeNull();
-    expect(navigate).toHaveBeenCalledWith(['/preview']);
+    // the story id lets the reader's Back to writing return to this story
+    expect(navigate).toHaveBeenCalledWith(['/preview', PLACEHOLDER_STORY_ID]);
   });
 
   it('should show the error and stay on the writer when Preview is pressed with a mistake', () => {

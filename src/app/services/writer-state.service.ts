@@ -77,8 +77,11 @@ export class WriterStateService {
     return this.opening;
   }
 
-  // loads a story (empty if it has no draft), saving the open one first
+  // loads a story (empty if it has no draft), saving the open one first. does nothing if it's already open
   private async switch_story(story_id: string) {
+    if (this.opened && this.story_id() === story_id) {
+      return;
+    }
     if (this.opened) {
       this.opened = false;
       await this.save_now();

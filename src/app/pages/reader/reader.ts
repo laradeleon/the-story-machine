@@ -64,8 +64,11 @@ export class Reader {
   // true when opened by the writer's Preview button (the /preview route)
   protected isPreview = inject(ActivatedRoute).snapshot.data['preview'] === true;
 
-  // the story id from the url /read/storyId
+  // the story id from the url /read/storyId, or for a preview /preview/storyId
   private storyId = inject(ActivatedRoute).snapshot.paramMap.get('storyId') ?? '';
+
+  // where Back to writing goes from a preview, the story that was previewed
+  protected writerLink = this.storyId ? ['/write', this.storyId] : ['/write'];
 
   private router = inject(Router);
   private progress = inject(ReadingProgressService);
@@ -244,7 +247,7 @@ export class Reader {
   // preview goes back to writer, a story goes back to the story list
   protected exit() {
     if (this.isPreview) {
-      this.router.navigate(['/write']);
+      this.router.navigate(this.writerLink);
     } else {
       this.router.navigate(['/']);
     }

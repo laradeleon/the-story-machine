@@ -61,7 +61,7 @@ export class StoryPreview {
       const story_id = this.story().story_id;
       const saved = await this.stories.get_saved_story(story_id);
       await this.writer.open_saved_story(story_id, saved);
-      await this.router.navigate(['/write']);
+      await this.router.navigate(['/write', story_id]);
     } catch {
       this.editError.set("Sorry, this story couldn't be opened. Please try again.");
     } finally {

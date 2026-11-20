@@ -455,7 +455,7 @@ describe('StoryPreview author buttons', () => {
       characters: [],
       updated_at: Date.parse('2026-10-19T11:03:46.435Z'),
     });
-    expect(navigate).toHaveBeenCalledWith(['/write']);
+    expect(navigate).toHaveBeenCalledWith(['/write', '1']);
   });
 
   it('should show an error and stay on the page if the story cannot be fetched', async () => {
