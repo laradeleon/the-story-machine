@@ -390,7 +390,9 @@ describe('StoryPreview author buttons', () => {
 
     expect(confirm_popup()).not.toBeNull();
     expect(confirm_popup()!.textContent).toContain('Delete this story?');
-    expect(confirm_popup()!.textContent).toContain(`"${component.story().title}"`);
+    expect(confirm_popup()!.textContent).toContain(
+      `${component.story().title} will be deleted. This can't be undone.`,
+    );
     httpTesting.expectNone('/api/v1/story/1');
   });
 

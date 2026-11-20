@@ -51,7 +51,10 @@ export class StoryPreview {
   protected opening = signal(false); // while the story is being fetched for the writer page
   protected editError = signal<string | null>(null); // why the last edit didn't open
   protected confirmDeleteOpen = signal(false); // whether the "are you sure?" popup is open
-  protected deleteMessage = computed(() => `This story will be deleted. This can't be undone.`);
+  // names the story so the author can see it's the right one
+  protected deleteMessage = computed(
+    () => `${this.story().title} will be deleted. This can't be undone.`,
+  );
 
   // gets the saved story from the backend, puts it in the writer and opens the writer page
   protected async edit_story() {
