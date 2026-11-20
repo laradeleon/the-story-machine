@@ -15,7 +15,9 @@ In Sprint 2:
 
 ## Regression Testing
 
-<!-- TODO: someone pick up -->
+Backend regression testing documentation can be found here [here](https://github.com/laradeleon/the-story-machine/blob/develop/docs/regression-testing-backend.md)
+
+<!-- TODO: Front-end-regression-testing -->
 
 ## Testing Status & Gaps
 
