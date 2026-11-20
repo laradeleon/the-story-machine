@@ -1,0 +1,190 @@
+<!-- appModal opens this as a popup. Esc is stopped while there are problems, see on_cancel -->
+<dialog
+  appModal
+  #modal="appModal"
+  class="characters-dialog"
+  (closed)="closed.emit()"
+  (cancel)="on_cancel($event)"
+>
+  <div class="characters-content">
+    <h2>Characters</h2>
+
+    @if (error()) {
+      <p class="modal-error" role="alert">{{ error() }}</p>
+    }
+    @for (problem of problems(); track problem) {
+      <p class="modal-warning" role="status">{{ problem }}</p>
+    }
+
+    <div class="characters-columns">
+      <!-- left: the add button stays at the top, only the list scrolls -->
+      <section class="column column-characters">
+        <div class="column-top">
+          <button type="button" class="primary-button add-button" (click)="add_character()">
+            Add character
+          </button>
+        </div>
+
+        <ul class="column-scroll character-list">
+          @for (character of state.characters(); track character.id) {
+            @let first = character.emotions[0];
+            <li>
+              <button
+                type="button"
+                class="item"
+                [class.selected]="character.id === selected_character_id()"
+                (click)="select_character(character.id)"
+              >
+                <app-image-thumbnail [image_url]="image_url_of(first)" [emotion]="first" />
+                <span class="item-name">{{ character.name.trim() || 'Unnamed' }}</span>
+                @if (duplicate_character_names().has(name_key(character.name))) {
+                  <span class="tag tag-warning">duplicate</span>
+                }
+              </button>
+            </li>
+          } @empty {
+            <li class="column-empty">No characters yet.</li>
+          }
+        </ul>
+      </section>
+
+      <!-- middle: name, description and add emotion stay at the top, only the emotion list scrolls -->
+      <section class="column column-character">
+        @if (selected_character(); as character) {
+          <div class="column-top">
+            <label class="modal-field">
+              Character name
+              <input
+                #nameBox
+                type="text"
+                [value]="character.name"
+                (input)="rename_character(character.id, nameBox.value)"
+              />
+            </label>
+
+            <label class="modal-field">
+              Description
+              <textarea
+                #descriptionBox
+                rows="3"
+                [value]="character.description"
+                (input)="set_description(character.id, descriptionBox.value)"
+              ></textarea>
+            </label>
+
+            <button type="button" class="primary-button add-button" (click)="add_emotion()">
+              Add emotion
+            </button>
+          </div>
+
+          <ul class="column-scroll emotion-list">
+            @for (emotion of character.emotions; track emotion.id) {
+              <li>
+                <button
+                  type="button"
+                  class="item"
+                  [class.selected]="emotion.id === selected_emotion_id()"
+                  (click)="select_emotion(emotion.id)"
+                >
+                  <app-image-thumbnail [image_url]="image_url_of(emotion)" [emotion]="emotion" />
+                  <span class="item-name">{{ emotion.emotion.trim() || 'Unnamed' }}</span>
+                  @if (duplicate_emotion_keys().has(name_key(emotion.emotion))) {
+                    <span class="tag tag-warning">duplicate</span>
+                  }
+                </button>
+              </li>
+            } @empty {
+              <li class="column-empty">No emotions yet.</li>
+            }
+          </ul>
+
+          <div class="column-bottom">
+            <button
+              type="button"
+              class="cancel-button add-button"
+              (click)="confirming.set('character')"
+            >
+              Remove character
+            </button>
+          </div>
+        } @else {
+          <p class="column-empty">Select a character, or add one.</p>
+        }
+      </section>
+
+      <!-- right: the selected emotion's name at the top, its picture below -->
+      <section class="column column-emotion">
+        @if (selected_emotion(); as emotion) {
+          <div class="column-top">
+            <div class="name-row">
+              <label class="modal-field">
+                Emotion name
+                <input
+                  #emotionName
+                  type="text"
+                  [value]="emotion.emotion"
+                  (input)="rename_emotion(emotionName.value)"
+                />
+              </label>
+              <button
+                type="button"
+                class="cancel-button"
+                [attr.aria-pressed]="!outline_visible()"
+                (click)="outline_visible.set(!outline_visible())"
+              >
+                {{ outline_visible() ? 'Hide outline' : 'Show outline' }}
+              </button>
+            </div>
+          </div>
+
+          <app-image-editor
+            [image_url]="image_url_of(emotion)"
+            [placement]="selected_placement()"
+            [alt_text]="emotion.emotion"
+            [guide]="true"
+            [guide_visible]="outline_visible()"
+            (image_chosen)="set_image_from_file($event)"
+            (placement_changed)="set_placement($event)"
+            (image_deleted)="delete_image()"
+          >
+            <!-- sits to the right of Delete image in the editor's button row -->
+            <button type="button" class="cancel-button" (click)="confirming.set('emotion')">
+              Delete emotion
+            </button>
+          </app-image-editor>
+          @if (image_problem(emotion); as problem) {
+            <p class="modal-error image-problem" role="alert">{{ problem }}</p>
+          }
+        } @else {
+          <p class="column-empty">Select an emotion to see its portrait.</p>
+        }
+      </section>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="cancel-button" (click)="close()">Close</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- both deletes ask first -->
+@switch (confirming()) {
+  @case ('character') {
+    <app-confirm-dialog
+      title="Delete this character?"
+      message="Its emotions and portraits are removed too."
+      confirm_label="Delete"
+      (confirmed)="remove_selected_character()"
+      (closed)="confirming.set(null)"
+    />
+  }
+  @case ('emotion') {
+    <app-confirm-dialog
+      title="Delete this emotion?"
+      message="Its portrait is removed too."
+      confirm_label="Delete"
+      (confirmed)="remove_selected_emotion()"
+      (closed)="confirming.set(null)"
+    />
+  }
+}

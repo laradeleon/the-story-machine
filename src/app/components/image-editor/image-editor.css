@@ -1,0 +1,125 @@
+/* the editor fills the space it's given, the picture area takes most of it */
+:host {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+/* the box the picture sits in. its background comes from --image-area-bg, set by the popup */
+.portrait-area {
+  position: relative; /* the picture and the guide are placed inside this box */
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  overflow: hidden; /* a zoomed or moved picture is cut off at the edges */
+  touch-action: none; /* so dragging the picture doesn't scroll the page on touch screens */
+  border: 2px dashed var(--blue-line, #7b87c9);
+  border-radius: 0.75rem;
+  background: var(--image-area-bg, transparent);
+  text-align: center;
+}
+
+.portrait-area.dragging {
+  border-color: var(--color-accent);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.portrait-area:not(.movable) {
+  cursor: pointer; /* an empty area opens the upload menu */
+}
+
+.portrait-area.movable {
+  cursor: grab;
+}
+
+.portrait-area.movable:active {
+  cursor: grabbing;
+}
+
+/* the picture starts the size of the area. its position and zoom come from the inline style */
+.picture {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none; /* the area gets the pointer, so the picture doesn't steal the drag */
+}
+
+/* the hint sits above the guide so it stays readable */
+.hint {
+  position: relative;
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* the see-through person guide. the head's centre sits a third of the way down the area,
+   the body runs off the bottom (waist up). the box is as tall as the area and 2:3 wide, so the
+   head is always at one third whatever the area's shape. it ignores the mouse, so dragging still works */
+.silhouette {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  aspect-ratio: 2 / 3;
+  transform: translateX(-50%);
+  color: var(--color-text);
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.silhouette svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+/* the zoom and offset values. a fieldset, so the browser's own border and spacing are taken off */
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0; /* fieldsets won't shrink below their content otherwise */
+}
+
+/* a slider or a number box, side by side */
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* min-width 0 lets the slider shrink, so the number box beside it stays in view */
+.setting-row > input[type='range'] {
+  flex: 1;
+  min-width: 0;
+}
+
+/* the offset X and Y boxes sit side by side, each the width of its half of the row */
+.offset-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); /* minmax so the halves can shrink below their labels */
+  gap: 12px;
+}
+
+/* the Upload / Delete buttons wrap onto a second line when the column is too narrow for them */
+.modal-actions {
+  flex-wrap: wrap;
+}
+
+.number-box {
+  width: 90px;
+  box-sizing: border-box;
+}
+
+.offset-row .number-box {
+  width: 100%;
+}

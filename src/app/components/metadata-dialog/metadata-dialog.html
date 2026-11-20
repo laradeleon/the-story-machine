@@ -9,7 +9,7 @@
   >
     <h2>Story details</h2>
 
-    <label class="metadata-field">
+    <label class="modal-field">
       Title
       <input
         #titleInput
@@ -20,7 +20,7 @@
       />
     </label>
 
-    <label class="metadata-field">
+    <label class="modal-field">
       Genres
       <input
         #genresInput
@@ -31,7 +31,7 @@
       <span class="metadata-hint">Separate genres with commas</span>
     </label>
 
-    <label class="metadata-field">
+    <label class="modal-field">
       Description
       <textarea
         #descriptionInput
@@ -41,7 +41,7 @@
       ></textarea>
     </label>
 
-    <div class="metadata-actions">
+    <div class="modal-actions">
       <button type="button" class="cancel-button" (click)="modal.close()">Cancel</button>
       <button type="submit" class="primary-button">Save</button>
     </div>
