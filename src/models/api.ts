@@ -17,6 +17,25 @@ export interface StoryResponse {
   updatedAt: string;
 }
 
+// one emotion of a character from GET /story/:id. portrait_x and portrait_y are always null for now
+export interface EmotionResponse {
+  emotion: string;
+  portrait_x: number | null;
+  portrait_y: number | null;
+}
+
+// one character from GET /story/:id. emotions always includes "default"
+export interface CharacterResponse {
+  name: string;
+  description: string | null;
+  emotions: EmotionResponse[];
+}
+
+// one story from GET /story/:id, with what the writer page needs to edit it
+export interface StoryEditResponse extends StoryResponse {
+  characters: CharacterResponse[];
+}
+
 // this is for one chapter in the list from GET /story/:storyId/chapter (but no script)
 export interface ChapterSummaryResponse {
   title: string; // the STORY title

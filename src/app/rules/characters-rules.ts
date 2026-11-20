@@ -1,5 +1,5 @@
 // the rules for characters and their emotions, with no Angular so they can be tested on their own
-import { CharacterRequest } from '../../models/api';
+import { CharacterRequest, CharacterResponse, EmotionResponse } from '../../models/api';
 import { AssetRef } from '../../models/asset';
 import { Character, Emotion } from '../../models/story';
 import { default_placement, Placement } from './placement';
@@ -158,6 +158,52 @@ export function to_character_requests(characters: Character[]): CharacterRequest
     description: character.description.trim() || null,
     emotions: character.emotions.map((e) => ({ emotion: e.emotion.trim() })),
   }));
+}
+
+// ---- getting from the backend
+
+// the emotion the backend adds to every character
+export const DEFAULT_EMOTION = 'default';
+
+// the characters from GET /story/:id as the popup holds them, the reverse of to_character_requests.
+// the backend has no ids or pictures yet, so a character or emotion with the same name in existing
+// keeps its id, picture and placement. "default" is left out unless the writer made it themselves
+export function from_character_responses(
+  responses: CharacterResponse[],
+  existing: Character[] = [],
+): Character[] {
+  return responses.map((response) => {
+    const old = existing.find((c) => name_key(c.name) === name_key(response.name));
+    const old_emotions = old?.emotions ?? [];
+    return {
+      id: old?.id ?? new_id(),
+      name: response.name,
+      description: response.description ?? '',
+      emotions: response.emotions
+        .filter(
+          (e) =>
+            name_key(e.emotion) !== DEFAULT_EMOTION ||
+            old_emotions.some((o) => name_key(o.emotion) === DEFAULT_EMOTION),
+        )
+        .map((e) => from_emotion_response(e, old_emotions)),
+    };
+  });
+}
+
+// one emotion from the backend, keeping the matching old emotion's id, picture and placement
+function from_emotion_response(response: EmotionResponse, existing: Emotion[]): Emotion {
+  const old = existing.find((e) => name_key(e.emotion) === name_key(response.emotion));
+  if (old) {
+    return { ...old, emotion: response.emotion };
+  }
+  return {
+    id: new_id(),
+    emotion: response.emotion,
+    image: null,
+    ...placement_fields(default_placement),
+    portrait_x: response.portrait_x ?? default_placement.x,
+    portrait_y: response.portrait_y ?? default_placement.y,
+  };
 }
 
 // the problems that stop the popup closing

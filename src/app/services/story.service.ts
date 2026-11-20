@@ -1,9 +1,11 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject, resource } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { SavedStory } from '../../models/saved-story';
 import {
   APIResponse,
   StoryResponse,
+  StoryEditResponse,
   ChapterResponse,
   ChapterSummaryResponse,
 } from '../../models/api';
@@ -56,6 +58,41 @@ export class StoryService {
     });
   }
 
+  // deletes a story and all its chapters, the backend only lets its author do this
+  async delete_story(storyId: string) {
+    await firstValueFrom(this.http.delete(`${this.storiesURL}/${storyId}`));
+  }
+
+  // gets a story's script, metadata and characters for the writer page to edit
+  async get_saved_story(storyId: string): Promise<SavedStory> {
+    const [storyResponse, script] = await Promise.all([
+      firstValueFrom(
+        this.http.get<APIResponse<StoryEditResponse>>(`${this.storiesURL}/${storyId}`),
+      ),
+      this.get_script(storyId),
+    ]);
+    const story = storyResponse.data;
+    return {
+      script,
+      metadata: { title: story.title, description: story.description },
+      characters: story.characters ?? [],
+      updated_at: Date.parse(story.updatedAt),
+    };
+  }
+
+  // gets the story's .txt script, empty if none has been uploaded yet
+  async get_script(storyId: string): Promise<string> {
+    try {
+      return await firstValueFrom(
+        this.http.get(`${this.storiesURL}/${storyId}/file`, { responseType: 'text' }),
+      );
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 404) {
+        return '';
+      }
+      throw error;
+    }
+  }
   //create a new story with passed title and description, and return storyID
   //postStory(storyTitle: string, storyDescription: string) {
   //  return this.http.post<APIResponse<StoryResponse>>(this.storiesURL, { title: storyTitle, description: storyDescription });
@@ -89,14 +126,6 @@ export class StoryService {
   //upload the draft .txt file to the given storyID
   putStory(storyID: () => string, storyText: () => string) {
     return this.http.put(this.storiesURL + '/' + storyID + '/file', storyText);
-  }
-
-  async deleteStory(storyID: string) {
-    const storiesResponse = await firstValueFrom(
-      this.http.delete<APIResponse<StoryResponse>>(this.storiesURL + '/' + storyID),
-    );
-
-    return storiesResponse.data;
   }
 
   //upload the chapter to the given storyID

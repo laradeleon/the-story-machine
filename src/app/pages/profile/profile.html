@@ -128,5 +128,9 @@
 
 <!-- preview popup for the story that got clicked -->
 @if (selectedStory(); as story) {
-  <app-story-preview [story]="story" (closed)="selectedStory.set(null)" />
+  <app-story-preview
+    [story]="story"
+    (closed)="selectedStory.set(null)"
+    (deleted)="stories.reload()"
+  />
 }

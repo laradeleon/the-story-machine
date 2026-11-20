@@ -38,6 +38,113 @@ describe('WriterStateService', () => {
     expect(state.story_id()).toBe(PLACEHOLDER_STORY_ID);
   });
 
+  it('should open a saved story with its script, metadata and characters', async () => {
+    const state = TestBed.inject(WriterStateService);
+    await save_draft({
+      ...draft_with_script('story-1', 'Old text'),
+      metadata: { title: 'Old', genres: ['Horror'], description: 'Old' },
+    });
+
+    // the draft was saved at 0, so the backend copy is newer
+    await state.open_saved_story('story-1', {
+      script: 'Saved text',
+      metadata: { title: 'The Lighthouse', description: 'A storm' },
+      characters: [{ name: 'Dave', description: null, emotions: [] }],
+      updated_at: 1000,
+    });
+
+    expect(state.story_id()).toBe('story-1');
+    expect(state.script()).toBe('Saved text');
+    // the backend has no genres, so the draft's are kept
+    expect(state.metadata()).toEqual({
+      title: 'The Lighthouse',
+      genres: ['Horror'],
+      description: 'A storm',
+    });
+    expect(state.characters()).toEqual([
+      { id: expect.any(String), name: 'Dave', description: '', emotions: [] },
+    ]);
+  });
+
+  it('should keep the local draft when it is newer than the saved story', async () => {
+    const state = TestBed.inject(WriterStateService);
+    await save_draft({
+      ...draft_with_script('story-1', 'Unsaved changes'),
+      metadata: { title: 'Local title', genres: [], description: '' },
+      updated_at: 2000,
+    });
+
+    await state.open_saved_story('story-1', {
+      script: 'Saved text',
+      metadata: { title: 'The Lighthouse', description: 'A storm' },
+      characters: [{ name: 'Dave', description: null, emotions: [] }],
+      updated_at: 1000,
+    });
+
+    expect(state.story_id()).toBe('story-1');
+    expect(state.script()).toBe('Unsaved changes');
+    expect(state.metadata().title).toBe('Local title');
+    expect(state.characters()).toEqual([]);
+  });
+
+  it('should use the saved story when there is no local draft', async () => {
+    const state = TestBed.inject(WriterStateService);
+
+    await state.open_saved_story('story-1', {
+      script: 'Saved text',
+      metadata: { title: 'The Lighthouse', description: 'A storm' },
+      characters: [],
+      updated_at: 0,
+    });
+
+    expect(state.script()).toBe('Saved text');
+    expect(state.metadata().title).toBe('The Lighthouse');
+  });
+
+  it('should set the metadata', async () => {
+    const state = TestBed.inject(WriterStateService);
+    await state.open_story('story-1');
+
+    state.set_metadata({ title: 'The Lighthouse', genres: ['Horror'], description: 'A storm' });
+
+    expect(state.metadata()).toEqual({
+      title: 'The Lighthouse',
+      genres: ['Horror'],
+      description: 'A storm',
+    });
+  });
+
+  it('should set the characters from the backend, keeping pictures of ones with the same name', async () => {
+    const state = TestBed.inject(WriterStateService);
+    await state.open_story('story-1');
+    const image = { asset_id: 'a1', url: 'https://example.com/a1.webp' };
+    state.characters.set([
+      {
+        id: 'c1',
+        name: 'Dave',
+        description: '',
+        emotions: [{ id: 'e1', emotion: 'happy', image, portrait_x: 0, portrait_y: 0, zoom: 100 }],
+      },
+    ]);
+
+    state.set_characters([
+      {
+        name: 'Dave',
+        description: 'A farmer',
+        emotions: [{ emotion: 'happy', portrait_x: null, portrait_y: null }],
+      },
+    ]);
+
+    expect(state.characters()).toEqual([
+      {
+        id: 'c1',
+        name: 'Dave',
+        description: 'A farmer',
+        emotions: [{ id: 'e1', emotion: 'happy', image, portrait_x: 0, portrait_y: 0, zoom: 100 }],
+      },
+    ]);
+  });
+
   it('should save the script straight away', async () => {
     const state = TestBed.inject(WriterStateService);
     await state.open_story('story-1');

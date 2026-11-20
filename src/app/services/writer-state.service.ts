@@ -1,10 +1,13 @@
 import { computed, DestroyRef, effect, inject, Injectable, signal } from '@angular/core';
+import { CharacterResponse } from '../../models/api';
 import { AssetRef } from '../../models/asset';
 import { Draft } from '../../models/draft';
+import { SavedStory } from '../../models/saved-story';
 import { Character } from '../../models/story';
 import { StoryMetadata } from '../../models/story-metadata';
 import {
   find_emotion,
+  from_character_responses,
   images_of,
   placement_fields,
   remove_character,
@@ -38,6 +41,9 @@ export class WriterStateService {
 
   // false until open_story() has loaded the draft, so the empty starting values aren't saved over it
   private opened = false;
+
+  // when the open story's draft was last saved, null if it had none or it couldn't be read
+  private draft_updated_at: number | null = null;
 
   // the latest open_story call, so opens run one at a time
   private opening: Promise<void> = Promise.resolve();
@@ -86,6 +92,7 @@ export class WriterStateService {
       loaded = false;
     }
     this.story_id.set(story_id);
+    this.draft_updated_at = saved?.updated_at ?? null;
     this.script.set(saved?.script ?? null);
     this.metadata.set(saved?.metadata ?? empty_metadata());
     this.characters.set(saved?.characters ?? []);
@@ -157,6 +164,29 @@ export class WriterStateService {
     if (await this.save_now()) {
       await this.assets.forget(asset_id);
     }
+  }
+
+  // replaces the title, genres and description, e.g. with a saved story's when editing it
+  set_metadata(metadata: StoryMetadata) {
+    this.metadata.set({ ...metadata, genres: [...metadata.genres] });
+  }
+
+  // replaces the characters with ones from the backend, keeping pictures of any with the same names
+  set_characters(characters: CharacterResponse[]) {
+    this.characters.set(from_character_responses(characters, this.characters()));
+  }
+
+  // opens a saved story, using the backend's script, metadata and characters unless the local
+  // draft is newer. the draft's genres and pictures are kept since the backend doesn't have them yet
+  async open_saved_story(story_id: string, saved: SavedStory) {
+    await this.open_story(story_id);
+    // the draft has changes the backend doesn't, keep them
+    if (this.draft_updated_at !== null && this.draft_updated_at > saved.updated_at) {
+      return;
+    }
+    this.script.set(saved.script);
+    this.set_metadata({ ...this.metadata(), ...saved.metadata });
+    this.set_characters(saved.characters);
   }
 
   save_script_now(script: string) {
