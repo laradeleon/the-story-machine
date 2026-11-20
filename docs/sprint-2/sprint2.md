@@ -176,6 +176,15 @@ For me, since I solely worked on the scripting language, I believe our most impr
 _What feedback from Sprint 1 did the team act on, and what changed as a result?_
 
 During sprint 1 one thing we agreed on was that our communication was adequate, but could have been better. As a result, during sprint 2 we were much more active about sharing our progress, both in terms of how often we shared progress and how detailed said progress reports were. This allowed for better work regarding functions that used the parts our team members were actively working on.
+**Adejare Taiwo**
+_What part of the current testing, CI, or CD process creates the most friction, and what might improve it?_
+
+Our pipeline now makes sure only tested code is deployed, and the smoke test tells us straight away if the deployed API isn't responding. However, environment variables like the JWT secret, storage connection string and mail settings are still set on the container app by hand. If a new feature needs a variable nobody added, the smoke test catches it, but only after the broken version is already live. Someone then has to fix it manually while the app is down. The improvement is that if the smoke test fails, the CD workflow could automatically switch traffic back to the previous working version. Azure Container Apps keeps old versions, so this is one extra step in the workflow. We could also keep a list of required environment variables in the README and check it whenever a pull request adds a new one, so missing settings are caught before the merge.
+
+**Oluwanifemi Tawoju**
+_What part of the current testing, CI, or CD process creates the most friction, and what might improve it?_
+
+We have develop, staging and main branches, but only main is deployed. That means the first time a change runs on real Azure, with the real database, storage and email, is in production. Our tests use an in-memory database and fake storage and email, which keeps them fast and free of secrets. But it also means problems that only happen with the real services, like a wrong connection string or a permissions issue, aren't found until a release. We could deploy the staging branch to a second container app, with its own database and storage container. Running the same CD workflow and smoke test there would give us a safe place to check each release against real services before merging into main.
 
 ### Work the Team Is Proud Of
 
