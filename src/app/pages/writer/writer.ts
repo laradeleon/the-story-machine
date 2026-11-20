@@ -21,6 +21,7 @@ import { create_editor } from './editor-setup';
 import { choice_snippet, insert_on_own_line, SNIPPETS } from './editor-commands';
 import { EditorView } from '@codemirror/view';
 import { StoryService } from '../../services/story.service';
+import { to_character_requests } from '../../rules/characters-rules';
 
 const exampleStory = `Welcome to The Story Machine.
 
@@ -103,6 +104,12 @@ export class Writer {
 
   //the parser's AST as formatted text, shown in the AST popup. null when the popup is closed
   protected astOutput = signal<string | null>(null);
+
+  //while Save Draft is sending the story to the backend
+  protected saving = signal(false);
+
+  //"Draft saved." or why the last save didn't work, null before the first save
+  protected saveMessage = signal<string | null>(null);
 
   constructor() {
     //the editor div only exists once the page has rendered
@@ -227,21 +234,14 @@ export class Writer {
     this.editorView?.dispatch({ effects: set_error_line.of(null) });
   }
 
-  //checks if the current draft has all three metadata variables not empty
-  private has_all_metadata(): boolean {
-    if (
-      this.state.metadata().title != '' &&
-      this.state.metadata().genres.length > 0 &&
-      this.state.metadata().description != ''
-    ) {
-      return true;
-    } else {
-      return false;
-    }
+  //a story needs a title to be published, genres and description can be left blank.
+  //spaces don't count, the backend trims them and would turn the title away
+  private has_title(): boolean {
+    return this.state.metadata().title.trim() !== '';
   }
 
   private async publishChapter() {
-    if (this.has_all_metadata()) {
+    if (this.has_title()) {
       // the open story's id, the same one that's in the url. Write Story made it on the backend
       const storyID = this.state.story_id();
       console.log(storyID);
@@ -282,14 +282,33 @@ export class Writer {
         console.error('Caught story PATCH error\n' + error);
       }
 
-      //run saveDraft() as well
+      //run save_draft() as well
     } else {
       //change to a dedicated error message for missing metadata
       this.comingSoon.set('publish');
     }
   }
 
-  private saveDraft() {
-    //check if story exists like above like publishChapter()
+  //saves the script, title, description and characters to the backend without publishing
+  protected async save_draft() {
+    this.save_script(); //keep a local copy first, like Preview does
+    this.saving.set(true);
+    this.saveMessage.set(null);
+    const story_id = this.state.story_id();
+    const metadata = this.state.metadata();
+    try {
+      await this.storyService.patchStory(story_id, {
+        //the backend won't take a blank title, so the story keeps the one it has
+        ...(metadata.title.trim() ? { title: metadata.title } : {}),
+        description: metadata.description,
+        characters: to_character_requests(this.state.characters()),
+      });
+      await this.storyService.upload_script(story_id, this.current_script());
+      this.saveMessage.set('Draft saved.');
+    } catch {
+      this.saveMessage.set("Sorry, the draft couldn't be saved. Please try again.");
+    } finally {
+      this.saving.set(false);
+    }
   }
 }

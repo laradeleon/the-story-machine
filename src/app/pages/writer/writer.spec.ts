@@ -4,6 +4,7 @@ import { By } from '@angular/platform-browser';
 import { clear_all, load_draft } from '../../services/saved-values';
 import { PreviewService } from '../../services/preview.service';
 import { WriterStateService } from '../../services/writer-state.service';
+import { StoryService } from '../../services/story.service';
 import { Writer } from './writer';
 import { ErrorKind, ErrorMessageManager } from '../../../scripting_language/error_message_manager';
 
@@ -145,6 +146,66 @@ describe('Writer', () => {
     await new Promise((resolve) => setTimeout(resolve, 10)); // the IndexedDB save is async
 
     expect((await load_draft('story-1'))?.script).toBe('Keep me');
+  });
+
+  describe('Save Draft', () => {
+    // lets save_draft() finish after its faked requests, then shows the result
+    async function settle() {
+      await new Promise((resolve) => setTimeout(resolve));
+      await fixture.whenStable();
+    }
+
+    function save_message() {
+      return fixture.nativeElement.querySelector('.save-message')?.textContent ?? null;
+    }
+
+    it('should send the metadata and characters, then upload the script', async () => {
+      const stories = TestBed.inject(StoryService);
+      const patch = vi.spyOn(stories, 'patchStory').mockResolvedValue({} as never);
+      const upload = vi.spyOn(stories, 'upload_script').mockResolvedValue();
+      const state = TestBed.inject(WriterStateService);
+      state.metadata.set({ title: 'The Lighthouse', genres: ['Horror'], description: 'A storm' });
+      state.characters.set([{ id: 'c1', name: 'Dave', description: '', emotions: [] }]);
+      set_editor_text('Hello, world.');
+
+      button_named('Save Draft').click();
+      fixture.detectChanges();
+      expect(button_named('Saving...').disabled).toBe(true);
+      await settle();
+
+      expect(patch).toHaveBeenCalledWith('story-1', {
+        title: 'The Lighthouse',
+        description: 'A storm',
+        characters: [{ name: 'Dave', description: null, emotions: [] }],
+      });
+      expect(upload).toHaveBeenCalledWith('story-1', 'Hello, world.');
+      expect(save_message()).toContain('Draft saved.');
+      expect(button_named('Save Draft').disabled).toBe(false);
+    });
+
+    it('should leave out a blank title, since the backend needs one', async () => {
+      const stories = TestBed.inject(StoryService);
+      const patch = vi.spyOn(stories, 'patchStory').mockResolvedValue({} as never);
+      vi.spyOn(stories, 'upload_script').mockResolvedValue();
+
+      button_named('Save Draft').click();
+      await settle();
+
+      expect(patch.mock.calls[0][1]).not.toHaveProperty('title');
+    });
+
+    it('should show an error and not upload the script if the story cannot be saved', async () => {
+      const stories = TestBed.inject(StoryService);
+      vi.spyOn(stories, 'patchStory').mockRejectedValue(new Error('Server Error'));
+      const upload = vi.spyOn(stories, 'upload_script').mockResolvedValue();
+
+      button_named('Save Draft').click();
+      await settle();
+
+      expect(upload).not.toHaveBeenCalled();
+      expect(save_message()).toContain("couldn't be saved");
+      expect(button_named('Save Draft').disabled).toBe(false);
+    });
   });
 
   it('should show the parser output when AST is pressed with a valid script', () => {

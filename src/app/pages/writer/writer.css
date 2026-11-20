@@ -135,6 +135,12 @@
   margin: 12px 0; /* sides come from .writer-page */
 }
 
+/* "Draft saved." or the save error, under the toolbar on the right where Save Draft is */
+.save-message {
+  margin: 0;
+  text-align: right;
+}
+
 /* margin-left: auto takes up all the spare space on its left, pushing it to the right end */
 .toolbar-right {
   margin-left: auto;

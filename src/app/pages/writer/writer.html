@@ -110,13 +110,22 @@
       <!--<button type="button" class="primary-button" (click)="comingSoon.set('Publish')">-->
       <button type="button" class="primary-button" (click)="publishChapter()">Publish</button>
 
-      <!-- TODO: swap the coming soon popup for (click)="save()" and write save() in writer.ts
-           to store the unfinished script as a draft (not published) -->
-      <button type="button" class="primary-button" (click)="comingSoon.set('Save')">
-        Save Draft
+      <!-- sends the script, metadata and characters to the backend without publishing, see save_draft() in writer.ts -->
+      <button
+        type="button"
+        class="primary-button save-draft-button"
+        [disabled]="saving()"
+        (click)="save_draft()"
+      >
+        {{ saving() ? 'Saving...' : 'Save Draft' }}
       </button>
     </div>
   </div>
+
+  <!-- whether the last Save Draft worked -->
+  @if (saveMessage(); as message) {
+    <p class="save-message" role="status">{{ message }}</p>
+  }
 </div>
 
 <!-- the metadata popup, opened by the Metadata button -->

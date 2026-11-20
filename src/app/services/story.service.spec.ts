@@ -288,6 +288,23 @@ describe('StoryService', () => {
     expect(await patched).toEqual({ _id: 's1' });
   });
 
+  it('should upload the script as a plain text file in the "file" field', async () => {
+    // the test browser's FormData gives files back as text, so check what's put into it instead
+    const append = vi.spyOn(FormData.prototype, 'append');
+    const uploaded = service.upload_script('s1', 'Hello, world.');
+
+    const request = httpTesting.expectOne({ method: 'PUT', url: '/api/v1/story/s1/file' });
+    expect(request.request.body).toBeInstanceOf(FormData);
+    const [field, file] = append.mock.calls[0] as [string, File];
+    expect(field).toBe('file');
+    expect(file.type).toBe('text/plain'); // the backend turns anything else away
+    expect(await file.text()).toBe('Hello, world.');
+    request.flush({ success: true, message: 'Story file uploaded', data: { _id: 's1' } });
+
+    await uploaded;
+    append.mockRestore();
+  });
+
   it('should fail if the script request fails for another reason', async () => {
     const script = service.get_script('s1');
 

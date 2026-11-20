@@ -8,6 +8,7 @@ import {
   StoryEditResponse,
   ChapterResponse,
   ChapterSummaryResponse,
+  CharacterRequest,
 } from '../../models/api';
 import { StoryDetails } from '../../models/story-details';
 import { Chapter } from '../../models/chapter';
@@ -33,8 +34,9 @@ export function toStoryDetails(story: StoryResponse): StoryDetails {
 // the fields of a story PATCH /story/:id can change
 export interface StoryChanges {
   status?: 'draft' | 'published';
-  title?: string;
+  title?: string; // can't be blank
   description?: string;
+  characters?: CharacterRequest[]; // replaces the whole list
 }
 
 @Injectable({ providedIn: 'root' }) // global singleton
@@ -127,10 +129,12 @@ export class StoryService {
     return storiesResponse.data;
   }
 
-  //TODO check how storytext is supposed to work
-  //upload the draft .txt file to the given storyID
-  putStory(storyID: () => string, storyText: () => string) {
-    return this.http.put(this.storiesURL + '/' + storyID + '/file', storyText);
+  // uploads the script as the story's .txt file, replacing any earlier one. author only
+  async upload_script(storyId: string, script: string) {
+    // the backend reads the "file" field and only takes plain text
+    const form = new FormData();
+    form.append('file', new File([script], 'draft.txt', { type: 'text/plain' }));
+    await firstValueFrom(this.http.put(`${this.storiesURL}/${storyId}/file`, form));
   }
 
   //upload the chapter to the given storyID
