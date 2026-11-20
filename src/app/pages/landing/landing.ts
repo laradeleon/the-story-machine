@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { StoryService } from '../../services/story.service';
 import { ReadingProgressService } from '../../services/reading-progress.service';
 import { AuthService } from '../../services/auth.service';
@@ -9,6 +9,9 @@ import { StoryPreview } from '../../components/story-preview/story-preview';
 import { AccountMenu } from '../../components/account-menu/account-menu';
 import { StoryCard } from '../../components/story-card/story-card';
 
+// the backend needs a title to create a story, the writer replaces it from the metadata popup
+export const NEW_STORY_TITLE = 'Untitled story';
+
 @Component({
   imports: [StoryPreview, RouterLink, AccountMenu, StoryCard],
   selector: 'app-landing', //html tag for this component
@@ -16,10 +19,29 @@ import { StoryCard } from '../../components/story-card/story-card';
   templateUrl: './landing.html',
 })
 export class Landing {
-  protected stories = inject(StoryService).getStories();
+  private storyService = inject(StoryService);
+  private router = inject(Router);
+  protected stories = this.storyService.getStories();
   protected selectedStory = signal<StoryDetails | null>(null); // the story shown in the popup. this is null when it's closed
   private progress = inject(ReadingProgressService);
   protected isSignedIn = inject(AuthService).isSignedIn; // guests have to sign in before writing
+
+  protected creating = signal(false); // while the new story is being made on the backend
+  protected createError = signal<string | null>(null); // why the last new story couldn't be made
+
+  // makes a new story on the backend and opens it in the writer
+  protected async write_story() {
+    this.creating.set(true);
+    this.createError.set(null);
+    try {
+      const story = await this.storyService.postStory(NEW_STORY_TITLE, '');
+      await this.router.navigate(['/write', story._id]);
+    } catch {
+      this.createError.set("Sorry, a new story couldn't be started. Please try again.");
+    } finally {
+      this.creating.set(false);
+    }
+  }
 
   // stories this reader started but hasnt finished, with the chapter they're on, for the continue reading list
   // most recently read first

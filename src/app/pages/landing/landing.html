@@ -28,19 +28,20 @@
 
   <div class="section-header">
     <h2 class="section-heading">Stories</h2>
-    <!-- takes the author to the writing page -->
-    <!--<a class="primary-button" routerLink="/write">Write Story</a>-->
-
-    <!-- guests get the sign in popup instead of the writing page -->
+    <!-- makes a new story and opens it in the writer. guests get the sign in popup instead -->
     <button
       type="button"
-      class="primary-button"
-      [routerLink]="isSignedIn() ? '/write' : null"
-      (click)="!isSignedIn() && accountMenu.openSignIn('signIn')"
+      class="primary-button write-story-button"
+      [disabled]="creating()"
+      (click)="isSignedIn() ? write_story() : accountMenu.openSignIn('signIn')"
     >
-      Write Story
+      {{ creating() ? 'Creating...' : 'Write Story' }}
     </button>
   </div>
+
+  @if (createError(); as error) {
+    <p class="section-message create-error" role="alert">{{ error }}</p>
+  }
 
   <!-- shows loading message if stories are still being retrieved -->
   @if (stories.isLoading()) {

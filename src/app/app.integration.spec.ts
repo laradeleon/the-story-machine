@@ -6,7 +6,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { routes } from './app.routes';
 import { clear_all, save_draft } from './services/saved-values';
-import { PLACEHOLDER_STORY_ID, WriterStateService } from './services/writer-state.service';
+import { WriterStateService } from './services/writer-state.service';
 
 describe('Integration: finding and reading a story', () => {
   let harness: RouterTestingHarness;
@@ -170,12 +170,12 @@ describe('Integration: finding and reading a story', () => {
     expect(page().textContent).toContain('Sorry, this chapter could not be retrieved.');
   });
 
-  it('should send /write to the new story', async () => {
+  it('should send /write with no story to the home page, since Write Story has to make one first', async () => {
     await harness.navigateByUrl('/write');
     await waitForPage();
 
-    expect(TestBed.inject(Router).url).toBe(`/write/${PLACEHOLDER_STORY_ID}`);
-    expect(TestBed.inject(WriterStateService).story_id()).toBe(PLACEHOLDER_STORY_ID);
+    expect(TestBed.inject(Router).url).toBe('/');
+    await answerStoryList();
   });
 
   it('should open the editor with the script of the story in the url', async () => {

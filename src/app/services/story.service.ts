@@ -30,6 +30,13 @@ export function toStoryDetails(story: StoryResponse): StoryDetails {
   };
 }
 
+// the fields of a story PATCH /story/:id can change
+export interface StoryChanges {
+  status?: 'draft' | 'published';
+  title?: string;
+  description?: string;
+}
+
 @Injectable({ providedIn: 'root' }) // global singleton
 export class StoryService {
   private http = inject(HttpClient);
@@ -111,12 +118,10 @@ export class StoryService {
     return storiesResponse.data;
   }
 
-  //change the story's status to draft or published
-  async patchStory(storyID: string, storyStatus: 'draft' | 'published') {
+  //change the story's status (draft or published), title or description. only the fields given are sent
+  async patchStory(storyID: string, changes: StoryChanges) {
     const storiesResponse = await firstValueFrom(
-      this.http.patch<APIResponse<StoryResponse>>(this.storiesURL + '/' + storyID, {
-        status: storyStatus,
-      }),
+      this.http.patch<APIResponse<StoryResponse>>(this.storiesURL + '/' + storyID, changes),
     );
 
     return storiesResponse.data;

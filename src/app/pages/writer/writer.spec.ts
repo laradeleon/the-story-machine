@@ -3,7 +3,7 @@ import { Router, provideRouter } from '@angular/router';
 import { By } from '@angular/platform-browser';
 import { clear_all, load_draft } from '../../services/saved-values';
 import { PreviewService } from '../../services/preview.service';
-import { PLACEHOLDER_STORY_ID } from '../../services/writer-state.service';
+import { WriterStateService } from '../../services/writer-state.service';
 import { Writer } from './writer';
 import { ErrorKind, ErrorMessageManager } from '../../../scripting_language/error_message_manager';
 
@@ -39,6 +39,9 @@ describe('Writer', () => {
       imports: [Writer],
       providers: [provideRouter([])], // the back button and preview() both need a router
     }).compileComponents();
+
+    // the /write/:storyId route opens the story before the writer page is made
+    await TestBed.inject(WriterStateService).open_story('story-1');
 
     fixture = TestBed.createComponent(Writer);
     component = fixture.componentInstance;
@@ -104,7 +107,7 @@ describe('Writer', () => {
 
     expect(TestBed.inject(PreviewService).chapter()).not.toBeNull();
     // the story id lets the reader's Back to writing return to this story
-    expect(navigate).toHaveBeenCalledWith(['/preview', PLACEHOLDER_STORY_ID]);
+    expect(navigate).toHaveBeenCalledWith(['/preview', 'story-1']);
   });
 
   it('should show the error and stay on the writer when Preview is pressed with a mistake', () => {
@@ -141,7 +144,7 @@ describe('Writer', () => {
     fixture.destroy();
     await new Promise((resolve) => setTimeout(resolve, 10)); // the IndexedDB save is async
 
-    expect((await load_draft(PLACEHOLDER_STORY_ID))?.script).toBe('Keep me');
+    expect((await load_draft('story-1'))?.script).toBe('Keep me');
   });
 
   it('should show the parser output when AST is pressed with a valid script', () => {

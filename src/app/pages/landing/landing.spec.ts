@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { computed, resource, signal } from '@angular/core';
-import { Landing } from './landing';
-import { provideRouter } from '@angular/router';
+import { Landing, NEW_STORY_TITLE } from './landing';
+import { provideRouter, Router } from '@angular/router';
 import { StoryService } from '../../services/story.service';
 import { AuthService } from '../../services/auth.service';
 import { StoryDetails } from '../../../models/story-details';
@@ -188,6 +188,101 @@ describe('Landing with no stories', () => {
   it('should show a message if there are no stories', () => {
     expect(compiled.querySelectorAll('.story-card').length).toBe(0);
     expect(compiled.textContent).toContain('No stories yet so stay tuned!');
+  });
+});
+
+describe('Landing Write Story', () => {
+  let fixture: ComponentFixture<Landing>;
+  let compiled: HTMLElement;
+  const signedIn = signal(true);
+  const postStory = vi.fn();
+
+  const realShowModal = HTMLDialogElement.prototype.showModal;
+
+  beforeEach(async () => {
+    HTMLDialogElement.prototype.showModal = vi.fn(); // the sign in popup opens with this
+    signedIn.set(true);
+    postStory.mockReset();
+
+    await TestBed.configureTestingModule({
+      imports: [Landing],
+      providers: [
+        provideRouter([]),
+        {
+          provide: AuthService,
+          useValue: {
+            isSignedIn: signedIn,
+            currentUser: computed(() => ({ username: 'ada', email: '' })),
+          },
+        },
+        {
+          provide: StoryService,
+          useValue: {
+            getStories: () => resource({ defaultValue: [], loader: async () => [] }),
+            postStory,
+          },
+        },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(Landing);
+    compiled = fixture.nativeElement as HTMLElement;
+    await fixture.whenStable();
+  });
+
+  afterEach(() => {
+    HTMLDialogElement.prototype.showModal = realShowModal;
+  });
+
+  function write_button() {
+    return compiled.querySelector('.write-story-button') as HTMLButtonElement;
+  }
+
+  // lets write_story() finish after its faked request, then shows the result
+  async function settle() {
+    await new Promise((resolve) => setTimeout(resolve));
+    await fixture.whenStable();
+  }
+
+  it('should make a new story and open it in the writer', async () => {
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    // held until the test lets it finish, so the button can be checked while it's creating
+    let finish!: (story: { _id: string }) => void;
+    postStory.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+
+    write_button().click();
+    fixture.detectChanges();
+    expect(write_button().disabled).toBe(true);
+    expect(write_button().textContent).toContain('Creating...');
+
+    finish({ _id: 'new-id' });
+    await settle();
+
+    expect(postStory).toHaveBeenCalledWith(NEW_STORY_TITLE, '');
+    expect(navigate).toHaveBeenCalledWith(['/write', 'new-id']);
+  });
+
+  it('should show an error and let them try again if the story cannot be made', async () => {
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    postStory.mockRejectedValue(new Error('Server Error'));
+
+    write_button().click();
+    await settle();
+
+    expect(compiled.querySelector('.create-error')).not.toBeNull();
+    expect(write_button().disabled).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('should ask guests to sign in instead of making a story', async () => {
+    signedIn.set(false);
+    await fixture.whenStable();
+
+    write_button().click();
+    await fixture.whenStable();
+
+    expect(postStory).not.toHaveBeenCalled();
+    expect(compiled.querySelector('app-sign-in-popup #sign-in-title')).not.toBeNull();
   });
 });
 

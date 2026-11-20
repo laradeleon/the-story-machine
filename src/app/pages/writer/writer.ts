@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { PreviewService } from '../../services/preview.service';
-import { PLACEHOLDER_STORY_ID, WriterStateService } from '../../services/writer-state.service';
+import { WriterStateService } from '../../services/writer-state.service';
 import { MetadataDialog } from '../../components/metadata-dialog/metadata-dialog';
 import { CharactersDialog } from '../../components/characters-dialog/characters-dialog';
 import { ComingSoonDialog } from '../../components/coming-soon-dialog/coming-soon-dialog';
@@ -242,23 +242,8 @@ export class Writer {
 
   private async publishChapter() {
     if (this.has_all_metadata()) {
-      // the open story's id, the same one that's in the url
-      let storyID = this.state.story_id();
-      // TODO: remove once Write Story creates the story on the backend, then every story has a real id
-      if (storyID === PLACEHOLDER_STORY_ID) {
-        //call POST/api/v1/story
-        try {
-          const response = await this.storyService.postStory(
-            this.state.metadata().title,
-            this.state.metadata().description,
-          );
-          //use the new story's id for the rest of this publish
-          storyID = response._id;
-        } catch (error) {
-          console.error('Caught story POST error\n' + error);
-          return; // there's no story to add the chapter to
-        }
-      }
+      // the open story's id, the same one that's in the url. Write Story made it on the backend
+      const storyID = this.state.story_id();
       console.log(storyID);
       //call POST/api/v1/story/{storyID}/chapter
       //get lines[] JSON from parser
@@ -283,9 +268,14 @@ export class Writer {
         console.error('Caught story Chapter POST error\n' + error);
       }
       //call PATCH/api/v1/story/{storyID}
-      //set status to "published"
+      //set status to "published", with the title and description from the metadata popup
+      //(the story was made as "Untitled story" by Write Story)
       try {
-        const response = await this.storyService.patchStory(storyID, 'published');
+        const response = await this.storyService.patchStory(storyID, {
+          status: 'published',
+          title: this.state.metadata().title,
+          description: this.state.metadata().description,
+        });
         //set storyID to the returned value
         console.log(response);
       } catch (error) {

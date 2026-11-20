@@ -278,6 +278,16 @@ describe('StoryService', () => {
     expect((await saved).script).toBe('');
   });
 
+  it('should send only the fields given when changing a story', async () => {
+    const patched = service.patchStory('s1', { status: 'published', title: 'The Lighthouse' });
+
+    const request = httpTesting.expectOne({ method: 'PATCH', url: '/api/v1/story/s1' });
+    expect(request.request.body).toEqual({ status: 'published', title: 'The Lighthouse' });
+    request.flush({ success: true, message: 'Story updated', data: { _id: 's1' } });
+
+    expect(await patched).toEqual({ _id: 's1' });
+  });
+
   it('should fail if the script request fails for another reason', async () => {
     const script = service.get_script('s1');
 

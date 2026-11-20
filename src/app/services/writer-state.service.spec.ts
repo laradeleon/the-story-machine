@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Draft } from '../../models/draft';
 import { AssetService } from './asset.service';
 import { clear_all, load_draft, load_story_assets, save_asset, save_draft } from './saved-values';
-import { PLACEHOLDER_STORY_ID, SAVE_DELAY, WriterStateService } from './writer-state.service';
+import { SAVE_DELAY, WriterStateService } from './writer-state.service';
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -187,13 +187,12 @@ describe('WriterStateService', () => {
   });
 
   it('should not save anything before a story is opened', async () => {
-    await save_draft(draft_with_script(PLACEHOLDER_STORY_ID, 'Saved text'));
     TestBed.inject(WriterStateService);
 
     TestBed.tick(); // runs the effect with the empty starting values
     await saves_finished();
 
-    expect((await load_draft(PLACEHOLDER_STORY_ID))!.script).toBe('Saved text');
+    expect(await load_draft('')).toBeNull(); // '' is the id before a story is opened
   });
 
   it("should restore the story's saved draft", async () => {

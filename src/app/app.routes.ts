@@ -3,7 +3,6 @@ import { Landing } from './pages/landing/landing';
 import { Reader } from './pages/reader/reader';
 import { Profile } from './pages/profile/profile';
 import { open_story_from_url } from './pages/writer/open-story';
-import { PLACEHOLDER_STORY_ID } from './services/writer-state.service';
 
 export const routes: Routes = [
   { path: '', component: Landing }, //home page
@@ -12,8 +11,8 @@ export const routes: Routes = [
   // plays the writer's script instead of a saved story. the id is the story to go back to
   { path: 'preview/:storyId', component: Reader, data: { preview: true } },
   { path: 'preview', component: Reader, data: { preview: true } }, // older links with no story id
-  // a new story until Write Story gets a real id from the backend
-  { path: 'write', redirectTo: `write/${PLACEHOLDER_STORY_ID}`, pathMatch: 'full' },
+  // a story has to be made with Write Story first, which goes to /write/<new id>
+  { path: 'write', redirectTo: '', pathMatch: 'full' },
   {
     path: 'write/:storyId',
     // loaded only when someone opens the writer so the editor isn't downloaded on every page

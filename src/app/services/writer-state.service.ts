@@ -19,9 +19,6 @@ import { default_placement } from '../rules/placement';
 import { AssetService } from './asset.service';
 import { load_draft, save_draft } from './saved-values';
 
-// the story_id used until the backend gives each new story a real one
-export const PLACEHOLDER_STORY_ID = 'new-story';
-
 // ms to wait after the last change before saving, so a burst of changes is one save
 export const SAVE_DELAY = 500;
 
@@ -34,7 +31,7 @@ function empty_metadata(): StoryMetadata {
 export class WriterStateService {
   private assets = inject(AssetService);
 
-  story_id = signal(PLACEHOLDER_STORY_ID);
+  story_id = signal(''); // the backend's id for the open story, '' until open_story() runs
   script = signal<string | null>(null); // the editor text
   metadata = signal<StoryMetadata>(empty_metadata());
   characters = signal<Character[]>([]);
