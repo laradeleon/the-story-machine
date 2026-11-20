@@ -66,6 +66,15 @@ describe('CharactersDialog', () => {
     expect(dialog.error()).toBe('Fix the problems above before closing.');
   });
 
+  it('should clear the error once a character is changed', () => {
+    two_characters_named('Dave');
+    dialog.close();
+
+    dialog.rename_character(state.characters()[1].id, 'Eve');
+
+    expect(dialog.error()).toBeNull();
+  });
+
   it('should close once the duplicate has been renamed', () => {
     two_characters_named('Dave');
     dialog.rename_character(state.characters()[1].id, 'Sam');
@@ -108,8 +117,10 @@ describe('CharactersDialog', () => {
     dialog.add_emotion();
     const [first, second] = state.characters()[0].emotions;
 
-    dialog.rename_emotion(first.id, 'happy');
-    dialog.rename_emotion(second.id, ' Happy ');
+    dialog.select_emotion(first.id);
+    dialog.rename_emotion('happy');
+    dialog.select_emotion(second.id);
+    dialog.rename_emotion(' Happy ');
     dialog.close();
 
     expect(dialog.duplicate_emotion_keys().has('happy')).toBe(true);
@@ -381,15 +392,6 @@ describe('CharactersDialog', () => {
       expect(compiled.querySelectorAll('.tag-warning').length).toBe(2);
     });
 
-    it('should show the error message when an emotion is added with no character', () => {
-      dialog.add_emotion();
-      fixture.detectChanges();
-
-      expect(compiled.querySelector('.modal-error')!.textContent).toContain(
-        'Select or add a character first.',
-      );
-    });
-
     it('should show the empty messages when a character has no emotions and nothing is selected', () => {
       expect(compiled.querySelector('.column-character > .column-empty')!.textContent).toContain(
         'Select a character, or add one.',
@@ -489,7 +491,7 @@ describe('CharactersDialog', () => {
       click('Add character');
       const before = JSON.stringify(state.characters());
 
-      dialog.rename_emotion('missing', 'x');
+      dialog.rename_emotion('x');
       dialog.delete_image();
       dialog.remove_selected_emotion();
       dialog.set_placement({ x: 5, y: 5, zoom: 200 });
@@ -498,7 +500,8 @@ describe('CharactersDialog', () => {
     });
 
     it('should do nothing for emotion actions when no character is selected', () => {
-      dialog.rename_emotion('missing', 'x');
+      dialog.add_emotion();
+      dialog.rename_emotion('x');
       dialog.delete_image();
       dialog.remove_selected_emotion();
       dialog.remove_selected_character();
@@ -506,11 +509,11 @@ describe('CharactersDialog', () => {
       expect(state.characters()).toEqual([]);
     });
 
-    it('should ask for an emotion before a picture is put on a character', async () => {
+    it('should not put a picture on a character with no emotion selected', async () => {
       click('Add character');
 
       expect(await dialog.set_image_from_file(png())).toBe(false);
-      expect(dialog.error()).toBe('Select an emotion first.');
+      expect(state.characters()[0].emotions).toEqual([]);
     });
   });
 

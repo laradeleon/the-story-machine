@@ -18,8 +18,7 @@ export class PreviewService {
 
   chapter = signal<Chapter | null>(null); // the parsed script for the reader to play
 
-  // true once restore() has put the saved chapter back. nothing is saved before then,
-  // otherwise the empty starting value would wipe out the saved chapter
+  // false until restore() runs, so the empty start value isn't saved over the saved chapter
   private restored = signal(false);
 
   constructor() {
@@ -30,9 +29,7 @@ export class PreviewService {
     });
   }
 
-  // loads the saved chapter from IndexedDB.
-  // called once before the app starts (see app.config.ts), so the reader never sees an empty value.
-  // a chapter built while this was loading is newer, so it is kept
+  // puts the saved chapter back, unless a newer one was built while loading
   async restore() {
     const saved = await load<Chapter | null>(CHAPTER_KEY, null);
     if (this.chapter() === null) this.chapter.set(saved);

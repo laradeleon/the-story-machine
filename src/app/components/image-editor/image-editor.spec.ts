@@ -116,7 +116,7 @@ describe('ImageEditor', () => {
     const onChange = vi.fn();
     editor.placement_changed.subscribe(onChange);
 
-    editor.set_offset_x('1e400');
+    editor.set_offset('x', '1e400');
 
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -147,8 +147,8 @@ describe('ImageEditor', () => {
     const changes: Placement[] = [];
     editor.placement_changed.subscribe((p) => changes.push(p));
 
-    editor.set_offset_x('100000');
-    editor.set_offset_y('-250');
+    editor.set_offset('x', '100000');
+    editor.set_offset('y', '-250');
 
     expect(changes[0].x).toBe(100);
     expect(changes[1].y).toBe(-100);

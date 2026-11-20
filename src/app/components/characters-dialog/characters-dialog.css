@@ -25,9 +25,11 @@
 /* the three columns always sit side by side. each one fills the height and scrolls only where marked */
 .characters-columns {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr) minmax(0, 1.2fr);
-  height: 70vh;
-  min-height: 480px;
+  /* the character list is 240px, narrower on a small screen so the other two keep room */
+  grid-template-columns: clamp(140px, 24%, 240px) minmax(0, 1fr) minmax(0, 1.2fr);
+  /* as tall as the screen allows once the title and Close button fit, but never huge */
+  height: min(720px, calc(100dvh - 200px));
+  min-height: 320px;
   overflow: hidden;
   border-radius: 0.75rem;
 }
@@ -55,6 +57,7 @@
 .column-emotion {
   background: var(--blue-medium);
   padding-right: 16px;
+  overflow-y: auto; /* on a short screen the zoom, offsets and buttons scroll into view instead of being cut off */
   --field-bg: var(--blue-medium-dark); /* the emotion name box */
   --image-area-bg: var(--blue-bright); /* the picture area; TEMPORARY, see --blue-bright above */
 }
@@ -95,15 +98,24 @@
   gap: 12px;
 }
 
+/* min-width 0 lets the name box shrink, so a narrow column doesn't push the outline button out of sight */
 .name-row > .modal-field {
   flex: 1;
+  min-width: 0;
 }
 
-/* the remove button under the emotion list, at the bottom of the middle column */
+/* boxes fill their column instead of keeping the browser's default width */
+.characters-columns .modal-field input,
+.characters-columns .modal-field textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* the remove button under the emotion list, full width like Add emotion */
 .column-bottom {
   display: flex;
   flex: none;
-  justify-content: flex-end;
 }
 
 /* the list that scrolls on its own */

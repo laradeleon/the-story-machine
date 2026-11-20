@@ -77,7 +77,7 @@
         step="0.5"
         aria-label="Offset X"
         [value]="placement().x"
-        (change)="set_offset_x(offsetXBox.value)"
+        (change)="set_offset('x', offsetXBox.value)"
       />
     </label>
     <label class="modal-field">
@@ -89,7 +89,7 @@
         step="0.5"
         aria-label="Offset Y"
         [value]="placement().y"
-        (change)="set_offset_y(offsetYBox.value)"
+        (change)="set_offset('y', offsetYBox.value)"
       />
     </label>
   </div>

@@ -140,7 +140,7 @@ export function images_of(characters: Character[]): AssetRef[] {
   );
 }
 
-// the problems that stop the popup closing (duplicate_names can be passed in if already known)
+// the problems that stop the popup closing
 export function character_problems(
   characters: Character[],
   duplicate_names: ReadonlySet<string> = duplicated_keys(characters.map((c) => c.name)),

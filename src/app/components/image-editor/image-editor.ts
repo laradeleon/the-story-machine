@@ -11,9 +11,7 @@ import {
   placement_style,
 } from '../../rules/placement';
 
-// a picture area you can drop an image into, pick one with Upload, move the picture around and zoom it.
-// it reports what the user did and keeps no data of its own, so the parent decides what to store.
-// used for character portraits, and for backgrounds later
+// a picture area to drop, upload, move and zoom an image. keeps no data, the parent stores it
 @Component({
   imports: [ConfirmDialog],
   selector: 'app-image-editor',
@@ -25,7 +23,7 @@ export class ImageEditor {
   placement = input.required<Placement>(); // where the picture sits and how big it is
   alt_text = input<string>(''); // a description of the picture, for screen readers
   guide = input(false); // whether the see-through person guide can be shown (portraits only)
-  guide_visible = input(true); // whether the guide is drawn right now. the parent holds this, so its button can sit beside the name
+  guide_visible = input(true); // whether the guide is drawn now, held by the parent
 
   image_chosen = output<File>(); // a file was dropped or picked, the parent checks and reads it
   placement_changed = output<Placement>(); // the picture was moved, zoomed or typed in
@@ -49,19 +47,16 @@ export class ImageEditor {
     placement: Placement;
   } | null = null;
 
-  // the CSS that places the picture inside the area
   picture_style(): string {
     return placement_style(this.placement());
   }
 
-  // a file dragged over the area is highlighted. preventDefault lets the browser accept the drop
   on_drag_over(event: DragEvent) {
-    event.preventDefault();
+    event.preventDefault(); // lets the browser accept the drop
     this.dragging.set(true);
   }
 
-  // leaving for a child of the area (the picture, the hint, the guide) is not leaving the area,
-  // so the highlight stays until the pointer really leaves
+  // clears the highlight, unless the pointer only moved onto a child of the area
   on_drag_leave(event: DragEvent, area: HTMLElement) {
     const target = event.relatedTarget as Node | null;
     if (target && area.contains(target)) {
@@ -80,7 +75,7 @@ export class ImageEditor {
     }
   }
 
-  // the Upload button: passes the chosen file up, then clears the input so the same file can be picked again
+  // passes the picked file up, clearing the input so the same file can be picked again
   on_upload(picker: HTMLInputElement) {
     const file = picker.files?.[0];
     picker.value = '';
@@ -89,7 +84,7 @@ export class ImageEditor {
     }
   }
 
-  // the pointer is down on the picture: remember where it started, so the move can be worked out
+  // remembers where a drag of the picture started
   on_pointer_down(event: PointerEvent, area: HTMLElement) {
     if (!this.image_url()) {
       return;
@@ -104,7 +99,7 @@ export class ImageEditor {
     area.setPointerCapture(event.pointerId); // keeps tracking the pointer even if it leaves the area
   }
 
-  // the pointer moved while the picture is held: move it by the same distance on screen
+  // moves the held picture by the distance the pointer moved
   on_pointer_move(event: PointerEvent) {
     const start = this.pan_start;
     if (!start) {
@@ -119,12 +114,11 @@ export class ImageEditor {
     });
   }
 
-  // the pointer was let go, so stop moving the picture
   on_pointer_up() {
     this.pan_start = null;
   }
 
-  // the zoom slider or number box: kept between 50% and 300%. a box that isn't a number is ignored
+  // sets the zoom from the slider or box, ignoring non-numbers
   set_zoom(value: string) {
     const zoom = number_from_box(value);
     if (zoom === null) {
@@ -133,23 +127,14 @@ export class ImageEditor {
     this.placement_changed.emit({ ...this.placement(), zoom: clamp_zoom(zoom) });
   }
 
-  // the Offset X box, given as a % of the area, kept within the clamp. a box that isn't a number is ignored
-  set_offset_x(value: string) {
-    const x = number_from_box(value);
-    if (x !== null) {
-      this.placement_changed.emit({ ...this.placement(), x: clamp_offset(x) });
+  // sets Offset X or Y from its box, ignoring non-numbers
+  set_offset(axis: 'x' | 'y', value: string) {
+    const offset = number_from_box(value);
+    if (offset !== null) {
+      this.placement_changed.emit({ ...this.placement(), [axis]: clamp_offset(offset) });
     }
   }
 
-  // the Offset Y box, given as a % of the area, kept within the clamp. a box that isn't a number is ignored
-  set_offset_y(value: string) {
-    const y = number_from_box(value);
-    if (y !== null) {
-      this.placement_changed.emit({ ...this.placement(), y: clamp_offset(y) });
-    }
-  }
-
-  // the picture is removed once the user confirms
   confirm_delete() {
     this.image_deleted.emit();
   }

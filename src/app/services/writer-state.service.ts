@@ -39,6 +39,9 @@ export class WriterStateService {
   // false until open_story() has loaded the draft, so the empty starting values aren't saved over it
   private opened = false;
 
+  // the latest open_story call, so opens run one at a time
+  private opening: Promise<void> = Promise.resolve();
+
   // the draft as it's saved (updated_at is added when saving)
   private draft = computed<Omit<Draft, 'updated_at'>>(() => ({
     story_id: this.story_id(),
@@ -61,8 +64,15 @@ export class WriterStateService {
     inject(DestroyRef).onDestroy(() => this.cancel_save_later());
   }
 
-  // saves the open story, then loads another one (empty if it has no draft)
-  async open_story(story_id = PLACEHOLDER_STORY_ID) {
+  // saves the open story, then loads another one, waiting for any open already running
+  open_story(story_id = PLACEHOLDER_STORY_ID): Promise<void> {
+    const open = () => this.switch_story(story_id);
+    this.opening = this.opening.then(open, open);
+    return this.opening;
+  }
+
+  // loads a story (empty if it has no draft), saving the open one first
+  private async switch_story(story_id: string) {
     if (this.opened) {
       this.opened = false;
       await this.save_now();
@@ -146,7 +156,7 @@ export class WriterStateService {
     }
     this.characters.update((characters) => set_image_url(characters, asset_id, url));
     if (await this.save_now()) {
-      await this.assets.uploaded(asset_id);
+      await this.assets.forget(asset_id);
     }
   }
 

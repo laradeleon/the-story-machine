@@ -55,18 +55,14 @@ export class AssetService {
     await Promise.all(unused.map(delete_asset));
   }
 
-  uploaded(asset_id: string) {
-    return this.forget(asset_id);
-  }
-
   // drops a picture's local copy from memory and IndexedDB
   async forget(asset_id: string) {
     const url = this.local_urls().get(asset_id);
     if (url) {
       URL.revokeObjectURL(url);
-      this.local_urls.update((urls) => without(urls, asset_id));
+      this.local_urls.update((urls) => new Map([...urls].filter(([id]) => id !== asset_id)));
     }
-    this.unsaved.update((ids) => without_id(ids, asset_id));
+    this.unsaved.update((ids) => new Set([...ids].filter((id) => id !== asset_id)));
     await delete_asset(asset_id);
   }
 
@@ -83,18 +79,4 @@ export class AssetService {
     this.local_urls.set(new Map());
     this.unsaved.set(new Set());
   }
-}
-
-// a copy of the set without one id (signals need a new set)
-function without_id(ids: ReadonlySet<string>, id: string): ReadonlySet<string> {
-  const copy = new Set(ids);
-  copy.delete(id);
-  return copy;
-}
-
-// a copy of the map without one key (signals need a new map)
-function without(urls: ReadonlyMap<string, string>, key: string): ReadonlyMap<string, string> {
-  const copy = new Map(urls);
-  copy.delete(key);
-  return copy;
 }

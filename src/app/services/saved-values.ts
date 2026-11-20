@@ -2,14 +2,7 @@ import { DBSchema, IDBPDatabase, openDB } from 'idb';
 import { PendingAsset } from '../../models/asset';
 import { Draft } from '../../models/draft';
 
-// helpers for saving and loading values in the browser's IndexedDB.
-// plain functions, not a service, since they keep no state of their own
-// (apart from the one open database connection, which every call shares).
-//
-// IndexedDB is async, so every function here returns a Promise.
-// it stores objects as they are (no JSON needed), can hold Blobs (for images later),
-// and has a much bigger size limit than localStorage (which is about 5 MB).
-// the idb library wraps IndexedDB's callback API in Promises
+// IndexedDB helpers. plain functions, not a service, since the only state is the shared connection
 
 const DB_NAME = 'story-machine';
 const DB_VERSION = 3; // raise this when the stores below change, so upgrade runs again
@@ -22,8 +15,7 @@ interface SavedValuesDB extends DBSchema {
   assets: { key: string; value: PendingAsset; indexes: { by_story: string } };
 }
 
-// the open database. holds the Promise rather than the database itself,
-// so two calls at the same time share one open instead of both opening it
+// a Promise, so calls at the same time share one open
 let db_promise: Promise<IDBPDatabase<SavedValuesDB>> | null = null;
 
 // opens the database, making any stores that don't exist yet
@@ -43,10 +35,7 @@ function open_db(): Promise<IDBPDatabase<SavedValuesDB>> {
           assets.createIndex('by_story', 'story_id');
         }
       },
-      // a newer version of the app has opened in another tab and needs to raise DB_VERSION.
-      // it can't until every tab closes its connection, so close this one instead of making it wait forever.
-      // this tab's next call opens again, which fails (its DB_VERSION is now too old) and falls back
-      // like any other IndexedDB error, until the page is reloaded
+      // a newer tab needs to upgrade, so close this connection instead of blocking it
       blocking(_current_version, _new_version, event) {
         (event.target as IDBDatabase).close();
         db_promise = null;
@@ -63,8 +52,7 @@ function open_db(): Promise<IDBPDatabase<SavedValuesDB>> {
   return db_promise;
 }
 
-// reads a saved value, or gives back the fallback if nothing was saved.
-// IndexedDB can fail (blocked by the browser, private mode), so any error gives back the fallback instead
+// reads a saved value, or the fallback if it's missing or IndexedDB fails
 export async function load<T>(key: string, fallback: T): Promise<T> {
   try {
     const saved = await (await open_db()).get('values', key);
@@ -74,8 +62,7 @@ export async function load<T>(key: string, fallback: T): Promise<T> {
   }
 }
 
-// saves a value, or removes it when it's null.
-// values are copied as they are, so plain objects, arrays, strings, numbers and Blobs all work
+// saves a value, or removes it when it's null
 export async function save(key: string, value: unknown): Promise<void> {
   try {
     const db = await open_db();
@@ -89,15 +76,12 @@ export async function save(key: string, value: unknown): Promise<void> {
   }
 }
 
-// reads one story's draft, or null if that story has no draft saved.
-// unlike the other functions here this throws when IndexedDB fails, because "couldn't read it"
-// has to be told apart from "there isn't one" (see WriterStateService.open_story)
 export async function load_draft(story_id: string): Promise<Draft | null> {
+  // throws on failure, unlike the others, so "couldn't read" differs from "no draft"
   return (await (await open_db()).get('drafts', story_id)) ?? null;
 }
 
-// saves a story's draft, replacing the one saved before it (if any).
-// gives back whether it was saved, for callers that must only go on once it is
+// saves a story's draft, giving back whether it worked
 export async function save_draft(draft: Draft): Promise<boolean> {
   try {
     await (await open_db()).put('drafts', draft);
@@ -137,7 +121,6 @@ export async function delete_asset(asset_id: string): Promise<void> {
   }
 }
 
-// removes every saved value, draft and picture. used by the tests so each one starts the same
 export async function clear_all(): Promise<void> {
   const db = await open_db();
   await Promise.all([db.clear('values'), db.clear('drafts'), db.clear('assets')]);

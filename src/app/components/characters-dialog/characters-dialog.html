@@ -99,7 +99,11 @@
           </ul>
 
           <div class="column-bottom">
-            <button type="button" class="cancel-button" (click)="confirm_character_open.set(true)">
+            <button
+              type="button"
+              class="cancel-button add-button"
+              (click)="confirming.set('character')"
+            >
               Remove character
             </button>
           </div>
@@ -119,7 +123,7 @@
                   #emotionName
                   type="text"
                   [value]="emotion.emotion"
-                  (input)="rename_emotion(emotion.id, emotionName.value)"
+                  (input)="rename_emotion(emotionName.value)"
                 />
               </label>
               <button
@@ -144,7 +148,7 @@
             (image_deleted)="delete_image()"
           >
             <!-- sits to the right of Delete image in the editor's button row -->
-            <button type="button" class="cancel-button" (click)="confirm_emotion_open.set(true)">
+            <button type="button" class="cancel-button" (click)="confirming.set('emotion')">
               Delete emotion
             </button>
           </app-image-editor>
@@ -164,21 +168,23 @@
 </dialog>
 
 <!-- both deletes ask first -->
-@if (confirm_character_open()) {
-  <app-confirm-dialog
-    title="Delete this character?"
-    message="Its emotions and portraits are removed too."
-    confirm_label="Delete"
-    (confirmed)="remove_selected_character()"
-    (closed)="confirm_character_open.set(false)"
-  />
-}
-@if (confirm_emotion_open()) {
-  <app-confirm-dialog
-    title="Delete this emotion?"
-    message="Its portrait is removed too."
-    confirm_label="Delete"
-    (confirmed)="remove_selected_emotion()"
-    (closed)="confirm_emotion_open.set(false)"
-  />
+@switch (confirming()) {
+  @case ('character') {
+    <app-confirm-dialog
+      title="Delete this character?"
+      message="Its emotions and portraits are removed too."
+      confirm_label="Delete"
+      (confirmed)="remove_selected_character()"
+      (closed)="confirming.set(null)"
+    />
+  }
+  @case ('emotion') {
+    <app-confirm-dialog
+      title="Delete this emotion?"
+      message="Its portrait is removed too."
+      confirm_label="Delete"
+      (confirmed)="remove_selected_emotion()"
+      (closed)="confirming.set(null)"
+    />
+  }
 }

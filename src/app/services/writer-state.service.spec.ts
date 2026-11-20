@@ -283,4 +283,15 @@ describe('WriterStateService', () => {
     expect((await load_draft('story-1'))!.script).toBe('Unsaved change');
     expect(state.script()).toBeNull();
   });
+
+  it('should open stories one at a time when asked to open two at once', async () => {
+    const state = TestBed.inject(WriterStateService);
+    await state.open_story('story-1');
+    state.script.set('Unsaved change');
+
+    await Promise.all([state.open_story('story-2'), state.open_story('story-3')]);
+
+    expect((await load_draft('story-1'))!.script).toBe('Unsaved change');
+    expect(state.story_id()).toBe('story-3');
+  });
 });

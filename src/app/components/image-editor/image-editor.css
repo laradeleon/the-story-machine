@@ -14,7 +14,7 @@
   flex: 1;
   align-items: center;
   justify-content: center;
-  min-height: 260px;
+  min-height: 180px;
   overflow: hidden; /* a zoomed or moved picture is cut off at the edges */
   touch-action: none; /* so dragging the picture doesn't scroll the page on touch screens */
   border: 2px dashed var(--blue-line, #7b87c9);
@@ -97,15 +97,22 @@
   gap: 12px;
 }
 
+/* min-width 0 lets the slider shrink, so the number box beside it stays in view */
 .setting-row > input[type='range'] {
   flex: 1;
+  min-width: 0;
 }
 
 /* the offset X and Y boxes sit side by side, each the width of its half of the row */
 .offset-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); /* minmax so the halves can shrink below their labels */
   gap: 12px;
+}
+
+/* the Upload / Delete buttons wrap onto a second line when the column is too narrow for them */
+.modal-actions {
+  flex-wrap: wrap;
 }
 
 .number-box {

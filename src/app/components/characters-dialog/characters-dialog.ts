@@ -1,4 +1,12 @@
-import { Component, computed, inject, output, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  linkedSignal,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { ModalDialog } from '../../directives/modal-dialog';
 import { Character, Emotion } from '../../../models/story';
 import { AssetService } from '../../services/asset.service';
@@ -38,12 +46,20 @@ export class CharactersDialog {
 
   protected readonly name_key = name_key;
 
-  error = signal<string | null>(null);
   selected_character_id = signal<string | null>(null);
   selected_emotion_id = signal<string | null>(null);
   outline_visible = signal(true); // the see-through person guide over the picture
-  confirm_character_open = signal(false);
-  confirm_emotion_open = signal(false);
+  confirming = signal<'character' | 'emotion' | null>(null); // which delete popup is showing
+
+  // cleared whenever the characters or the selection change
+  error = linkedSignal({
+    source: () => [
+      this.state.characters(),
+      this.selected_character_id(),
+      this.selected_emotion_id(),
+    ],
+    computation: (): string | null => null,
+  });
 
   selected_character = computed(
     () => this.state.characters().find((c) => c.id === this.selected_character_id()) ?? null,
@@ -77,19 +93,16 @@ export class CharactersDialog {
 
   // adds "Character N" and selects it
   add_character() {
-    this.error.set(null);
     const character = new_character(this.state.characters());
     this.state.characters.update((list) => [...list, character]);
     this.select_character(character.id);
   }
 
   rename_character(id: string, name: string) {
-    this.error.set(null);
     this.change_character(id, (character) => ({ ...character, name }));
   }
 
   set_description(id: string, description: string) {
-    this.error.set(null);
     this.change_character(id, (character) => ({ ...character, description }));
   }
 
@@ -98,13 +111,12 @@ export class CharactersDialog {
     const id = this.selected_character_id();
     if (id) {
       this.state.remove_character(id);
-      this.select_character(null); // also clears the error
+      this.select_character(null);
     }
   }
 
   // removes the selected emotion and its picture, once confirmed
   remove_selected_emotion() {
-    this.error.set(null);
     const ids = this.selected_ids();
     if (ids) {
       this.state.remove_emotion(ids.character_id, ids.emotion_id);
@@ -114,17 +126,14 @@ export class CharactersDialog {
 
   // selects a character (null clears the selection) and clears the emotion
   select_character(id: string | null) {
-    this.error.set(null);
     this.selected_character_id.set(id);
     this.selected_emotion_id.set(null);
   }
 
   // adds "Emotion N" to the selected character and selects it
   add_emotion() {
-    this.error.set(null);
     const character = this.selected_character();
     if (!character) {
-      this.error.set('Select or add a character first.');
       return;
     }
 
@@ -133,20 +142,11 @@ export class CharactersDialog {
     this.selected_emotion_id.set(emotion.id);
   }
 
-  // renames an emotion of the selected character
-  rename_emotion(id: string, name: string) {
-    this.error.set(null);
-    const character = this.selected_character();
-    if (!character) {
-      return;
-    }
-    this.state.characters.update((characters) =>
-      update_emotion(characters, character.id, id, (e) => ({ ...e, emotion: name })),
-    );
+  rename_emotion(name: string) {
+    this.update_selected_emotion((e) => ({ ...e, emotion: name }));
   }
 
   select_emotion(id: string) {
-    this.error.set(null);
     this.selected_emotion_id.set(id);
   }
 
@@ -156,13 +156,8 @@ export class CharactersDialog {
 
   // converts the file and puts it on the selected emotion, giving back false if it can't
   async set_image_from_file(file: File | null): Promise<boolean> {
-    this.error.set(null);
     const ids = this.selected_ids();
-    if (!ids) {
-      this.error.set('Select an emotion first.');
-      return false;
-    }
-    if (!file) {
+    if (!ids || !file) {
       return false;
     }
 
@@ -184,7 +179,6 @@ export class CharactersDialog {
 
   // removes the selected emotion's picture, keeping the emotion
   delete_image() {
-    this.error.set(null);
     const ids = this.selected_ids();
     if (ids) {
       this.state.remove_emotion_image(ids.character_id, ids.emotion_id);
