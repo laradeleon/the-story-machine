@@ -1,0 +1,11 @@
+<!-- appModal opens this as a popup, closed fires on esc or OK so the page can remove it -->
+<dialog appModal #modal="appModal" class="error-dialog" role="alertdialog" (closed)="closed.emit()">
+  <div class="error-content">
+    <h2>{{ title() }}</h2>
+    <p>{{ message() }}</p>
+
+    <div class="error-actions">
+      <button type="button" class="primary-button" (click)="modal.close()">OK</button>
+    </div>
+  </div>
+</dialog>

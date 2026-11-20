@@ -1,0 +1,25 @@
+<!-- inside reader view, pressing exit on top left OR esc key opens this as a popup  -->
+<dialog
+  appModal
+  #modal="appModal"
+  class="exit-dialog"
+  aria-labelledby="exit-title"
+  (closed)="closed.emit()"
+>
+  <div class="exit-content">
+    @if (isPreview()) {
+      <h2 id="exit-title">Leave the preview?</h2>
+      <p>You'll go back to writing your story.</p>
+    } @else {
+      <h2 id="exit-title">Exit this story?</h2>
+      <p>Your progress is saved so you can pick up where you left off next time you open it.</p>
+    }
+    <!-- keep reading or exit button -->
+    <div class="exit-actions">
+      <button type="button" class="cancel-button" autofocus (click)="modal.close()">
+        Keep reading
+      </button>
+      <button type="button" class="primary-button" (click)="exit.emit()">Exit</button>
+    </div>
+  </div>
+</dialog>

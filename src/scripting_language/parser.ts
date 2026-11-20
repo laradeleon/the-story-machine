@@ -10,8 +10,11 @@ import {
   GotoNode,
 } from './ast.ts';
 import { tokenize, Token, TokenType } from './lexer.ts';
+import { ErrorKind, ErrorMessageManager } from './error_message_manager.ts';
 
 export const MAX_OPTIONS = 4;
+
+const errors = new ErrorMessageManager();
 
 export default class Parser {
   private tokens: Token[] = [];
@@ -56,10 +59,11 @@ export default class Parser {
         return this.parse_prose();
 
       case TokenType.DialogueSpeaker:
-        return this.parse_Dialogue(0);
+        this.switch_Speaker();
+        return this.parse_node();
 
       case TokenType.DialogueText:
-        return this.parse_Dialogue(1);
+        return this.parse_Dialogue();
 
       case TokenType.ChoiceStart:
         return this.parse_choice();
@@ -74,7 +78,7 @@ export default class Parser {
         return this.parse_goto();
 
       default:
-        throw new Error(`Unexpected token '${token.value}' at line ${token.lineNumber}`);
+        throw errors.format_error(ErrorKind.UnexpectedToken, token.lineNumber, token.value);
     }
   }
 
@@ -88,20 +92,17 @@ export default class Parser {
     return { lineNumber: token.lineNumber, kind: 'GotoNode', destination: token.value };
   }
 
-  //construct a dialogue node by popping off the speaker token and dialogue text token
-  private parse_Dialogue(type: number): DialogueNode {
-    let speaker_token: Token;
+  private switch_Speaker() {
+    const speaker_token = this.pop();
+    this.current_speaker = speaker_token;
+  }
 
-    if (type == 0) {
-      speaker_token = this.pop();
-      this.current_speaker = speaker_token;
-    } else {
-      if (this.current_speaker == null) {
-        throw new Error(
-          `Dialogue text has no speaker at line ${this.at().lineNumber}, please add a speaker.`,
-        );
-      }
-      speaker_token = this.current_speaker;
+  //construct a dialogue node by popping off the speaker token and dialogue text token
+  private parse_Dialogue(): DialogueNode {
+    const speaker_token = this.current_speaker;
+
+    if (speaker_token == null) {
+      throw errors.format_error(ErrorKind.DialogueMissingSpeaker, this.at().lineNumber);
     }
 
     const dialogue_token = this.pop(); //now the actual dialogue
@@ -124,12 +125,19 @@ export default class Parser {
       const option_token = this.pop(); //get the option information
       //check to see if we have a destination for the choice or if we have too many choices
       if (this.at().type != TokenType.Goto) {
-        throw new Error(
-          `Unexpected token '${this.at().value}' at line ${this.at().lineNumber}\nNo destination provided for choice option: '${option_token.value}'`,
+        throw errors.format_error(
+          ErrorKind.ChoiceOptionMissingDestination,
+          this.at().lineNumber,
+          this.at().value,
+          option_token.value,
         );
       } else if (num_options > MAX_OPTIONS) {
-        throw new Error(
-          `Unexpected token '${this.at().value}' at line ${this.at().lineNumber}\nToo many options, maximum of '${MAX_OPTIONS}' options per choice: '${option_token.value}'`,
+        throw errors.format_error(
+          ErrorKind.TooManyChoiceOptions,
+          this.at().lineNumber,
+          this.at().value,
+          option_token.value,
+          String(MAX_OPTIONS),
         );
       }
 

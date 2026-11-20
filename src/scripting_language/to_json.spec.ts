@@ -1,6 +1,9 @@
 import { toJSON } from './to_json.ts';
 import { ASTNode, StoryNode } from './ast.ts';
 import { StoryInfo } from '../models/story.ts';
+import { ErrorKind, ErrorMessageManager } from './error_message_manager.ts';
+
+const errors = new ErrorMessageManager();
 
 //info for toJSON call, values don't matter for these tests
 const info: StoryInfo = {
@@ -8,6 +11,9 @@ const info: StoryInfo = {
   author: 'test-author',
   story_id: 'test-id',
 };
+
+//the story's characters, everyone who speaks in these tests
+const characters = ['Logan', 'Grandpa', 'Krupal'];
 
 //wraps a list of nodes in a StoryNode so each test only has to write the body
 function story(body: ASTNode[]): StoryNode {
@@ -23,7 +29,7 @@ describe('toJSON', () => {
   it('converts a ProseNode into a prose line', () => {
     const input = story([{ kind: 'ProseNode', lineNumber: 1, text: 'Earth to Logan.' }]);
 
-    const result = toJSON(input, info);
+    const result = toJSON(input, info, characters);
 
     expect(result.story.lines).toEqual([
       {
@@ -38,7 +44,7 @@ describe('toJSON', () => {
       { kind: 'DialogueNode', lineNumber: 1, speaker: 'Logan', text: '"Good morning!"' },
     ]);
 
-    const result = toJSON(input, info);
+    const result = toJSON(input, info, characters);
 
     expect(result.story.lines).toEqual([
       {
@@ -56,7 +62,7 @@ describe('toJSON', () => {
   it('converts an EndNode into an end line', () => {
     const input = story([{ kind: 'EndNode', lineNumber: 1 }]);
 
-    const result = toJSON(input, info);
+    const result = toJSON(input, info, characters);
 
     expect(result.story.lines).toEqual([{ line_id: 0, end: true }]);
   });
@@ -68,7 +74,7 @@ describe('toJSON', () => {
       { kind: 'EndNode', lineNumber: 3 },
     ]);
 
-    const result = toJSON(input, info);
+    const result = toJSON(input, info, characters);
 
     expect(result.story.lines.map((line) => line.line_id)).toEqual([0, 1, 2]);
   });
@@ -76,7 +82,7 @@ describe('toJSON', () => {
   it('copies the story info onto the result', () => {
     const input = story([{ kind: 'EndNode', lineNumber: 1 }]);
 
-    const result = toJSON(input, info);
+    const result = toJSON(input, info, characters);
 
     expect(result.title).toBe('Test Story');
     expect(result.author).toBe('test-author');
@@ -88,7 +94,7 @@ describe('toJSON', () => {
   it('ignores extra whitespace between words', () => {
     const input = story([{ kind: 'ProseNode', lineNumber: 1, text: '  Hello    there  ' }]);
 
-    const result = toJSON(input, info);
+    const result = toJSON(input, info, characters);
 
     expect(result.story.lines[0]).toEqual({
       line_id: 0,
@@ -101,7 +107,7 @@ describe('toJSON', () => {
       { kind: 'DialogueNode', lineNumber: 1, speaker: 'Krupal', text: '“Wake up dude..”' },
     ]);
 
-    const result = toJSON(input, info);
+    const result = toJSON(input, info, characters);
 
     expect(result.story.lines[0]).toEqual({
       line_id: 0,
@@ -123,7 +129,7 @@ describe('toJSON', () => {
       { kind: 'ProseNode', lineNumber: 3, text: 'After.' },
     ]);
 
-    const result = toJSON(input, info);
+    const result = toJSON(input, info, characters);
 
     //the flag doesn't create a line, so "After." is line 1
     expect(result.story.flags).toEqual({ ending: { line_id: 1 } });
@@ -146,7 +152,7 @@ describe('toJSON', () => {
       { kind: 'EndNode', lineNumber: 7 },
     ]);
 
-    const result = toJSON(input, info);
+    const result = toJSON(input, info, characters);
 
     //lines: 0 = choice, 1 = "You went left.", 2 = END
     expect(result.story.lines[0]).toEqual({
@@ -166,7 +172,7 @@ describe('toJSON', () => {
       { kind: 'EndNode', lineNumber: 4 },
     ]);
 
-    const result = toJSON(input, info);
+    const result = toJSON(input, info, characters);
 
     expect(result.story.lines[0]).toEqual({ line_id: 0, goto_line: 2 });
   });
@@ -178,7 +184,7 @@ describe('toJSON', () => {
       { kind: 'EndNode', lineNumber: 3 },
     ]);
 
-    const result = toJSON(input, info);
+    const result = toJSON(input, info, characters);
 
     expect(result.story.lines[0]).toEqual({ line_id: 0, goto_line: 1 });
     //flag names are stored lowercased
@@ -196,13 +202,17 @@ describe('toJSON', () => {
     ]);
 
     //the arrow function matters, without it the error is thrown before expect can catch it
-    expect(() => toJSON(input, info)).toThrow('Flag already exists on line: 3');
+    expect(() => toJSON(input, info, characters)).toThrow(
+      errors.format_error(ErrorKind.FlagAlreadyExists, 3).message,
+    );
   });
 
   it('throws when a goto points at a missing flag', () => {
     const input = story([{ kind: 'GotoNode', lineNumber: 1, destination: 'nowhere' }]);
 
-    expect(() => toJSON(input, info)).toThrow('Flag does not exist for goto on line: 1');
+    expect(() => toJSON(input, info, characters)).toThrow(
+      errors.format_error(ErrorKind.FlagDoesNotExist, 1).message,
+    );
   });
 
   it('throws when a choice option points at a missing flag', () => {
@@ -217,6 +227,33 @@ describe('toJSON', () => {
     ]);
 
     //the error uses the option's line number, not the choice's
-    expect(() => toJSON(input, info)).toThrow('Flag does not exist for goto on line: 2');
+    expect(() => toJSON(input, info, characters)).toThrow(
+      errors.format_error(ErrorKind.FlagDoesNotExist, 2).message,
+    );
+  });
+
+  it("throws when dialogue is by someone who isn't one of the characters", () => {
+    const input = story([
+      { kind: 'ProseNode', lineNumber: 1, text: 'Hello.' },
+      { kind: 'DialogueNode', lineNumber: 2, speaker: 'Arthur', text: '"Hi!"' },
+    ]);
+
+    expect(() => toJSON(input, info, characters)).toThrow(
+      errors.format_error(ErrorKind.CharacterDoesNotExist, 2, 'Arthur').message,
+    );
+  });
+
+  it('throws when the speaker is spelled with different capitals, like the backend', () => {
+    const input = story([{ kind: 'DialogueNode', lineNumber: 1, speaker: 'logan', text: '"Hi!"' }]);
+
+    expect(() => toJSON(input, info, characters)).toThrow(
+      errors.format_error(ErrorKind.CharacterDoesNotExist, 1, 'logan').message,
+    );
+  });
+
+  it('needs no characters for a script without dialogue', () => {
+    const input = story([{ kind: 'ProseNode', lineNumber: 1, text: 'Hello.' }]);
+
+    expect(toJSON(input, info, []).story.lines).toHaveLength(1);
   });
 });

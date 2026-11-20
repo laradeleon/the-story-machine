@@ -1,0 +1,108 @@
+Test Coverage Report using V8 (Sprint 2)
+
+Generated on 2026-11-20 from the develop branch of each repository:
+
+# Front End:
+-----------------------------------|---------|----------|---------|---------|-------------------------------------
+File                               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+-----------------------------------|---------|----------|---------|---------|-------------------------------------
+All files                          |   94.81 |    91.21 |   92.54 |   96.64 |
+ app                               |     100 |       90 |     100 |     100 |
+  app.ts                           |     100 |       90 |     100 |     100 | 10
+ app/components/account-menu       |   93.47 |      100 |   83.33 |     100 |
+  account-menu.html                |   87.75 |      100 |      50 |     100 |
+ app/components/ast-dialog         |    87.5 |      100 |   33.33 |     100 |
+  ast-dialog.html                  |   82.35 |      100 |       0 |     100 |
+ app/components/characters-dialog  |   95.03 |    94.36 |   90.47 |   98.87 |
+  characters-dialog.html           |    92.4 |     90.9 |      75 |   97.84 | 97,152
+  characters-dialog.ts             |   99.03 |    95.91 |   97.67 |     100 | 77-85
+ app/components/confirm-dialog     |   97.14 |    91.66 |   83.33 |     100 |
+  confirm-dialog.html              |     100 |       50 |     100 |     100 | 5
+  confirm-dialog.ts                |   93.33 |      100 |   66.66 |     100 |
+ app/components/error-dialog       |   95.45 |      100 |   66.66 |     100 |
+  error-dialog.html                |   92.85 |      100 |      50 |     100 |
+ app/components/exit-reader-dialog |   83.33 |    91.66 |     100 |   88.23 |
+  exit-reader-dialog.html          |   78.57 |       50 |     100 |   84.61 | 11-12
+ app/components/image-editor       |    96.4 |    97.22 |      90 |   99.03 |
+  image-editor.html                |   94.04 |      100 |   83.33 |   98.11 | 13
+  image-editor.ts                  |     100 |    96.15 |     100 |     100 | 82
+ app/components/metadata-dialog    |   96.07 |      100 |      75 |     100 |
+  metadata-dialog.html             |   97.22 |      100 |   66.66 |     100 |
+  metadata-dialog.ts               |   93.33 |      100 |      80 |     100 |
+ app/components/sign-in-popup      |   91.44 |       84 |   88.88 |   93.95 |
+  sign-in-popup.html               |      90 |    93.75 |    87.5 |   93.97 | 88-96,107,119
+  sign-in-popup.ts                 |   93.57 |    76.74 |   89.28 |   93.93 | 190,222,262-273,280
+ app/components/story-preview      |   99.21 |      100 |   95.45 |     100 |
+  story-preview.ts                 |   98.18 |      100 |    92.3 |     100 |
+ app/pages/landing                 |   97.87 |    96.42 |   88.88 |     100 |
+  landing.html                     |   96.72 |      100 |      80 |     100 |
+  landing.ts                       |     100 |    93.75 |     100 |     100 | 64
+ app/pages/profile                 |   96.39 |    89.28 |    91.3 |   97.63 |
+  profile.html                     |   96.24 |    88.46 |   71.42 |   98.64 | 48
+  profile.ts                       |   96.72 |       90 |     100 |   96.22 | 80,145
+ app/pages/reader                  |   86.57 |    77.09 |   88.46 |   85.25 |
+  reader.html                      |   94.11 |    95.45 |   85.71 |   98.03 | 92
+  reader.ts                        |   79.82 |    73.39 |   89.47 |   79.04 | 125-128,138,173,221-222,250,279-305
+ app/pages/writer                  |   93.22 |    88.88 |    87.3 |   98.01 |
+  error-line.ts                    |     100 |    94.73 |     100 |     100 | 46
+  writer.html                      |   89.79 |      100 |   66.66 |     100 |
+  writer.ts                        |   93.45 |       80 |   90.62 |   95.87 | 153-154,250,311
+ app/services                      |   98.18 |    94.47 |   96.69 |    98.2 |
+  api-errors.ts                    |     100 |     92.3 |     100 |     100 | 40
+  asset.service.ts                 |   97.77 |    95.45 |    92.3 |     100 | 61
+  auth.service.ts                  |   95.83 |    88.88 |    90.9 |   95.23 | 88-91
+  image.service.ts                 |    97.5 |    94.73 |     100 |   97.29 | 62
+  saved-values.ts                  |   95.34 |    78.57 |    92.3 |   95.34 | 45,111
+  story.service.ts                 |   95.55 |    89.47 |    92.3 |   95.23 | 109-112
+  writer-state.service.ts          |     100 |    97.87 |     100 |     100 | 112
+ scripting_language                |   94.34 |    90.69 |     100 |   94.22 |
+  lexer.ts                         |   88.42 |    88.67 |     100 |   88.17 | 63,68-75,104-106,173-174
+  parser.ts                        |   96.22 |    85.71 |     100 |   96.22 | 81,128
+-----------------------------------|---------|----------|---------|---------|-------------------------------------
+
+# Back End:
+--------------------------------|---------|----------|---------|---------|-------------------
+File                            | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+--------------------------------|---------|----------|---------|---------|-------------------
+All files                       |   98.47 |    85.94 |   97.68 |    98.9 |
+ src                            |    91.3 |       50 |      80 |     100 |
+  app.controller.ts             |     100 |       50 |     100 |     100 | 4
+  app.module.ts                 |   85.71 |       50 |   66.66 |     100 | 28-38
+ src/auth                       |     100 |    93.75 |     100 |     100 |
+  auth.service.ts               |     100 |    91.66 |     100 |     100 | 57
+ src/auth/dto                   |     100 |       50 |     100 |     100 |
+  login-response.dto.ts         |     100 |       50 |     100 |     100 | 22
+ src/auth/guards                |     100 |       95 |     100 |     100 |
+  roles.guard.ts                |     100 |    83.33 |     100 |     100 | 15
+ src/chapter                    |     100 |    98.46 |     100 |     100 |
+  check-script.ts               |     100 |    97.72 |     100 |     100 | 146
+ src/chapter/dto                |     100 |       50 |     100 |     100 |
+  chapter-response.dto.ts       |     100 |       50 |     100 |     100 | 41-48
+  create-chapter.dto.ts         |     100 |       50 |     100 |     100 | 18
+ src/chapter/entities           |     100 |       50 |     100 |     100 |
+  script.entity.ts              |     100 |       50 |     100 |     100 | 25-103
+ src/common/filters             |   91.66 |    81.81 |     100 |   91.66 |
+  all-exceptions.filter.ts      |   91.66 |    81.81 |     100 |   91.66 | 23,74
+ src/common/interceptors        |      90 |     87.5 |     100 |      90 |
+  response.interceptor.ts       |      90 |     87.5 |     100 |      90 | 38
+ src/common/logger              |   76.92 |       75 |      75 |      80 |
+  logger.config.ts              |   76.92 |       75 |      75 |      80 | 41,54
+ src/common/swagger             |     100 |    94.73 |     100 |     100 |
+  api-response.decorators.ts    |     100 |    94.44 |     100 |     100 | 47
+ src/mail                       |     100 |       75 |     100 |     100 |
+  mail.service.ts               |     100 |       75 |     100 |     100 | 16
+ src/storage                    |     100 |    66.66 |     100 |     100 |
+  storage.service.ts            |     100 |    66.66 |     100 |     100 | 8,59
+ src/story                      |   97.82 |    90.69 |     100 |    97.7 |
+  story.service.ts              |   97.46 |    90.69 |     100 |   97.29 | 150,186
+ src/story/dto                  |     100 |    58.33 |     100 |     100 |
+  create-story.dto.ts           |     100 |       50 |     100 |     100 | 17
+  story-response.dto.ts         |     100 |       50 |     100 |     100 | 69-124
+ src/story/entities             |     100 |       50 |     100 |     100 |
+  story.entity.ts               |     100 |       50 |     100 |     100 | 74
+ src/user/dto                   |     100 |       50 |     100 |     100 |
+  create-user.dto.ts            |     100 |       50 |     100 |     100 | 17-30
+  user-response.dto.ts          |     100 |       50 |     100 |     100 | 41-44
+ src/user/entities              |     100 |       50 |     100 |     100 |
+  user.entity.ts                |     100 |       50 |     100 |     100 | 31
+--------------------------------|---------|----------|---------|---------|-------------------

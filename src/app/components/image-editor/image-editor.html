@@ -1,0 +1,122 @@
+<!-- the picture area: drop an image here, click it to pick one (while it's empty), drag the picture to move it -->
+<div
+  #area
+  class="portrait-area"
+  [class.dragging]="dragging()"
+  [class.movable]="image_url()"
+  [attr.role]="image_url() ? null : 'button'"
+  [attr.tabindex]="image_url() ? null : 0"
+  (dragover)="on_drag_over($event)"
+  (dragleave)="on_drag_leave($event, area)"
+  (drop)="on_drop($event)"
+  (pointerdown)="on_pointer_down($event, area)"
+  (pointermove)="on_pointer_move($event)"
+  (pointerup)="on_pointer_up()"
+  (pointercancel)="on_pointer_up()"
+  (click)="!image_url() && picker.click()"
+  (keydown.enter)="!image_url() && picker.click()"
+>
+  @if (image_url(); as url) {
+    <img
+      class="picture"
+      draggable="false"
+      [src]="url"
+      [alt]="alt_text()"
+      [style]="picture_style()"
+    />
+  } @else {
+    <p class="hint">Drop a {{ accepted_type_names }} here, or press Upload.</p>
+  }
+
+  <!-- a see-through person from the waist up, to line the portrait up with. only for portraits -->
+  @if (guide() && guide_visible()) {
+    <div class="silhouette" aria-hidden="true">
+      <svg viewBox="0 0 200 300">
+        <circle cx="100" cy="100" r="36" />
+        <path d="M30 300 C30 200 60 165 100 165 C140 165 170 200 170 300 Z" />
+      </svg>
+    </div>
+  }
+</div>
+
+<!-- the zoom and offset values, under the picture. they can be typed in too.
+     a fieldset so disabling it turns off every box inside it while there's no picture -->
+<fieldset class="settings" [disabled]="!image_url()">
+  <label class="modal-field">
+    Zoom (%)
+    <div class="setting-row">
+      <input
+        #zoomBox
+        type="range"
+        [min]="min_zoom"
+        [max]="max_zoom"
+        step="1"
+        [value]="placement().zoom"
+        (input)="set_zoom(zoomBox.value)"
+      />
+      <input
+        #zoomNumber
+        class="number-box"
+        type="number"
+        aria-label="Zoom"
+        [min]="min_zoom"
+        [max]="max_zoom"
+        [value]="placement().zoom"
+        (change)="set_zoom(zoomNumber.value)"
+      />
+    </div>
+  </label>
+
+  <div class="offset-row">
+    <label class="modal-field">
+      Offset X (%)
+      <input
+        #offsetXBox
+        class="number-box"
+        type="number"
+        step="0.5"
+        aria-label="Offset X"
+        [value]="placement().x"
+        (change)="set_offset('x', offsetXBox.value)"
+      />
+    </label>
+    <label class="modal-field">
+      Offset Y (%)
+      <input
+        #offsetYBox
+        class="number-box"
+        type="number"
+        step="0.5"
+        aria-label="Offset Y"
+        [value]="placement().y"
+        (change)="set_offset('y', offsetYBox.value)"
+      />
+    </label>
+  </div>
+</fieldset>
+
+<div class="modal-actions">
+  <input #picker type="file" [accept]="accepted_types" hidden (change)="on_upload(picker)" />
+  <button type="button" class="primary-button" (click)="picker.click()">Upload</button>
+  <button
+    type="button"
+    class="cancel-button"
+    [disabled]="!image_url()"
+    (click)="confirm_delete_open.set(true)"
+  >
+    Delete image
+  </button>
+  <!-- anything the parent puts here sits to the right of Delete image -->
+  <ng-content />
+</div>
+
+<!-- asks before the picture is removed -->
+@if (confirm_delete_open()) {
+  <app-confirm-dialog
+    title="Delete this image?"
+    message="The picture is removed, but the item stays in the list."
+    confirm_label="Delete"
+    (confirmed)="confirm_delete()"
+    (closed)="confirm_delete_open.set(false)"
+  />
+}

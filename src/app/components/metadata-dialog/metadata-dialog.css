@@ -1,0 +1,27 @@
+/* the border, shadow and blurred background come from dialog[appModal] in styles.css */
+.metadata-dialog {
+  --dialog-width: 480px;
+}
+
+.metadata-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 32px;
+}
+
+.metadata-content h2 {
+  font-size: 1.75rem;
+}
+
+/* the labels, boxes, buttons and their colours are shared, see styles.css */
+.metadata-hint {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+/* the cancel and save buttons sit at the bottom */
+.metadata-content .modal-actions {
+  margin-top: 8px;
+}

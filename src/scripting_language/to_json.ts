@@ -1,10 +1,21 @@
 // takes an AST from the parser and converts it to JSON
 import { StoryNode } from './ast.ts';
 import { StoryInfo, StoryJSON, Text } from '../models/story.ts';
+import { ErrorKind, ErrorMessageManager } from './error_message_manager.ts';
+
+const errors = new ErrorMessageManager();
 
 // ---------- Main function ----------
 
-export function toJSON(story: StoryNode, info: StoryInfo): StoryJSON {
+// character_names are the story's characters (from the Characters popup). every dialogue speaker
+// has to be one of them exactly as written, the backend turns the chapter away otherwise
+export function toJSON(
+  story: StoryNode,
+  info: StoryInfo,
+  character_names: readonly string[],
+): StoryJSON {
+  const characters = new Set(character_names);
+
   // TODO step 1: work out which line_id each flag points to (see find_flags)
   // why first? a choice can jump to a flag further down the story
   const flags: Map<string, number> = find_flags(story);
@@ -38,6 +49,9 @@ export function toJSON(story: StoryNode, info: StoryInfo): StoryJSON {
         break;
 
       case 'DialogueNode':
+        if (!characters.has(node.speaker)) {
+          throw errors.format_error(ErrorKind.CharacterDoesNotExist, node.lineNumber, node.speaker);
+        }
         result.story.lines.push({
           line_id: result.story.lines.length,
           dialogue: {
@@ -81,6 +95,11 @@ export function toJSON(story: StoryNode, info: StoryInfo): StoryJSON {
 
 // ---------- Helpers ----------
 
+// every name that speaks in the script, e.g. so tests and examples can allow all of them
+export function speakers_of(story: StoryNode): string[] {
+  return story.body.flatMap((node) => (node.kind === 'DialogueNode' ? [node.speaker] : []));
+}
+
 //returns flag name -> line_id of the line right after the flag
 function find_flags(story: StoryNode): Map<string, number> {
   const flags = new Map<string, number>();
@@ -94,7 +113,7 @@ function find_flags(story: StoryNode): Map<string, number> {
 
       //check for duplicate names of flags
       if (flags.has(name)) {
-        throw new Error('Flag already exists on line: ' + node.lineNumber);
+        throw errors.format_error(ErrorKind.FlagAlreadyExists, node.lineNumber);
       }
 
       flags.set(name, count);
@@ -110,7 +129,7 @@ function resolve_flag(flags: Map<string, number>, destination: string, lineNumbe
   const result = flags.get(destination.toLowerCase());
 
   if (result === undefined) {
-    throw new Error('Flag does not exist for goto on line: ' + lineNumber);
+    throw errors.format_error(ErrorKind.FlagDoesNotExist, lineNumber);
   }
 
   return result;

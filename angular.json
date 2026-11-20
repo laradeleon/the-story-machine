@@ -68,7 +68,16 @@
           "defaultConfiguration": "development"
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "setupFiles": ["src/test-setup.ts"],
+            "coverageThresholds": {
+              "statements": 75,
+              "branches": 75,
+              "functions": 75,
+              "lines": 75
+            }
+          }
         },
         "lint": {
           "builder": "@angular-eslint/builder:lint",
