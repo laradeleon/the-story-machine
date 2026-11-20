@@ -17,8 +17,9 @@ import { ReadingProgressService } from '../../services/reading-progress.service'
 import { AuthService } from '../../services/auth.service';
 import { StoryService } from '../../services/story.service';
 import { ComingSoonDialog } from '../coming-soon-dialog/coming-soon-dialog';
+import { ConfirmDialog } from '../confirm-dialog/confirm-dialog';
 @Component({
-  imports: [DatePipe, RouterLink, ComingSoonDialog],
+  imports: [DatePipe, RouterLink, ComingSoonDialog, ConfirmDialog],
   selector: 'app-story-preview',
   styleUrl: './story-preview.css',
   templateUrl: './story-preview.html',
@@ -47,12 +48,11 @@ export class StoryPreview {
   protected deleting = signal(false); // while the delete is on its way to the backend
   protected deleteError = signal<string | null>(null); // why the last delete didn't work
   protected showEditComingSoon = signal(false); // editing a saved story isn't built yet
+  protected confirmDeleteOpen = signal(false); // whether the "are you sure?" popup is open
+  protected deleteMessage = computed(() => `This story will be deleted. This can't be undone.`);
 
-  // asks first, then deletes the story and closes the popup
+  // runs once the author confirms in the popup, deletes the story and closes the preview
   protected async delete_story() {
-    if (!confirm(`Delete "${this.story().title}"? This can't be undone.`)) {
-      return;
-    }
     this.deleting.set(true);
     this.deleteError.set(null);
     try {

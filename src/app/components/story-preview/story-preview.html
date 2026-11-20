@@ -44,7 +44,7 @@
           type="button"
           class="preview-button delete-button"
           [disabled]="deleting()"
-          (click)="delete_story()"
+          (click)="confirmDeleteOpen.set(true)"
         >
           {{ deleting() ? 'Deleting...' : 'Delete' }}
         </button>
@@ -58,5 +58,15 @@
 
   @if (showEditComingSoon()) {
     <app-coming-soon-dialog feature="Edit" (closed)="showEditComingSoon.set(false)" />
+  }
+
+  @if (confirmDeleteOpen()) {
+    <app-confirm-dialog
+      title="Delete this story?"
+      [message]="deleteMessage()"
+      confirm_label="Delete"
+      (confirmed)="delete_story()"
+      (closed)="confirmDeleteOpen.set(false)"
+    />
   }
 </dialog>

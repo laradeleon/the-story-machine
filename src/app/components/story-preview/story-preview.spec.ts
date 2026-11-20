@@ -356,46 +356,86 @@ describe('StoryPreview author buttons', () => {
     expect(actions()).toEqual(['Read Story']);
   });
 
+  function confirm_popup() {
+    return compiled.querySelector('app-confirm-dialog dialog') as HTMLDialogElement | null;
+  }
+
+  // presses Delete on the preview, then the popup's own Delete button
+  async function confirm_delete() {
+    delete_button().click();
+    fixture.detectChanges();
+    (confirm_popup()!.querySelector('.primary-button') as HTMLButtonElement).click();
+    await fixture.whenStable();
+  }
+
+  // lets the delete finish after its response, then shows the result
+  async function settle() {
+    await new Promise((resolve) => setTimeout(resolve));
+    await fixture.whenStable();
+  }
+
+  // whether the preview itself was closed. close is one shared fake, so check which dialog it ran on
+  function preview_closed() {
+    const preview = compiled.querySelector('dialog.story-preview');
+    return vi.mocked(HTMLDialogElement.prototype.close).mock.contexts.includes(preview);
+  }
+
+  it('should ask in the confirm popup before deleting', async () => {
+    currentUser.set(author);
+    await openPreview();
+
+    delete_button().click();
+    fixture.detectChanges();
+
+    expect(confirm_popup()).not.toBeNull();
+    expect(confirm_popup()!.textContent).toContain('Delete this story?');
+    expect(confirm_popup()!.textContent).toContain(`"${component.story().title}"`);
+    httpTesting.expectNone('/api/v1/story/1');
+  });
+
   it('should delete the story, tell the page and close when the author confirms', async () => {
     currentUser.set(author);
     await openPreview();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const onDeleted = vi.fn();
     component.deleted.subscribe(onDeleted);
 
-    delete_button().click();
+    await confirm_delete();
     httpTesting.expectOne({ method: 'DELETE', url: '/api/v1/story/1' }).flush({});
-    await fixture.whenStable();
+    await settle();
 
     expect(onDeleted).toHaveBeenCalled();
-    expect(compiled.querySelector('dialog')!.close).toHaveBeenCalled();
+    expect(preview_closed()).toBe(true);
   });
 
-  it('should not delete anything if the author cancels', async () => {
+  it('should not delete anything and drop the popup if the author cancels', async () => {
     currentUser.set(author);
     await openPreview();
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
 
     delete_button().click();
+    fixture.detectChanges();
+    // Cancel or Esc fires the popup's close event. the test browser can't really close it, so it's sent by hand
+    confirm_popup()!.dispatchEvent(new Event('close'));
+    fixture.detectChanges();
 
+    expect(confirm_popup()).toBeNull();
     httpTesting.expectNone('/api/v1/story/1');
+    expect(preview_closed()).toBe(false);
   });
 
   it('should show an error and stay open if the delete fails', async () => {
     currentUser.set(author);
     await openPreview();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const onDeleted = vi.fn();
     component.deleted.subscribe(onDeleted);
 
-    delete_button().click();
+    await confirm_delete();
     httpTesting
       .expectOne('/api/v1/story/1')
       .flush({ message: 'Forbidden' }, { status: 403, statusText: 'Forbidden' });
-    await fixture.whenStable();
+    await settle();
 
     expect(onDeleted).not.toHaveBeenCalled();
     expect(compiled.querySelector('.delete-error')).not.toBeNull();
-    expect(compiled.querySelector('dialog')!.close).not.toHaveBeenCalled();
+    expect(preview_closed()).toBe(false);
   });
 });
