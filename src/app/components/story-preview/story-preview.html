@@ -36,9 +36,10 @@
         <button
           type="button"
           class="preview-button edit-button"
-          (click)="showEditComingSoon.set(true)"
+          [disabled]="opening()"
+          (click)="edit_story()"
         >
-          Edit
+          {{ opening() ? 'Opening...' : 'Edit' }}
         </button>
         <button
           type="button"
@@ -54,11 +55,10 @@
     @if (deleteError(); as error) {
       <p class="delete-error" role="alert">{{ error }}</p>
     }
+    @if (editError(); as error) {
+      <p class="delete-error edit-error" role="alert">{{ error }}</p>
+    }
   </div>
-
-  @if (showEditComingSoon()) {
-    <app-coming-soon-dialog feature="Edit" (closed)="showEditComingSoon.set(false)" />
-  }
 
   @if (confirmDeleteOpen()) {
     <app-confirm-dialog

@@ -234,4 +234,57 @@ describe('StoryService', () => {
     // verify() in afterEach fails the test if any /api/v1/user request was sent
     expect(stories.value()).toEqual([]);
   });
+
+  // answers GET /story/s1 with a story that has one character
+  function answerStory() {
+    httpTesting.expectOne('/api/v1/story/s1').flush({
+      success: true,
+      message: 'Story fetched',
+      data: {
+        _id: 's1',
+        title: 'The Lighthouse',
+        authorId: 'a1',
+        description: 'A storm',
+        updatedAt: '2026-10-01',
+        characters: [{ name: 'Dave', description: null, emotions: [] }],
+      },
+    });
+  }
+
+  it('should get the saved script, metadata and characters for editing', async () => {
+    const saved = service.get_saved_story('s1');
+
+    answerStory();
+    const file = httpTesting.expectOne('/api/v1/story/s1/file');
+    expect(file.request.responseType).toBe('text');
+    file.flush('Hello, world.');
+
+    expect(await saved).toEqual({
+      script: 'Hello, world.',
+      metadata: { title: 'The Lighthouse', description: 'A storm' },
+      characters: [{ name: 'Dave', description: null, emotions: [] }],
+      updated_at: Date.parse('2026-10-01'),
+    });
+  });
+
+  it('should give back an empty script if the story has no file yet', async () => {
+    const saved = service.get_saved_story('s1');
+
+    answerStory();
+    httpTesting
+      .expectOne('/api/v1/story/s1/file')
+      .flush('No file', { status: 404, statusText: 'Not Found' });
+
+    expect((await saved).script).toBe('');
+  });
+
+  it('should fail if the script request fails for another reason', async () => {
+    const script = service.get_script('s1');
+
+    httpTesting
+      .expectOne('/api/v1/story/s1/file')
+      .flush('Oops', { status: 500, statusText: 'Server Error' });
+
+    await expect(script).rejects.toBeTruthy();
+  });
 });

@@ -4,6 +4,7 @@ import {
   character_problems,
   duplicated_keys,
   find_emotion,
+  from_character_responses,
   images_of,
   name_key,
   new_character,
@@ -62,6 +63,53 @@ describe('characters rules', () => {
 
     it('gives back an empty list when there are no characters', () => {
       expect(to_character_requests([])).toEqual([]);
+    });
+  });
+
+  describe('from_character_responses', () => {
+    const response = (name: string, emotions: string[], description: string | null = null) => ({
+      name,
+      description,
+      emotions: emotions.map((e) => ({ emotion: e, portrait_x: null, portrait_y: null })),
+    });
+
+    it('turns the backend characters into characters with ids and no pictures', () => {
+      const [dave] = from_character_responses([response('Dave', ['default', 'happy'], 'A farmer')]);
+
+      expect(dave.id).toEqual(expect.any(String));
+      expect(dave.name).toBe('Dave');
+      expect(dave.description).toBe('A farmer');
+      expect(dave.emotions).toEqual([
+        {
+          id: expect.any(String),
+          emotion: 'happy',
+          image: null,
+          ...placement_fields(default_placement),
+        },
+      ]);
+    });
+
+    it('turns a null description into an empty one', () => {
+      expect(from_character_responses([response('Dave', [])])[0].description).toBe('');
+    });
+
+    it('keeps the id, picture and placement of characters and emotions with the same names', () => {
+      const old = character('Dave', ['happy']);
+      old.emotions[0] = { ...old.emotions[0], image: { asset_id: 'a1', url: null }, zoom: 150 };
+
+      const [dave] = from_character_responses([response('dave', ['default', 'Happy'])], [old]);
+
+      expect(dave.id).toBe(old.id);
+      expect(dave.name).toBe('dave');
+      expect(dave.emotions).toEqual([{ ...old.emotions[0], emotion: 'Happy' }]);
+    });
+
+    it('keeps "default" when the writer made it themselves', () => {
+      const old = character('Dave', ['default']);
+
+      const [dave] = from_character_responses([response('Dave', ['default'])], [old]);
+
+      expect(dave.emotions).toEqual(old.emotions);
     });
   });
 

@@ -6,6 +6,7 @@ import { StoryPreview } from './story-preview';
 import { provideRouter, Router } from '@angular/router';
 import { ReadingProgressService } from '../../services/reading-progress.service';
 import { AuthService } from '../../services/auth.service';
+import { WriterStateService } from '../../services/writer-state.service';
 import { GUEST_USER, User } from '../../../models/auth';
 
 describe('StoryPreview closing', () => {
@@ -420,6 +421,58 @@ describe('StoryPreview author buttons', () => {
     expect(confirm_popup()).toBeNull();
     httpTesting.expectNone('/api/v1/story/1');
     expect(preview_closed()).toBe(false);
+  });
+
+  function edit_button() {
+    return compiled.querySelector('.edit-button') as HTMLButtonElement;
+  }
+
+  it('should get the saved story, put it in the writer and open the writer page', async () => {
+    currentUser.set(author);
+    await openPreview();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const writer = TestBed.inject(WriterStateService);
+    const open_saved_story = vi.spyOn(writer, 'open_saved_story').mockResolvedValue();
+
+    edit_button().click();
+    fixture.detectChanges();
+    expect(edit_button().disabled).toBe(true);
+
+    httpTesting.expectOne('/api/v1/story/1').flush({
+      data: {
+        title: 'Test story',
+        description: 'A test description',
+        characters: [],
+        updatedAt: '2026-10-19T11:03:46.435Z',
+      },
+    });
+    httpTesting.expectOne('/api/v1/story/1/file').flush('Hello, world.');
+    await settle();
+
+    expect(open_saved_story).toHaveBeenCalledWith('1', {
+      script: 'Hello, world.',
+      metadata: { title: 'Test story', description: 'A test description' },
+      characters: [],
+      updated_at: Date.parse('2026-10-19T11:03:46.435Z'),
+    });
+    expect(navigate).toHaveBeenCalledWith(['/write']);
+  });
+
+  it('should show an error and stay on the page if the story cannot be fetched', async () => {
+    currentUser.set(author);
+    await openPreview();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+    edit_button().click();
+    httpTesting
+      .expectOne('/api/v1/story/1')
+      .flush({ message: 'Oops' }, { status: 500, statusText: 'Server Error' });
+    httpTesting.expectOne('/api/v1/story/1/file').flush('Hello, world.');
+    await settle();
+
+    expect(compiled.querySelector('.edit-error')).not.toBeNull();
+    expect(edit_button().disabled).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('should show an error and stay open if the delete fails', async () => {

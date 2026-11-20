@@ -16,10 +16,10 @@ import { Router, RouterLink } from '@angular/router';
 import { ReadingProgressService } from '../../services/reading-progress.service';
 import { AuthService } from '../../services/auth.service';
 import { StoryService } from '../../services/story.service';
-import { ComingSoonDialog } from '../coming-soon-dialog/coming-soon-dialog';
+import { WriterStateService } from '../../services/writer-state.service';
 import { ConfirmDialog } from '../confirm-dialog/confirm-dialog';
 @Component({
-  imports: [DatePipe, RouterLink, ComingSoonDialog, ConfirmDialog],
+  imports: [DatePipe, RouterLink, ConfirmDialog],
   selector: 'app-story-preview',
   styleUrl: './story-preview.css',
   templateUrl: './story-preview.html',
@@ -36,6 +36,7 @@ export class StoryPreview {
   private router = inject(Router);
   private auth = inject(AuthService);
   private stories = inject(StoryService);
+  private writer = inject(WriterStateService);
 
   // true if this reader started the story before and hasnt finished it
   protected hasProgress = computed(() => this.progress.get(this.story().story_id) !== null);
@@ -47,9 +48,26 @@ export class StoryPreview {
 
   protected deleting = signal(false); // while the delete is on its way to the backend
   protected deleteError = signal<string | null>(null); // why the last delete didn't work
-  protected showEditComingSoon = signal(false); // editing a saved story isn't built yet
+  protected opening = signal(false); // while the story is being fetched for the writer page
+  protected editError = signal<string | null>(null); // why the last edit didn't open
   protected confirmDeleteOpen = signal(false); // whether the "are you sure?" popup is open
   protected deleteMessage = computed(() => `This story will be deleted. This can't be undone.`);
+
+  // gets the saved story from the backend, puts it in the writer and opens the writer page
+  protected async edit_story() {
+    this.opening.set(true);
+    this.editError.set(null);
+    try {
+      const story_id = this.story().story_id;
+      const saved = await this.stories.get_saved_story(story_id);
+      await this.writer.open_saved_story(story_id, saved);
+      await this.router.navigate(['/write']);
+    } catch {
+      this.editError.set("Sorry, this story couldn't be opened. Please try again.");
+    } finally {
+      this.opening.set(false);
+    }
+  }
 
   // runs once the author confirms in the popup, deletes the story and closes the preview
   protected async delete_story() {
