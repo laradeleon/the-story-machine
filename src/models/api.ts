@@ -31,3 +31,18 @@ export interface ChapterResponse extends ChapterSummaryResponse {
   characters: StoryJSON['characters'];
   story: StoryJSON['story']; // would have no lines until the author saves a script
 }
+
+// structure of requests to backend
+
+// one emotion in PATCH /story/:id. only the name until the backend has emotions,
+// then it gets portrait_x, portrait_y, zoom and the picture's url
+export interface EmotionRequest {
+  emotion: string;
+}
+
+// one character in PATCH /story/:id, the backend finds characters by name so there's no id
+export interface CharacterRequest {
+  name: string;
+  description: string | null;
+  emotions: EmotionRequest[];
+}

@@ -1,4 +1,5 @@
 // the rules for characters and their emotions, with no Angular so they can be tested on their own
+import { CharacterRequest } from '../../models/api';
 import { AssetRef } from '../../models/asset';
 import { Character, Emotion } from '../../models/story';
 import { default_placement, Placement } from './placement';
@@ -138,6 +139,25 @@ export function images_of(characters: Character[]): AssetRef[] {
   return characters.flatMap((character) =>
     character.emotions.flatMap((emotion) => (emotion.image ? [emotion.image] : [])),
   );
+}
+
+// ---- sending to the backend
+
+// the characters as PATCH /story/:id takes them. names are trimmed because the backend trims
+// them too, and the script's dialogue has to match them exactly.
+// blank or repeated names get a 400, character_problems stops the popup closing with those.
+// what changes once the backend has emotions:
+// - id: stays out, the backend finds characters by name and emotions by their emotion name
+// - description: no change, '' is sent as null like the story JSON docs
+// - image: becomes the Azure url, waiting for any picture still only stored locally (no url yet)
+// - portrait_x, portrait_y, zoom: sent as they are, the backend only allows null for now
+// - "default": stays out, the backend adds it to every character itself
+export function to_character_requests(characters: Character[]): CharacterRequest[] {
+  return characters.map((character) => ({
+    name: character.name.trim(),
+    description: character.description.trim() || null,
+    emotions: character.emotions.map((e) => ({ emotion: e.emotion.trim() })),
+  }));
 }
 
 // the problems that stop the popup closing

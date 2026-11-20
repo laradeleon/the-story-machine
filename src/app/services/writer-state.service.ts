@@ -102,7 +102,7 @@ export class WriterStateService {
   remove_character(id: string) {
     const removed = this.characters().find((c) => c.id === id);
     this.characters.update((characters) => remove_character(characters, id));
-    this.forget(...images_of(removed ? [removed] : []));
+    void this.save_then_forget(...images_of(removed ? [removed] : []));
   }
 
   // removes an emotion and throws away its picture
@@ -144,8 +144,7 @@ export class WriterStateService {
         ...placement_fields(default_placement),
       })),
     );
-    await this.save_now(); // the draft must point at the new picture before the old one goes
-    this.forget(emotion.image);
+    await this.save_then_forget(emotion.image);
     return true;
   }
 
@@ -193,7 +192,14 @@ export class WriterStateService {
   ) {
     const removed = find_emotion(this.characters(), character_id, emotion_id);
     this.characters.update(change);
-    this.forget(removed?.image);
+    void this.save_then_forget(removed?.image);
+  }
+
+  // saves first so the draft never points at a deleted picture. if the save fails they're kept, restore() clears them later
+  private async save_then_forget(...images: (AssetRef | null | undefined)[]) {
+    if (await this.save_now()) {
+      this.forget(...images);
+    }
   }
 
   // throws away pictures, skipping missing ones. not waited for

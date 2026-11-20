@@ -67,6 +67,8 @@ Sprint 1 was about getting the foundation planted.
   host: {
     //the browser is refreshing or closing the page, which skips onDestroy, so save here too
     '(window:pagehide)': 'save_script()',
+    //the tab was hidden. fires earlier and more reliably than pagehide, especially on phones
+    '(document:visibilitychange)': 'save_script_if_hidden()',
   },
 })
 export class Writer {
@@ -109,6 +111,8 @@ export class Writer {
         //replace with chapter text when editing a chapter
         this.state.script() ?? exampleStory,
         () => this.previewError.set(null),
+        //the autosave waits for typing to stop, so a missed pagehide loses half a second at most
+        (text) => this.state.script.set(text),
       );
     });
 
@@ -127,10 +131,16 @@ export class Writer {
     return this.editorView?.state.doc.toString() ?? '';
   }
 
-  //saves the editor's text, only on leave/refresh/Preview so typing stays fast
+  //saves the editor's text straight away (on leave, refresh, hiding the tab or Preview), skipping the autosave's wait
   protected save_script() {
     if (this.editorView) {
       this.state.save_script_now(this.current_script());
+    }
+  }
+
+  protected save_script_if_hidden() {
+    if (document.hidden) {
+      this.save_script();
     }
   }
 

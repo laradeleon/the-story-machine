@@ -271,6 +271,51 @@ describe('WriterStateService', () => {
       expect(state.characters()).toEqual([]);
       expect(await stored_pictures()).toEqual([]);
     });
+
+    // makes saving a draft fail, while pictures still save
+    function drafts_cannot_save() {
+      const put = IDBObjectStore.prototype.put;
+      vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementation(function (
+        this: IDBObjectStore,
+        ...args: Parameters<IDBObjectStore['put']>
+      ) {
+        if (this.name === 'drafts') {
+          throw new Error('full');
+        }
+        return put.apply(this, args);
+      });
+    }
+
+    it('should save straight away when a picture is taken off its emotion', async () => {
+      const { state } = await story_with_picture();
+
+      state.remove_emotion_image('c1', 'e1');
+      await saves_finished();
+
+      expect((await load_draft('story-1'))!.characters[0].emotions[0].image).toBeNull();
+    });
+
+    it('should keep the picture when the draft without it could not be saved', async () => {
+      const { state, image } = await story_with_picture();
+      drafts_cannot_save();
+
+      state.remove_emotion('c1', 'e1');
+      const pictures = await stored_pictures();
+      vi.restoreAllMocks();
+
+      expect(pictures).toEqual([image.asset_id]);
+    });
+
+    it('should keep the old picture when the draft with the new one could not be saved', async () => {
+      const { state, image: old } = await story_with_picture();
+      drafts_cannot_save();
+
+      await state.set_emotion_image('story-1', 'c1', 'e1', new Blob(['y']));
+      const pictures = await stored_pictures();
+      vi.restoreAllMocks();
+
+      expect(pictures).toContain(old.asset_id);
+    });
   });
 
   it('should save the open story before switching to another', async () => {

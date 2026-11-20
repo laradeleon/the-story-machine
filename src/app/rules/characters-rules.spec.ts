@@ -14,6 +14,7 @@ import {
   remove_character,
   remove_emotion,
   set_image_url,
+  to_character_requests,
   unapproved_characters,
   update_character,
   update_emotion,
@@ -41,6 +42,29 @@ function emotion(name: string): Emotion {
 }
 
 describe('characters rules', () => {
+  describe('to_character_requests', () => {
+    it('keeps only the name, description and emotion names', () => {
+      const dave = { ...character('Dave', ['happy']), description: 'A farmer' };
+      dave.emotions[0].image = { asset_id: 'a1', url: 'https://example.com/a1.webp' };
+
+      expect(to_character_requests([dave])).toEqual([
+        { name: 'Dave', description: 'A farmer', emotions: [{ emotion: 'happy' }] },
+      ]);
+    });
+
+    it('trims names and sends a blank description as null', () => {
+      const dave = { ...character(' Dave ', [' angry ']), description: '   ' };
+
+      expect(to_character_requests([dave])).toEqual([
+        { name: 'Dave', description: null, emotions: [{ emotion: 'angry' }] },
+      ]);
+    });
+
+    it('gives back an empty list when there are no characters', () => {
+      expect(to_character_requests([])).toEqual([]);
+    });
+  });
+
   describe('name_key', () => {
     it('ignores capitals and spaces at the ends', () => {
       expect(name_key('  Dave Smith ')).toBe('dave smith');
