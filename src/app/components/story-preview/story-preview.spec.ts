@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { StoryPreview } from './story-preview';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
+import { ReadingProgressService } from '../../services/reading-progress.service';
 
 describe('StoryPreview closing', () => {
   let component: StoryPreview;
@@ -27,6 +28,7 @@ describe('StoryPreview closing', () => {
       story_id: '1',
       title: 'Test story',
       author: 'Test author',
+      author_id: 'a1',
       description: 'A test description',
       updatedAt: '2026-10-19T11:03:46.435Z',
     });
@@ -135,5 +137,117 @@ describe('StoryPreview closing', () => {
     dialog.dispatchEvent(new Event('close'));
 
     expect(onClosed).toHaveBeenCalled();
+  });
+});
+
+describe('StoryPreview author link', () => {
+  const realShowModal = HTMLDialogElement.prototype.showModal;
+
+  beforeEach(() => {
+    HTMLDialogElement.prototype.showModal = vi.fn();
+  });
+
+  afterEach(() => {
+    HTMLDialogElement.prototype.showModal = realShowModal;
+  });
+
+  // clicking the author's name should take you to their profile
+  it("should link the author's name to their profile", async () => {
+    await TestBed.configureTestingModule({
+      imports: [StoryPreview],
+      providers: [provideRouter([])],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(StoryPreview);
+    fixture.componentRef.setInput('story', {
+      story_id: '1',
+      title: 'Test story',
+      author: 'Test author',
+      author_id: 'a1',
+      description: 'A test description',
+      updatedAt: '2026-10-19T11:03:46.435Z',
+    });
+    await fixture.whenStable();
+
+    const link = (fixture.nativeElement as HTMLElement).querySelector('.author-link');
+    expect(link?.textContent).toContain('Test author');
+    expect(link?.getAttribute('href')).toBe('/profile/a1');
+  });
+});
+
+describe('StoryPreview reading buttons', () => {
+  let fixture: ComponentFixture<StoryPreview>;
+  let compiled: HTMLElement;
+  let progress: ReadingProgressService;
+
+  const realShowModal = HTMLDialogElement.prototype.showModal;
+
+  beforeEach(async () => {
+    localStorage.clear();
+    HTMLDialogElement.prototype.showModal = vi.fn();
+
+    await TestBed.configureTestingModule({
+      imports: [StoryPreview],
+      providers: [provideRouter([])],
+    }).compileComponents();
+    progress = TestBed.inject(ReadingProgressService);
+  });
+
+  afterEach(() => {
+    HTMLDialogElement.prototype.showModal = realShowModal;
+    localStorage.clear();
+  });
+
+  // shows the popup for story "1" (popup from clicking story on landing oage)
+  async function openPreview() {
+    fixture = TestBed.createComponent(StoryPreview);
+    fixture.componentRef.setInput('story', {
+      story_id: '1',
+      title: 'Test story',
+      author: 'Test author',
+      author_id: 'a1',
+      description: 'A test description',
+      updatedAt: '2026-10-19T11:03:46.435Z',
+    });
+    compiled = fixture.nativeElement as HTMLElement;
+    await fixture.whenStable();
+  }
+
+  // the text of every button and link at the bottom of the popup
+  function actions() {
+    return Array.from(compiled.querySelectorAll('.preview-actions > *')).map((el) =>
+      el.textContent?.trim(),
+    );
+  }
+
+  // someone who hasnt opened the story just gets the one button for Read Story
+  it('should show read story for a story the reader has not started', async () => {
+    await openPreview();
+    expect(actions()).toEqual(['Read Story']);
+  });
+
+  // someone whos partway through gets to pick between picking up where they were or starting again
+  it('should offer continue reading and start over for a story the reader has started', async () => {
+    progress.save('1', { chapterIndex: 0, lineId: 3 });
+    await openPreview();
+
+    expect(actions()).toEqual(['Continue Reading', 'Start Over']);
+    // continue reading goes to the same reader link which opens at their saved place
+    const continueLink = compiled.querySelector('.preview-actions a');
+    expect(continueLink?.getAttribute('href')).toBe('/read/1');
+  });
+
+  // start over has to wipe the saved place before opening
+  it('should forget the saved place and open the story when start over is clicked', async () => {
+    progress.save('1', { chapterIndex: 1, lineId: 3 });
+    await openPreview();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+    const startOver = Array.from(compiled.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Start Over'),
+    ) as HTMLButtonElement;
+    startOver.click();
+
+    expect(progress.get('1')).toBeNull();
+    expect(navigate).toHaveBeenCalledWith(['/read', '1']);
   });
 });

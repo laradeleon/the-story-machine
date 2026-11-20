@@ -1,37 +1,5 @@
 <!-- account menu in the top right corner -->
-<!-- shows "Guest" until someone signs in, then itll show their username -->
-<nav class="top-bar" aria-label="Account">
-  <div class="profile-menu" #profileMenu>
-    <button
-      type="button"
-      class="profile-button"
-      (click)="toggleMenu()"
-      aria-controls="profile-dropdown"
-      [attr.aria-expanded]="menuOpen()"
-      [attr.title]="isSignedIn() ? username() : null"
-    >
-      <span class="profile-icon" aria-hidden="true"></span>
-      <span>{{ isSignedIn() ? shortUsername() : 'Guest' }}</span>
-      <span class="profile-arrow" [class.open]="menuOpen()" aria-hidden="true"></span>
-    </button>
-
-    @if (menuOpen()) {
-      <div id="profile-dropdown" class="profile-dropdown">
-        @if (isSignedIn()) {
-          <!-- shows which account is signed in -->
-          <div class="profile-details">
-            <span class="profile-details-name">{{ username() }}</span>
-            <span class="profile-details-email">{{ email() }}</span>
-          </div>
-          <button type="button" (click)="signOut()">Sign out</button>
-        } @else {
-          <button type="button" (click)="openSignIn('signIn')">Sign in</button>
-          <button type="button" (click)="openSignIn('createAccount')">Create account</button>
-        }
-      </div>
-    }
-  </div>
-</nav>
+<app-account-menu />
 
 <!-- banner at the top of the page with the wallpaper behind the site name -->
 <header class="hero">
@@ -41,6 +9,23 @@
 
 <!-- the stories get their own panel over top the wallpaper -->
 <main class="stories-section">
+  <!-- stories the reader started but hasnt finished -->
+  @if (inProgressStories().length > 0) {
+    <section class="continue-section" aria-labelledby="continue-heading">
+      <h2 id="continue-heading" class="section-heading continue-heading">Continue Reading</h2>
+      <div class="story-grid">
+        <!-- same cards as the full list but displays which chapter theyre on -->
+        @for (item of inProgressStories(); track item.story.story_id) {
+          <app-story-card
+            [story]="item.story"
+            [chapter]="item.chapter"
+            (click)="selectedStory.set(item.story)"
+          />
+        }
+      </div>
+    </section>
+  }
+
   <div class="section-header">
     <h2 class="section-heading">Stories</h2>
     <!-- takes the author to the writing page -->
@@ -65,12 +50,7 @@
     <div class="story-grid">
       <!-- display every story that was retrieved -->
       @for (story of stories.value(); track story.story_id) {
-        <button type="button" class="story-card" (click)="selectedStory.set(story)">
-          <div class="story-container">
-            <h3 class="story-title">{{ story.title }}</h3>
-            <p class="story-author">{{ story.author }}</p>
-          </div>
-        </button>
+        <app-story-card [story]="story" (click)="selectedStory.set(story)" />
       } @empty {
         <!-- if there's no stories to display -->
         <p class="section-message">No stories yet so stay tuned!</p>
@@ -82,9 +62,4 @@
 <!-- preview popup for the story that got clicked -->
 @if (selectedStory(); as story) {
   <app-story-preview [story]="story" (closed)="selectedStory.set(null)" />
-}
-
-<!-- sign in popup opened from the profile menu on whichever form was picked -->
-@if (showSignIn()) {
-  <app-sign-in-popup [startMode]="signInMode()" (closed)="showSignIn.set(false)" />
 }

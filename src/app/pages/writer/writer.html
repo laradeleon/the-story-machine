@@ -10,8 +10,8 @@
     <!-- opens the popup for the story's title, genres and description -->
     <button type="button" class="primary-button" (click)="metadataOpen.set(true)">Metadata</button>
 
-    <!-- TODO: open a popup for the story's characters (shows the coming soon popup for now) -->
-    <button type="button" class="primary-button" (click)="comingSoon.set('Characters')">
+    <!-- opens the popup for the story's characters and their portraits -->
+    <button type="button" class="primary-button" (click)="charactersOpen.set(true)">
       Characters
     </button>
 
@@ -122,10 +122,15 @@
 <!-- the metadata popup, opened by the Metadata button -->
 @if (metadataOpen()) {
   <app-metadata-dialog
-    [metadata]="draft.metadata()"
-    (saved)="draft.metadata.set($event)"
+    [metadata]="state.metadata()"
+    (saved)="state.metadata.set($event)"
     (closed)="metadataOpen.set(false)"
   />
+}
+
+<!-- the characters popup, opened by the Characters button -->
+@if (charactersOpen()) {
+  <app-characters-dialog (closed)="charactersOpen.set(false)" />
 }
 
 <!-- the parser's AST, opened by the AST button -->

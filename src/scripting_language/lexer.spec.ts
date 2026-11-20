@@ -35,9 +35,9 @@ describe('tokenize', () => {
   });
 
   it('accepts quotes in dialogue', () => {
-    const tokens = tokenize('Krupal: “Wake up dude..”');
+    const tokens = tokenize('Krupal: "Wake up dude.."');
 
-    expect(tokens[1]).toEqual(tok(1, '“Wake up dude..”', TokenType.DialogueText));
+    expect(tokens[1]).toEqual(tok(1, '"Wake up dude.."', TokenType.DialogueText));
   });
 
   it('turns END into an end token, ignoring case', () => {
@@ -169,6 +169,24 @@ describe('tokenize', () => {
   it('throws an error when dialogue is missing its opening quote', () => {
     expect(() => tokenize('Grandpa: Hello."')).toThrow(
       errors.format_error(ErrorKind.MissingOpenQuotation, 1).message,
+    );
+  });
+
+  it('throws an error when dialogue is missing its closing quote at EOF', () => {
+    expect(() => tokenize('Grandpa: "Hello')).toThrow(
+      errors.format_error(ErrorKind.UnterminatedDialogue, 1, 'choice:', '->', '#', 'end').message,
+    );
+  });
+
+  it('throws an error when dialogue is cut off by a reserved statement', () => {
+    expect(() => tokenize('Grandpa: "Hello\n# flag')).toThrow(
+      errors.format_error(ErrorKind.UnterminatedDialogue, 1, 'choice:', '->', '#', 'end').message,
+    );
+  });
+
+  it('throws an error when a choice block is started and no options are present', () => {
+    expect(() => tokenize('Choice:\n')).toThrow(
+      errors.format_error(ErrorKind.NoChoicesProvided, 1).message,
     );
   });
 });

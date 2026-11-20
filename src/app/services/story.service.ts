@@ -14,6 +14,20 @@ import { StoryNode } from '../../scripting_language/ast';
 import { toJSON } from '../../scripting_language/to_json';
 import { StoryInfo } from '../../models/story';
 
+// turns a story from the backend into what the story cards and preview popup show
+// each story comes with its author's display name
+// used by the landing page and profile pages
+export function toStoryDetails(story: StoryResponse): StoryDetails {
+  return {
+    story_id: story._id,
+    title: story.title,
+    author: story.author?.displayName ?? 'Unknown author',
+    author_id: story.authorId,
+    description: story.description,
+    updatedAt: story.updatedAt,
+  };
+}
+
 @Injectable({ providedIn: 'root' }) // global singleton
 export class StoryService {
   private http = inject(HttpClient);
@@ -37,14 +51,7 @@ export class StoryService {
         const stories = storiesResponse.data;
 
         // turn backends stories into StoryInfo format for display on landing page
-        // each story comes with author's display name
-        return stories.map((story) => ({
-          story_id: story._id,
-          title: story.title,
-          author: story.author?.displayName ?? 'Unknown author',
-          description: story.description,
-          updatedAt: story.updatedAt,
-        }));
+        return stories.map(toStoryDetails);
       },
     });
   }

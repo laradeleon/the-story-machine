@@ -188,6 +188,7 @@ describe('StoryService', () => {
         story_id: 's1',
         title: 'Story 1',
         author: 'Lara',
+        author_id: 'a1', // so the popup can link to the author's profile
         description: 'd1',
         updatedAt: '2026-10-01',
       },
@@ -195,6 +196,7 @@ describe('StoryService', () => {
         story_id: 's2',
         title: 'Story 2',
         author: 'Lara',
+        author_id: 'a1',
         description: 'd2',
         updatedAt: '2026-10-02',
       },

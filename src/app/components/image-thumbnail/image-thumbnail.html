@@ -1,0 +1,5 @@
+<span class="thumbnail" [class.thumbnail-empty]="!image_url()">
+  @if (image_url(); as url) {
+    <img class="thumbnail-image" draggable="false" [src]="url" alt="" [style]="picture_style()" />
+  }
+</span>

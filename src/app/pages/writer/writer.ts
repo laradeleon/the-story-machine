@@ -9,8 +9,9 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { PreviewService } from '../../services/preview.service';
-import { DraftService } from '../../services/draft.service';
+import { WriterStateService } from '../../services/writer-state.service';
 import { MetadataDialog } from '../../components/metadata-dialog/metadata-dialog';
+import { CharactersDialog } from '../../components/characters-dialog/characters-dialog';
 import { ComingSoonDialog } from '../../components/coming-soon-dialog/coming-soon-dialog';
 import { AstDialog } from '../../components/ast-dialog/ast-dialog';
 import Parser, { MAX_OPTIONS } from '../../../scripting_language/parser';
@@ -32,10 +33,10 @@ Hello, world.
 Dialogue is shown with quotes and by specifying the character before
 
 For example
-Arthur: “Good morning Lauren, welcome to Interactive fiction!”
-Paul: "We worked very hard on this, Adejare and I got zero sleep!”
+Arthur: "Good morning Lauren, welcome to Interactive fiction!"
+Paul: "We worked very hard on this, Adejare and I got zero sleep!"
 Adejare looks at you with sleepless eyes.
-Krupal: “Wake up dude..”
+Krupal: "Wake up dude.."
 
 You can define flags, these are points in the story we can jump to
 
@@ -60,13 +61,15 @@ Sprint 1 was about getting the foundation planted.
 
 //setup for writer component
 @Component({
-  imports: [RouterLink, MetadataDialog, ComingSoonDialog, AstDialog],
+  imports: [RouterLink, MetadataDialog, CharactersDialog, ComingSoonDialog, AstDialog],
   selector: 'app-writer',
   styleUrl: './writer.css',
   templateUrl: './writer.html',
   host: {
     //the browser is refreshing or closing the page, which skips onDestroy, so save here too
     '(window:pagehide)': 'save_script()',
+    //the tab was hidden. fires earlier and more reliably than pagehide, especially on phones
+    '(document:visibilitychange)': 'save_script_if_hidden()',
   },
 })
 export class Writer {
@@ -74,7 +77,7 @@ export class Writer {
   editorView?: EditorView;
 
   private previewService = inject(PreviewService); //plays the script in the reader when Preview is pressed
-  protected draft = inject(DraftService); //protected so the template can use the metadata in it
+  protected state = inject(WriterStateService); //protected so the template can use the metadata in it
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
 
@@ -83,6 +86,9 @@ export class Writer {
 
   //whether the metadata popup is showing
   protected metadataOpen = signal(false);
+
+  //whether the characters popup is showing
+  protected charactersOpen = signal(false);
 
   //TEMPORARY: the name of the unfinished button that was clicked, shown in the coming soon popup.
   //null when the popup is closed
@@ -109,8 +115,10 @@ export class Writer {
         this.editorHost().nativeElement,
         //coming back to the writer puts the script back how it was left, otherwise start with the example
         //replace with chapter text when editing a chapter
-        this.draft.script() ?? exampleStory,
+        this.state.script() ?? exampleStory,
         () => this.previewError.set(null),
+        //the autosave waits for typing to stop, so a missed pagehide loses half a second at most
+        (text) => this.state.script.set(text),
       );
     });
 
@@ -129,12 +137,16 @@ export class Writer {
     return this.editorView?.state.doc.toString() ?? '';
   }
 
-  //saves the editor's text to the draft service and localStorage.
-  //only done when leaving the page, refreshing/closing it or pressing Preview, not on every
-  //keystroke, so typing doesn't slow down as the story gets longer
+  //saves the editor's text straight away (on leave, refresh, hiding the tab or Preview), skipping the autosave's wait
   protected save_script() {
     if (this.editorView) {
-      this.draft.save_script_now(this.current_script());
+      this.state.save_script_now(this.current_script());
+    }
+  }
+
+  protected save_script_if_hidden() {
+    if (document.hidden) {
+      this.save_script();
     }
   }
 
