@@ -1,10 +1,13 @@
 import { computed, DestroyRef, effect, inject, Injectable, signal } from '@angular/core';
+import { CharacterResponse } from '../../models/api';
 import { AssetRef } from '../../models/asset';
 import { Draft } from '../../models/draft';
+import { SavedStory } from '../../models/saved-story';
 import { Character } from '../../models/story';
 import { StoryMetadata } from '../../models/story-metadata';
 import {
   find_emotion,
+  from_character_responses,
   images_of,
   placement_fields,
   remove_character,
@@ -15,9 +18,6 @@ import {
 import { default_placement } from '../rules/placement';
 import { AssetService } from './asset.service';
 import { load_draft, save_draft } from './saved-values';
-
-// the story_id used until the backend gives each new story a real one
-export const PLACEHOLDER_STORY_ID = 'new-story';
 
 // ms to wait after the last change before saving, so a burst of changes is one save
 export const SAVE_DELAY = 500;
@@ -31,13 +31,16 @@ function empty_metadata(): StoryMetadata {
 export class WriterStateService {
   private assets = inject(AssetService);
 
-  story_id = signal(PLACEHOLDER_STORY_ID);
+  story_id = signal(''); // the backend's id for the open story, '' until open_story() runs
   script = signal<string | null>(null); // the editor text
   metadata = signal<StoryMetadata>(empty_metadata());
   characters = signal<Character[]>([]);
 
   // false until open_story() has loaded the draft, so the empty starting values aren't saved over it
   private opened = false;
+
+  // when the open story's draft was last saved, null if it had none or it couldn't be read
+  private draft_updated_at: number | null = null;
 
   // the latest open_story call, so opens run one at a time
   private opening: Promise<void> = Promise.resolve();
@@ -65,14 +68,17 @@ export class WriterStateService {
   }
 
   // saves the open story, then loads another one, waiting for any open already running
-  open_story(story_id = PLACEHOLDER_STORY_ID): Promise<void> {
+  open_story(story_id: string): Promise<void> {
     const open = () => this.switch_story(story_id);
     this.opening = this.opening.then(open, open);
     return this.opening;
   }
 
-  // loads a story (empty if it has no draft), saving the open one first
+  // loads a story (empty if it has no draft), saving the open one first. does nothing if it's already open
   private async switch_story(story_id: string) {
+    if (this.opened && this.story_id() === story_id) {
+      return;
+    }
     if (this.opened) {
       this.opened = false;
       await this.save_now();
@@ -86,6 +92,7 @@ export class WriterStateService {
       loaded = false;
     }
     this.story_id.set(story_id);
+    this.draft_updated_at = saved?.updated_at ?? null;
     this.script.set(saved?.script ?? null);
     this.metadata.set(saved?.metadata ?? empty_metadata());
     this.characters.set(saved?.characters ?? []);
@@ -157,6 +164,24 @@ export class WriterStateService {
     if (await this.save_now()) {
       await this.assets.forget(asset_id);
     }
+  }
+
+  // replaces the characters with ones from the backend, keeping pictures of any with the same names
+  set_characters(characters: CharacterResponse[]) {
+    this.characters.set(from_character_responses(characters, this.characters()));
+  }
+
+  // opens a saved story, using the backend's script, metadata and characters unless the local
+  // draft is newer. the draft's genres and pictures are kept since the backend doesn't have them yet
+  async open_saved_story(story_id: string, saved: SavedStory) {
+    await this.open_story(story_id);
+    // the draft has changes the backend doesn't, keep them
+    if (this.draft_updated_at !== null && this.draft_updated_at > saved.updated_at) {
+      return;
+    }
+    this.script.set(saved.script);
+    this.metadata.update((metadata) => ({ ...metadata, ...saved.metadata }));
+    this.set_characters(saved.characters);
   }
 
   save_script_now(script: string) {

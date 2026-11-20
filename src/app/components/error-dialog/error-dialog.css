@@ -1,0 +1,25 @@
+/* the border, shadow and blurred background come from dialog[appModal] in styles.css */
+.error-dialog {
+  --dialog-width: 400px;
+}
+
+.error-content {
+  padding: 32px;
+}
+
+.error-content h2 {
+  margin-bottom: 8px;
+  font-size: 1.5rem;
+}
+
+.error-content p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* OK on the right at the bottom */
+.error-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+}

@@ -66,7 +66,7 @@ export class Profile {
   protected hasProfileError = computed(() => this.person.error() !== undefined);
 
   // the stories this user has published, shown on every profile
-  private stories = resource({
+  protected stories = resource({
     params: () => this.userId(),
     loader: ({ params }) => this.profiles.getPublishedStories(params),
   });

@@ -93,3 +93,20 @@
 .preview-button:hover {
   background: rgba(255, 255, 255, 0.06);
 }
+
+.preview-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* only shown to the story's author, pushed to the right end of the row */
+.delete-button {
+  margin-left: auto;
+  color: #ff8a80; /* same red as the error messages */
+  border-color: currentColor;
+}
+
+.delete-error {
+  color: #ff8a80;
+  font-size: 0.875rem;
+}

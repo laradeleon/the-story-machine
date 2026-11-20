@@ -104,17 +104,32 @@
       <!-- parses the script and plays it in the reader, see preview() in writer.ts -->
       <button type="button" class="primary-button" (click)="preview()">Preview</button>
 
-      <!-- TODO: swap the coming soon popup for (click)="open_publish()" and write open_publish()
-           in writer.ts to open a <dialog> modal (see components/metadata-dialog for an example) -->
-      <button type="button" class="primary-button" (click)="comingSoon.set('Publish')">
-        Publish
+      <!-- checks the script, saves the draft and its chapter, then publishes it, see publish() in writer.ts -->
+      <button
+        type="button"
+        class="primary-button publish-button"
+        [disabled]="busy() !== null"
+        (click)="publish()"
+      >
+        {{ busy() === 'publishing' ? 'Publishing...' : 'Publish' }}
       </button>
 
-      <!-- TODO: swap the coming soon popup for (click)="save()" and write save() in writer.ts
-           to store the unfinished script as a draft (not published) -->
-      <button type="button" class="primary-button" (click)="comingSoon.set('Save')">Save</button>
+      <!-- sends the script, metadata and characters to the backend without publishing, see save_draft() in writer.ts -->
+      <button
+        type="button"
+        class="primary-button save-draft-button"
+        [disabled]="busy() !== null"
+        (click)="save_draft()"
+      >
+        {{ busy() === 'saving' ? 'Saving...' : 'Save Draft' }}
+      </button>
     </div>
   </div>
+
+  <!-- "Draft saved." or "Story published." after the last one worked -->
+  @if (statusMessage(); as message) {
+    <p class="status-message" role="status">{{ message }}</p>
+  }
 </div>
 
 <!-- the metadata popup, opened by the Metadata button -->
@@ -136,7 +151,7 @@
   <app-ast-dialog [ast]="ast" (closed)="astOutput.set(null)" />
 }
 
-<!-- TEMPORARY: popup for buttons that don't do anything yet -->
-@if (comingSoon(); as feature) {
-  <app-coming-soon-dialog [feature]="feature" (closed)="comingSoon.set(null)" />
+<!-- what went wrong when Save Draft or Publish couldn't reach the backend -->
+@if (apiError(); as error) {
+  <app-error-dialog [title]="error.title" [message]="error.message" (closed)="apiError.set(null)" />
 }

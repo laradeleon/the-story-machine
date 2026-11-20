@@ -20,6 +20,7 @@ export enum ErrorKind {
   // to_json.ts
   FlagAlreadyExists = 'flag_already_exists',
   FlagDoesNotExist = 'flag_does_not_exist',
+  CharacterDoesNotExist = 'character_does_not_exist',
 }
 
 const message_templates: Record<ErrorKind, (line: number, ...details: string[]) => string> = {
@@ -51,6 +52,8 @@ const message_templates: Record<ErrorKind, (line: number, ...details: string[]) 
   // to_json.ts
   [ErrorKind.FlagAlreadyExists]: (line) => `Line ${line} has a Flag that already exists`,
   [ErrorKind.FlagDoesNotExist]: (line) => `Line ${line} has a goto with a flag that does not exist`,
+  [ErrorKind.CharacterDoesNotExist]: (line, name) =>
+    `Line ${line} has dialogue by '${name}', who isn't one of the story's characters. Add them in Characters, or check the spelling and capital letters`,
 };
 
 // the error the lexer, parser and to_json throw instead of a plain Error.

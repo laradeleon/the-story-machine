@@ -1,5 +1,5 @@
 <!-- account menu in the top right corner -->
-<app-account-menu />
+<app-account-menu #accountMenu />
 
 <!-- banner at the top of the page with the wallpaper behind the site name -->
 <header class="hero">
@@ -28,9 +28,20 @@
 
   <div class="section-header">
     <h2 class="section-heading">Stories</h2>
-    <!-- takes the author to the writing page -->
-    <a class="primary-button" routerLink="/write">Write Story</a>
+    <!-- makes a new story and opens it in the writer. guests get the sign in popup instead -->
+    <button
+      type="button"
+      class="primary-button write-story-button"
+      [disabled]="creating()"
+      (click)="isSignedIn() ? write_story() : accountMenu.openSignIn('signIn')"
+    >
+      {{ creating() ? 'Creating...' : 'Write Story' }}
+    </button>
   </div>
+
+  @if (createError(); as error) {
+    <p class="section-message create-error" role="alert">{{ error }}</p>
+  }
 
   <!-- shows loading message if stories are still being retrieved -->
   @if (stories.isLoading()) {
@@ -54,5 +65,9 @@
 
 <!-- preview popup for the story that got clicked -->
 @if (selectedStory(); as story) {
-  <app-story-preview [story]="story" (closed)="selectedStory.set(null)" />
+  <app-story-preview
+    [story]="story"
+    (closed)="selectedStory.set(null)"
+    (deleted)="stories.reload()"
+  />
 }

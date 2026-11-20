@@ -63,8 +63,8 @@ export class AccountMenu {
     this.menuOpen.update((open) => !open);
   }
 
-  // closes the menu and opens the popup on the form that was picked
-  protected openSignIn(mode: AuthFormMode) {
+  // closes the menu and opens the popup on the form that was picked (public so pages can open it too)
+  openSignIn(mode: AuthFormMode) {
     this.menuOpen.set(false);
     this.signInMode.set(mode);
     this.showSignIn.set(true);

@@ -12,7 +12,7 @@ import { PreviewService } from '../../services/preview.service';
 import { WriterStateService } from '../../services/writer-state.service';
 import { MetadataDialog } from '../../components/metadata-dialog/metadata-dialog';
 import { CharactersDialog } from '../../components/characters-dialog/characters-dialog';
-import { ComingSoonDialog } from '../../components/coming-soon-dialog/coming-soon-dialog';
+import { ErrorDialog } from '../../components/error-dialog/error-dialog';
 import { AstDialog } from '../../components/ast-dialog/ast-dialog';
 import Parser, { MAX_OPTIONS } from '../../../scripting_language/parser';
 import { StoryNode } from '../../../scripting_language/ast';
@@ -20,6 +20,11 @@ import { line_from_error, set_error_line } from './error-line';
 import { create_editor } from './editor-setup';
 import { choice_snippet, insert_on_own_line, SNIPPETS } from './editor-commands';
 import { EditorView } from '@codemirror/view';
+import { StoryService } from '../../services/story.service';
+import { to_character_requests } from '../../rules/characters-rules';
+import { toJSON } from '../../../scripting_language/to_json';
+import { StoryJSON } from '../../../models/story';
+import { api_reason } from '../../services/api-errors';
 
 const exampleStory = `Welcome to The Story Machine.
 
@@ -60,7 +65,7 @@ Sprint 1 was about getting the foundation planted.
 
 //setup for writer component
 @Component({
-  imports: [RouterLink, MetadataDialog, CharactersDialog, ComingSoonDialog, AstDialog],
+  imports: [RouterLink, MetadataDialog, CharactersDialog, ErrorDialog, AstDialog],
   selector: 'app-writer',
   styleUrl: './writer.css',
   templateUrl: './writer.html',
@@ -79,6 +84,7 @@ export class Writer {
   protected state = inject(WriterStateService); //protected so the template can use the metadata in it
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
+  private storyService = inject(StoryService);
 
   //the div in the .html the editor goes in
   private editorHost = viewChild.required<ElementRef<HTMLElement>>('editor');
@@ -89,26 +95,31 @@ export class Writer {
   //whether the characters popup is showing
   protected charactersOpen = signal(false);
 
-  //TEMPORARY: the name of the unfinished button that was clicked, shown in the coming soon popup.
-  //null when the popup is closed
-  protected comingSoon = signal<string | null>(null);
-
   //the numbered buttons next to "Choice", each adds a choice with that many options
   protected choiceCounts = Array.from({ length: MAX_OPTIONS }, (_, i) => i + 1); //[1, 2, 3, 4], the parser's limit
 
-  //the parser's error message when the script has a mistake in it, null when there isn't one
+  //what's wrong with the story when Preview or Publish can't use it (a mistake in the script,
+  //or no title to publish with), null when there isn't anything
   protected previewError = signal<string | null>(null);
 
   //the parser's AST as formatted text, shown in the AST popup. null when the popup is closed
   protected astOutput = signal<string | null>(null);
+
+  //what's being sent to the backend, so Save Draft and Publish can't run at the same time
+  protected busy = signal<'saving' | 'publishing' | null>(null);
+
+  //"Draft saved." or "Story published." after the last one worked
+  protected statusMessage = signal<string | null>(null);
+
+  //what went wrong talking to the backend, shown in a popup. null when the popup is closed
+  protected apiError = signal<{ title: string; message: string } | null>(null);
 
   constructor() {
     //the editor div only exists once the page has rendered
     afterNextRender(() => {
       this.editorView = create_editor(
         this.editorHost().nativeElement,
-        //coming back to the writer puts the script back how it was left, otherwise start with the example
-        //replace with chapter text when editing a chapter
+        //the open story's script (opened by the route before this page), or the example for a new story
         this.state.script() ?? exampleStory,
         () => this.previewError.set(null),
         //the autosave waits for typing to stop, so a missed pagehide loses half a second at most
@@ -179,23 +190,16 @@ export class Writer {
     }
   }
 
-  //parse the script in the editor and open it in the reader to play through it
+  //turn the script in the editor into story JSON and open it in the reader to play through it
   protected preview() {
-    const ast = this.parse_script();
-    if (!ast) {
-      return;
+    const script = this.script_json();
+    if (!script) {
+      return; //the mistake is already showing under the editor
     }
 
-    //toJSON also throws when the script has a mistake, e.g. a goto to a flag that doesn't exist
-    try {
-      this.previewService.build_preview(ast);
-    } catch (error) {
-      this.show_parse_error(error);
-      return;
-    }
-
+    this.previewService.build_preview(script);
     this.save_script();
-    this.router.navigate(['/preview']);
+    this.router.navigate(['/preview', this.state.story_id()]);
   }
 
   //runs the parser on the script in the editor.
@@ -224,5 +228,108 @@ export class Writer {
   private clear_parse_error() {
     this.previewError.set(null);
     this.editorView?.dispatch({ effects: set_error_line.of(null) });
+  }
+
+  //a story needs a title to be published, genres and description can be left blank.
+  //spaces don't count, the backend trims them and would turn the title away
+  private has_title(): boolean {
+    return this.state.metadata().title.trim() !== '';
+  }
+
+  //shows why the story can't be published under the editor, where Preview's mistakes go
+  private show_problem(message: string) {
+    this.clear_parse_error(); //an old line highlight would point at the wrong thing
+    this.previewError.set(message);
+  }
+
+  //turns the script into story JSON, the one place Preview and Publish both check it.
+  //a mistake is shown under the editor with its line coloured, and null is given back
+  private script_json(): StoryJSON['story'] | null {
+    const ast = this.parse_script();
+    if (!ast) {
+      return null;
+    }
+    //toJSON also throws when the script has a mistake, e.g. a goto to a flag that doesn't exist
+    try {
+      //only the story part is kept, so the title and author don't matter here.
+      //names are trimmed like Save Draft sends them, so the check matches the backend's
+      const character_names = this.state.characters().map((c) => c.name.trim());
+      const info = { title: '', author: '', story_id: this.state.story_id() };
+      return toJSON(ast, info, character_names).story;
+    } catch (error) {
+      this.show_parse_error(error);
+      return null;
+    }
+  }
+
+  //sends the title, description, characters and script to the backend. throws if any of it fails
+  private async save_to_backend(story_id: string) {
+    const metadata = this.state.metadata();
+    await this.storyService.update_story(story_id, {
+      //the backend won't take a blank title, so the story keeps the one it has
+      ...(this.has_title() ? { title: metadata.title } : {}),
+      description: metadata.description,
+      characters: to_character_requests(this.state.characters()),
+    });
+    await this.storyService.upload_script(story_id, this.current_script());
+  }
+
+  //runs Save Draft's or Publish's requests for the open story. only one runs at a time, or their
+  //requests would mix. shows the done message when it works and a popup when the backend doesn't
+  private async send_to_backend(
+    busy: 'saving' | 'publishing',
+    failed_title: string,
+    send: (story_id: string) => Promise<string>, //gives back the message for when it worked
+  ) {
+    if (this.busy() !== null) {
+      return;
+    }
+    this.save_script(); //keep a local copy first, like Preview does
+    this.busy.set(busy);
+    this.statusMessage.set(null);
+    try {
+      this.statusMessage.set(await send(this.state.story_id()));
+    } catch (error) {
+      this.apiError.set({ title: failed_title, message: api_reason(error) });
+    } finally {
+      this.busy.set(null);
+    }
+  }
+
+  //saves the script, title, description and characters to the backend without publishing
+  protected save_draft() {
+    return this.send_to_backend('saving', "Couldn't save the draft", async (story_id) => {
+      await this.save_to_backend(story_id);
+      return 'Draft saved.';
+    });
+  }
+
+  //checks the story first and stops before saving anything if it can't be published.
+  //then saves the draft, saves the script as the story's chapter, and publishes it
+  protected publish() {
+    if (this.busy() !== null) {
+      return; //checked before the checks too, so they don't show problems while it's busy
+    }
+    if (!this.has_title()) {
+      this.show_problem('Give the story a title in Metadata before publishing it.');
+      return;
+    }
+    const script = this.script_json();
+    if (!script) {
+      return; //the mistake is already showing under the editor
+    }
+    if (script.lines.length === 0) {
+      this.show_problem('Write the story before publishing it.');
+      return;
+    }
+
+    return this.send_to_backend('publishing', "Couldn't publish the story", async (story_id) => {
+      //the characters are saved before the chapter, the backend checks its dialogue against them
+      await this.save_to_backend(story_id);
+      await this.storyService.save_chapter(story_id, script);
+      //last, so readers can't see the story until its chapter is saved
+      await this.storyService.update_story(story_id, { status: 'published' });
+      return 'Story published.';
+    });
   }
 }

@@ -31,6 +31,42 @@
       } @else {
         <a class="primary-button" [routerLink]="['/read', story().story_id]">Read Story</a>
       }
+      <!-- only the story's author can edit or delete it -->
+      @if (isAuthor()) {
+        <button
+          type="button"
+          class="preview-button edit-button"
+          [disabled]="opening()"
+          (click)="edit_story()"
+        >
+          {{ opening() ? 'Opening...' : 'Edit' }}
+        </button>
+        <button
+          type="button"
+          class="preview-button delete-button"
+          [disabled]="deleting()"
+          (click)="confirmDeleteOpen.set(true)"
+        >
+          {{ deleting() ? 'Deleting...' : 'Delete' }}
+        </button>
+      }
     </div>
+
+    @if (deleteError(); as error) {
+      <p class="delete-error" role="alert">{{ error }}</p>
+    }
+    @if (editError(); as error) {
+      <p class="delete-error edit-error" role="alert">{{ error }}</p>
+    }
   </div>
+
+  @if (confirmDeleteOpen()) {
+    <app-confirm-dialog
+      title="Delete this story?"
+      [message]="deleteMessage()"
+      confirm_label="Delete"
+      (confirmed)="delete_story()"
+      (closed)="confirmDeleteOpen.set(false)"
+    />
+  }
 </dialog>
