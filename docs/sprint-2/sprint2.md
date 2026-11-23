@@ -7,13 +7,17 @@ In addition to being able to register and sign-in, here are some accounts that h
 ### Account 1
 
 **Email**: 4350grader@example.com
+
 **Username**: grader
+
 **Password**: tMsnRkiKdgrI^2
 
 ### Account 2
 
 **Email**: 4350lauren@example.com
+
 **Username**: lauren
+
 **Password**: Lauren4350!
 
 ## Sprint Summary
