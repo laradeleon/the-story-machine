@@ -1,5 +1,21 @@
 # Sprint 2
 
+## Test Accounts
+
+In addition to being able to register and sign-in, here are some accounts that have already been setup so you can test the accounts feature, and see what it looks like for an author to own a story (Account 1).
+
+### Account 1
+
+**Email**: 4350grader@example.com
+**Username**: grader
+**Password**: tMsnRkiKdgrI^2
+
+### Account 2
+
+**Email**: 4350lauren@example.com
+**Username**: lauren
+**Password**: Lauren4350!
+
 ## Sprint Summary
 
 In Sprint 1, we completed the parser, the reader feature, and the setup of the backend database, however, the reader was only using a mock chapter for every story, and the writing functionality and deployment was pushed to Sprint 2. For Sprint 2, we worked on finishing up these tasks while also extending the functionality of The Story Machine.
