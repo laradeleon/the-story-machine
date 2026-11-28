@@ -130,15 +130,29 @@ describe('Writer', () => {
 
   it("should show an error on Preview when dialogue is by someone who isn't a character", () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-    set_editor_text('Hello.\nArthur: "Hi!"');
+    set_editor_text('Hello.\nDave: "Hi!"');
 
     button_named('Preview').click();
     fixture.detectChanges();
 
     expect(navigate).not.toHaveBeenCalled();
     expect(fixture.nativeElement.querySelector('.preview-error').textContent).toContain(
-      errors.format_error(ErrorKind.CharacterDoesNotExist, 2, 'Arthur').message,
+      errors.format_error(ErrorKind.CharacterDoesNotExist, 2, 'Dave').message,
     );
+  });
+
+  it('should give a new story the example story characters so it previews right away', () => {
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const names = TestBed.inject(WriterStateService)
+      .characters()
+      .map((c) => c.name);
+    expect(names).toEqual(['Arthur', 'Paul', 'Krupal']);
+
+    button_named('Preview').click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.preview-error')).toBeNull();
+    expect(navigate).toHaveBeenCalled();
   });
 
   it('should preview dialogue by a character from the Characters popup', () => {
@@ -352,13 +366,13 @@ describe('Writer', () => {
     it('Publish should show an unknown speaker under the editor and save nothing', async () => {
       const { patch, chapter } = fake_backend();
       set_title('The Lighthouse');
-      set_editor_text('Arthur: "Hi!"');
+      set_editor_text('Dave: "Hi!"');
 
       button_named('Publish').click();
       await settle();
 
       expect(script_problem()).toContain(
-        errors.format_error(ErrorKind.CharacterDoesNotExist, 1, 'Arthur').message,
+        errors.format_error(ErrorKind.CharacterDoesNotExist, 1, 'Dave').message,
       );
       expect(error_popup()).toBeNull(); // it's a script problem, not a backend one
       expect(patch).not.toHaveBeenCalled();

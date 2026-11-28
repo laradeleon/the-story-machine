@@ -21,47 +21,45 @@ import { create_editor } from './editor-setup';
 import { choice_snippet, insert_on_own_line, SNIPPETS } from './editor-commands';
 import { EditorView } from '@codemirror/view';
 import { StoryService } from '../../services/story.service';
-import { to_character_requests } from '../../rules/characters-rules';
+import { new_id, to_character_requests } from '../../rules/characters-rules';
 import { toJSON } from '../../../scripting_language/to_json';
 import { StoryJSON } from '../../../models/story';
 import { api_reason } from '../../services/api-errors';
 
-const exampleStory = `Welcome to The Story Machine.
+const exampleStory = `Welcome to The Story Machine!
 
-This is a platform for writing, reading and sharing interactive fiction.
+This is where you write your interactive story. Any line written on its own like this one is narration.
 
-You can just have text show up by just writing it on its own like so
+Dialogue is the character's name, then a colon, then their words in quotes.
+Everyone who speaks has to be in Characters (the button above). We already added the ones below for you.
 
-Hello, world.
-
-Dialogue is shown with quotes and by specifying the character before
-
-For example
 Arthur: "Good morning Lauren, welcome to Interactive fiction!"
 Paul: "We worked very hard on this, Adejare and I got zero sleep!"
 Adejare looks at you with sleepless eyes.
 Krupal: "Wake up dude.."
 
-You can define flags, these are points in the story we can jump to
-
-# [a flag]
-
-You can users make a choice like so
+A choice lets the reader decide what happens next. Each option jumps to a flag.
 
 Choice:
-[what goes in the text box] -> [a flag]
-move on -> continue
+Say good morning -> good morning
+Stay quiet -> stay quiet
 
-# continue
+# good morning
+A line starting with # is a flag, a place in the story you can jump to.
+Arthur: "Good morning to you too!"
+-> the end
 
-Finally, to end the story, we use the END keyword.
+# stay quiet
+Krupal: "Tough crowd..."
+-> the end
 
+# the end
+That's the whole story! Press Preview to play through it, and try both choices.
 END
-
-For now we only support a few keywords, but down the line, we intend to have far more functionality.
-Sprint 1 was about getting the foundation planted.
-
 `;
+
+// the characters who speak in the example story, so a new story can be previewed right away
+const exampleCharacters = ['Arthur', 'Paul', 'Krupal'];
 
 //setup for writer component
 @Component({
@@ -115,6 +113,15 @@ export class Writer {
   protected apiError = signal<{ title: string; message: string } | null>(null);
 
   constructor() {
+    //a brand new story starts with the example, so it also needs the example's characters,
+    //otherwise Preview would say they aren't one of the story's characters
+    const isNewStory = this.state.script() === null && this.state.characters().length === 0;
+    if (isNewStory) {
+      this.state.characters.set(
+        exampleCharacters.map((name) => ({ id: new_id(), name, description: '', emotions: [] })),
+      );
+    }
+
     //the editor div only exists once the page has rendered
     afterNextRender(() => {
       this.editorView = create_editor(
